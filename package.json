@@ -1,0 +1,25 @@
+{
+  "name": "kinto-elm-experiments",
+  "version": "1.0.0",
+  "description": "Experimenting with Elm and Kinto.",
+  "main": "index.js",
+  "scripts": {
+    "build": "node_modules/.bin/elm-make src/Main.elm --output=build/index.html",
+    "publish-to-gh-pages": "npm run build && node_modules/.bin/gh-pages --dist build/",
+    "test": "echo \"Testing is cheating!\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/n1k0/kinto-elm-experiments.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/n1k0/kinto-elm-experiments/issues"
+  },
+  "homepage": "https://github.com/n1k0/kinto-elm-experiments#readme",
+  "devDependencies": {
+    "elm": "^0.17.1",
+    "gh-pages": "^0.11.0"
+  }
+}
