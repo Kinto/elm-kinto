@@ -37,23 +37,22 @@ errorNotif error errorMsg =
         div [] [ text "" ]
 
 
-stylesheet : Html Msg
-stylesheet =
-    -- Silly hack to load bootstrap because other ways are clumsy.
-    let
-        tag =
-            "link"
 
-        attrs =
-            [ attribute "rel" "stylesheet"
-            , attribute "property" "stylesheet"
-            , attribute "href" "//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-            ]
-
-        children =
-            []
-    in
-        node tag attrs children
+--stylesheet : Html Msg
+--stylesheet =
+--    -- Silly hack to load bootstrap because other ways are clumsy.
+--    let
+--        tag =
+--            "link"
+--        attrs =
+--            [ attribute "rel" "stylesheet"
+--            , attribute "property" "stylesheet"
+--            , attribute "href" "//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+--            ]
+--        children =
+--            []
+--    in
+--        node tag attrs children
 
 
 view : Model -> Html Msg
@@ -63,5 +62,5 @@ view { error, errorMsg, records, formData } =
         , errorNotif error errorMsg
         , recordsList records
         , recordForm { title = "", description = "" }
-        , stylesheet
+          --, stylesheet
         ]
