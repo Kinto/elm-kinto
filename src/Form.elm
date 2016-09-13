@@ -1,4 +1,4 @@
-module Form exposing (view, Model, init, update, Msg)
+module Form exposing (view, Model, init, update, Msg(CreateRecord))
 
 import Html exposing (..)
 import Html.Attributes exposing (id, for, attribute, class, type', value)
@@ -25,6 +25,7 @@ init =
 type Msg
     = UpdateFormTitle String
     | UpdateFormDescription String
+    | CreateRecord
 
 
 update : Msg -> Model -> Model
@@ -36,6 +37,9 @@ update msg model =
         UpdateFormDescription description ->
             { model | description = description }
 
+        CreateRecord ->
+            model
+
 
 
 -- View
@@ -43,8 +47,7 @@ update msg model =
 
 view : Model -> Html Msg
 view { title, description } =
-    -- form [ onSubmit SubmitForm ]
-    form []
+    form [ onSubmit CreateRecord ]
         [ div [ class "form-group" ]
             [ label [ for "title" ] [ text "Title" ]
             , input

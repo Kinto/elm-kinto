@@ -5,7 +5,7 @@ import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, js
 import Json.Decode exposing (Decoder, string, at, list, object3, (:=), maybe)
 import Json.Encode as Encode
 
-import Form
+import Form exposing (Msg(CreateRecord))
 
 
 -- TODO:
@@ -44,7 +44,6 @@ type Msg
     | FetchRecordsSucceed (Response (List Record))
     | FetchRecordsFail (Error String)
     | FormMsg Form.Msg
-    | SubmitForm
     | CreateSucceed (Response Record)
     | CreateFail (Error String)
 
@@ -99,11 +98,11 @@ update msg model =
         FetchRecordsFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
+        FormMsg CreateRecord ->
+            ( model, createRecord model.formData )
+
         FormMsg subMsg ->
             ( { model | formData = Form.update subMsg model.formData }, Cmd.none )
-
-        SubmitForm ->
-            ( model, createRecord model.formData )
 
         CreateSucceed _ ->
             ( { model | formData = initialFormData }, fetchRecords )
