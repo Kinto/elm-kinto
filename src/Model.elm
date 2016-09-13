@@ -2,7 +2,7 @@ module Model exposing (..)
 
 import Task
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
-import Json.Decode exposing (Decoder, string, at, list, object3, (:=))
+import Json.Decode exposing (Decoder, string, at, list, object3, (:=), maybe)
 import Json.Encode as Encode
 
 
@@ -17,8 +17,8 @@ type alias RecordId =
 type alias Record =
     -- XXX add last_modified
     { id : RecordId
-    , title : String
-    , description : String
+    , title : Maybe String
+    , description : Maybe String
     }
 
 
@@ -139,8 +139,8 @@ decodeRecord : Decoder Record
 decodeRecord =
     object3 Record
         ("id" := string)
-        ("title" := string)
-        ("description" := string)
+        (maybe ("title" := string))
+        (maybe ("description" := string))
 
 
 createRecord : FormData -> Cmd Msg

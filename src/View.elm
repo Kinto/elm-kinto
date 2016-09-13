@@ -10,8 +10,8 @@ recordRow : Record -> Html Msg
 recordRow { id, title, description } =
     tr []
         [ td [] [ text id ]
-        , td [] [ text title ]
-        , td [] [ text description ]
+        , td [] [ text (Maybe.withDefault "[empty]" title) ]
+        , td [] [ text (Maybe.withDefault "[empty]" description)  ]
         ]
 
 
