@@ -9164,19 +9164,6 @@ var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p0) {
 			}
 			]));
 };
-var _n1k0$kinto_elm_experiments$Model$updateFormDataDescription = F2(
-	function (formData, description) {
-		return _elm_lang$core$Native_Utils.update(
-			formData,
-			{description: description});
-	});
-var _n1k0$kinto_elm_experiments$Model$updateFormDataTitle = F2(
-	function (formData, title) {
-		return _elm_lang$core$Native_Utils.update(
-			formData,
-			{title: title});
-	});
-var _n1k0$kinto_elm_experiments$Model$initialFormData = {title: '', description: ''};
 var _n1k0$kinto_elm_experiments$Model$initialModel = {
 	error: false,
 	errorMsg: '',
@@ -9321,7 +9308,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{formData: _n1k0$kinto_elm_experiments$Model$initialFormData}),
+						{formData: _n1k0$kinto_elm_experiments$Form$init}),
 					_1: _n1k0$kinto_elm_experiments$Model$fetchRecords
 				};
 			default:
