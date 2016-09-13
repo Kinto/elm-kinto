@@ -1,5 +1,7 @@
 module View exposing (view)
 
+import Date
+import Date.Format exposing (format)
 import Html exposing (..)
 import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
@@ -7,12 +9,18 @@ import Model exposing (Model, Record, Msg(..))
 import Form
 
 
+formatLatsModified : Float -> String
+formatLatsModified timestamp =
+    format "%Y-%m-%d@%H:%M" (Date.fromTime timestamp)
+
+
 recordRow : Record -> Html Msg
-recordRow { id, title, description } =
+recordRow { id, title, description, last_modified } =
     tr []
         [ td [] [ text id ]
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
-        , td [] [ text (Maybe.withDefault "[empty]" description)  ]
+        , td [] [ text (Maybe.withDefault "[empty]" description) ]
+        , td [] [ text (formatLatsModified (toFloat last_modified)) ]
         ]
 
 
@@ -24,6 +32,7 @@ recordsList records =
                 [ th [] [ text "id" ]
                 , th [] [ text "title" ]
                 , th [] [ text "description" ]
+                , th [] [ text "last_modified" ]
                 ]
             ]
         , tbody [] (List.map recordRow records)
@@ -63,5 +72,5 @@ view { error, errorMsg, records, formData } =
         , errorNotif error errorMsg
         , recordsList records
         , Html.App.map FormMsg (Form.view formData)
-        -- , stylesheet
+          -- , stylesheet
         ]
