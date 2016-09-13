@@ -9021,6 +9021,118 @@ var _lukewestby$elm_http_builder$HttpBuilder$send = F3(
 				_elm_lang$core$Time$now)) : A5(_lukewestby$elm_http_builder$HttpBuilder$sendHelp, successReader, errorReader, _p28, _p30, _p29);
 	});
 
+var _n1k0$kinto_elm_experiments$Form$update = F2(
+	function (msg, model) {
+		var _p0 = msg;
+		if (_p0.ctor === 'UpdateFormTitle') {
+			return _elm_lang$core$Native_Utils.update(
+				model,
+				{title: _p0._0});
+		} else {
+			return _elm_lang$core$Native_Utils.update(
+				model,
+				{description: _p0._0});
+		}
+	});
+var _n1k0$kinto_elm_experiments$Form$init = {title: '', description: ''};
+var _n1k0$kinto_elm_experiments$Form$Model = F2(
+	function (a, b) {
+		return {title: a, description: b};
+	});
+var _n1k0$kinto_elm_experiments$Form$UpdateFormDescription = function (a) {
+	return {ctor: 'UpdateFormDescription', _0: a};
+};
+var _n1k0$kinto_elm_experiments$Form$UpdateFormTitle = function (a) {
+	return {ctor: 'UpdateFormTitle', _0: a};
+};
+var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
+	var _p2 = _p1;
+	return A2(
+		_elm_lang$html$Html$form,
+		_elm_lang$core$Native_List.fromArray(
+			[]),
+		_elm_lang$core$Native_List.fromArray(
+			[
+				A2(
+				_elm_lang$html$Html$div,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Attributes$class('form-group')
+					]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						A2(
+						_elm_lang$html$Html$label,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$for('title')
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('Title')
+							])),
+						A2(
+						_elm_lang$html$Html$input,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$id('title'),
+								_elm_lang$html$Html_Attributes$type$('text'),
+								_elm_lang$html$Html_Attributes$class('form-control'),
+								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Form$UpdateFormTitle)
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[]))
+					])),
+				A2(
+				_elm_lang$html$Html$div,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Attributes$class('form-group')
+					]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						A2(
+						_elm_lang$html$Html$label,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$for('description')
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('Description')
+							])),
+						A2(
+						_elm_lang$html$Html$textarea,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$id('description'),
+								_elm_lang$html$Html_Attributes$class('form-control'),
+								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Form$UpdateFormDescription)
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[]))
+					])),
+				A2(
+				_elm_lang$html$Html$div,
+				_elm_lang$core$Native_List.fromArray(
+					[]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						A2(
+						_elm_lang$html$Html$button,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$type$('submit'),
+								_elm_lang$html$Html_Attributes$class('btn btn-default')
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('Create')
+							]))
+					]))
+			]));
+};
+
 var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p0) {
 	var _p1 = _p0;
 	return _elm_lang$core$Json_Encode$object(
@@ -9064,7 +9176,7 @@ var _n1k0$kinto_elm_experiments$Model$initialModel = {
 	errorMsg: '',
 	records: _elm_lang$core$Native_List.fromArray(
 		[]),
-	formData: _n1k0$kinto_elm_experiments$Model$initialFormData
+	formData: _n1k0$kinto_elm_experiments$Form$init
 };
 var _n1k0$kinto_elm_experiments$Model$Record = F3(
 	function (a, b, c) {
@@ -9122,11 +9234,8 @@ var _n1k0$kinto_elm_experiments$Model$createRecord = function (formData) {
 	return A3(_elm_lang$core$Task$perform, _n1k0$kinto_elm_experiments$Model$CreateFail, _n1k0$kinto_elm_experiments$Model$CreateSucceed, request);
 };
 var _n1k0$kinto_elm_experiments$Model$SubmitForm = {ctor: 'SubmitForm'};
-var _n1k0$kinto_elm_experiments$Model$UpdateFormDescription = function (a) {
-	return {ctor: 'UpdateFormDescription', _0: a};
-};
-var _n1k0$kinto_elm_experiments$Model$UpdateFormTitle = function (a) {
-	return {ctor: 'UpdateFormTitle', _0: a};
+var _n1k0$kinto_elm_experiments$Model$FormMsg = function (a) {
+	return {ctor: 'FormMsg', _0: a};
 };
 var _n1k0$kinto_elm_experiments$Model$FetchRecordsFail = function (a) {
 	return {ctor: 'FetchRecordsFail', _0: a};
@@ -9184,23 +9293,13 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			case 'UpdateFormTitle':
+			case 'FormMsg':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							formData: A2(_n1k0$kinto_elm_experiments$Model$updateFormDataTitle, model.formData, _p2._0)
-						}),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			case 'UpdateFormDescription':
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							formData: A2(_n1k0$kinto_elm_experiments$Model$updateFormDataDescription, model.formData, _p2._0)
+							formData: A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -9234,96 +9333,18 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 var _n1k0$kinto_elm_experiments$Model$FetchRecords = {ctor: 'FetchRecords'};
 var _n1k0$kinto_elm_experiments$Model$NoOp = {ctor: 'NoOp'};
 
-var _n1k0$kinto_elm_experiments$Form$recordForm = function (_p0) {
-	var _p1 = _p0;
-	return A2(
-		_elm_lang$html$Html$form,
-		_elm_lang$core$Native_List.fromArray(
-			[
-				_elm_lang$html$Html_Events$onSubmit(_n1k0$kinto_elm_experiments$Model$SubmitForm)
-			]),
-		_elm_lang$core$Native_List.fromArray(
-			[
-				A2(
-				_elm_lang$html$Html$div,
-				_elm_lang$core$Native_List.fromArray(
-					[
-						_elm_lang$html$Html_Attributes$class('form-group')
-					]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						A2(
-						_elm_lang$html$Html$label,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$for('title')
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html$text('Title')
-							])),
-						A2(
-						_elm_lang$html$Html$input,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$id('title'),
-								_elm_lang$html$Html_Attributes$type$('text'),
-								_elm_lang$html$Html_Attributes$class('form-control'),
-								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Model$UpdateFormTitle)
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[]))
-					])),
-				A2(
-				_elm_lang$html$Html$div,
-				_elm_lang$core$Native_List.fromArray(
-					[
-						_elm_lang$html$Html_Attributes$class('form-group')
-					]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						A2(
-						_elm_lang$html$Html$label,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$for('description')
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html$text('Description')
-							])),
-						A2(
-						_elm_lang$html$Html$textarea,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$id('description'),
-								_elm_lang$html$Html_Attributes$class('form-control'),
-								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Model$UpdateFormDescription)
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[]))
-					])),
-				A2(
-				_elm_lang$html$Html$div,
-				_elm_lang$core$Native_List.fromArray(
-					[]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						A2(
-						_elm_lang$html$Html$button,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Attributes$type$('submit'),
-								_elm_lang$html$Html_Attributes$class('btn btn-default')
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html$text('Create')
-							]))
-					]))
-			]));
-};
-
+var _n1k0$kinto_elm_experiments$View$stylesheet = function () {
+	var children = _elm_lang$core$Native_List.fromArray(
+		[]);
+	var attrs = _elm_lang$core$Native_List.fromArray(
+		[
+			A2(_elm_lang$html$Html_Attributes$attribute, 'rel', 'stylesheet'),
+			A2(_elm_lang$html$Html_Attributes$attribute, 'property', 'stylesheet'),
+			A2(_elm_lang$html$Html_Attributes$attribute, 'href', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css')
+		]);
+	var tag = 'link';
+	return A3(_elm_lang$html$Html$node, tag, attrs, children);
+}();
 var _n1k0$kinto_elm_experiments$View$errorNotif = F2(
 	function (error, errorMsg) {
 		return _elm_lang$core$Native_Utils.eq(error, true) ? A2(
@@ -9455,8 +9476,10 @@ var _n1k0$kinto_elm_experiments$View$view = function (_p2) {
 					])),
 				A2(_n1k0$kinto_elm_experiments$View$errorNotif, _p3.error, _p3.errorMsg),
 				_n1k0$kinto_elm_experiments$View$recordsList(_p3.records),
-				_n1k0$kinto_elm_experiments$Form$recordForm(
-				{title: '', description: ''})
+				A2(
+				_elm_lang$html$Html_App$map,
+				_n1k0$kinto_elm_experiments$Model$FormMsg,
+				_n1k0$kinto_elm_experiments$Form$view(_p3.formData))
 			]));
 };
 
