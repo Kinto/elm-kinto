@@ -9024,14 +9024,17 @@ var _lukewestby$elm_http_builder$HttpBuilder$send = F3(
 var _n1k0$kinto_elm_experiments$Form$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
-		if (_p0.ctor === 'UpdateFormTitle') {
-			return _elm_lang$core$Native_Utils.update(
-				model,
-				{title: _p0._0});
-		} else {
-			return _elm_lang$core$Native_Utils.update(
-				model,
-				{description: _p0._0});
+		switch (_p0.ctor) {
+			case 'UpdateFormTitle':
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{title: _p0._0});
+			case 'UpdateFormDescription':
+				return _elm_lang$core$Native_Utils.update(
+					model,
+					{description: _p0._0});
+			default:
+				return model;
 		}
 	});
 var _n1k0$kinto_elm_experiments$Form$init = {title: '', description: ''};
@@ -9039,6 +9042,7 @@ var _n1k0$kinto_elm_experiments$Form$Model = F2(
 	function (a, b) {
 		return {title: a, description: b};
 	});
+var _n1k0$kinto_elm_experiments$Form$CreateRecord = {ctor: 'CreateRecord'};
 var _n1k0$kinto_elm_experiments$Form$UpdateFormDescription = function (a) {
 	return {ctor: 'UpdateFormDescription', _0: a};
 };
@@ -9050,7 +9054,9 @@ var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
 	return A2(
 		_elm_lang$html$Html$form,
 		_elm_lang$core$Native_List.fromArray(
-			[]),
+			[
+				_elm_lang$html$Html_Events$onSubmit(_n1k0$kinto_elm_experiments$Form$CreateRecord)
+			]),
 		_elm_lang$core$Native_List.fromArray(
 			[
 				A2(
@@ -9233,7 +9239,6 @@ var _n1k0$kinto_elm_experiments$Model$createRecord = function (formData) {
 					_lukewestby$elm_http_builder$HttpBuilder$post('https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records')))));
 	return A3(_elm_lang$core$Task$perform, _n1k0$kinto_elm_experiments$Model$CreateFail, _n1k0$kinto_elm_experiments$Model$CreateSucceed, request);
 };
-var _n1k0$kinto_elm_experiments$Model$SubmitForm = {ctor: 'SubmitForm'};
 var _n1k0$kinto_elm_experiments$Model$FormMsg = function (a) {
 	return {ctor: 'FormMsg', _0: a};
 };
@@ -9294,21 +9299,23 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FormMsg':
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							formData: A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData)
-						}),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			case 'SubmitForm':
-				return {
-					ctor: '_Tuple2',
-					_0: model,
-					_1: _n1k0$kinto_elm_experiments$Model$createRecord(model.formData)
-				};
+				if (_p2._0.ctor === 'CreateRecord') {
+					return {
+						ctor: '_Tuple2',
+						_0: model,
+						_1: _n1k0$kinto_elm_experiments$Model$createRecord(model.formData)
+					};
+				} else {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								formData: A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData)
+							}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				}
 			case 'CreateSucceed':
 				return {
 					ctor: '_Tuple2',
@@ -9333,18 +9340,6 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 var _n1k0$kinto_elm_experiments$Model$FetchRecords = {ctor: 'FetchRecords'};
 var _n1k0$kinto_elm_experiments$Model$NoOp = {ctor: 'NoOp'};
 
-var _n1k0$kinto_elm_experiments$View$stylesheet = function () {
-	var children = _elm_lang$core$Native_List.fromArray(
-		[]);
-	var attrs = _elm_lang$core$Native_List.fromArray(
-		[
-			A2(_elm_lang$html$Html_Attributes$attribute, 'rel', 'stylesheet'),
-			A2(_elm_lang$html$Html_Attributes$attribute, 'property', 'stylesheet'),
-			A2(_elm_lang$html$Html_Attributes$attribute, 'href', '//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css')
-		]);
-	var tag = 'link';
-	return A3(_elm_lang$html$Html$node, tag, attrs, children);
-}();
 var _n1k0$kinto_elm_experiments$View$errorNotif = F2(
 	function (error, errorMsg) {
 		return _elm_lang$core$Native_Utils.eq(error, true) ? A2(
