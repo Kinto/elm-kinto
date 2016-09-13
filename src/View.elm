@@ -1,9 +1,10 @@
 module View exposing (view)
 
 import Html exposing (..)
+import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
-import Model exposing (Model, Record, Msg)
-import Form exposing (recordForm)
+import Model exposing (Model, Record, Msg(..))
+import Form
 
 
 recordRow : Record -> Html Msg
@@ -61,6 +62,6 @@ view { error, errorMsg, records, formData } =
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error errorMsg
         , recordsList records
-        , recordForm { title = "", description = "" }
-          --, stylesheet
+        , Html.App.map FormMsg (Form.view formData)
+        -- , stylesheet
         ]

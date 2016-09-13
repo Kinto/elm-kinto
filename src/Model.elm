@@ -5,6 +5,8 @@ import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, js
 import Json.Decode exposing (Decoder, string, at, list, object3, (:=), maybe)
 import Json.Encode as Encode
 
+import Form
+
 
 -- TODO:
 -- - Expose only what's necessary
@@ -32,7 +34,7 @@ type alias Model =
     { error : Bool
     , errorMsg : String
     , records : List Record
-    , formData : FormData
+    , formData : Form.Model
     }
 
 
@@ -41,8 +43,7 @@ type Msg
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
     | FetchRecordsFail (Error String)
-    | UpdateFormTitle String
-    | UpdateFormDescription String
+    | FormMsg Form.Msg
     | SubmitForm
     | CreateSucceed (Response Record)
     | CreateFail (Error String)
@@ -60,7 +61,7 @@ initialModel =
     { error = False
     , errorMsg = ""
     , records = []
-    , formData = initialFormData
+    , formData = Form.init
     }
 
 
@@ -98,11 +99,8 @@ update msg model =
         FetchRecordsFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
-        UpdateFormTitle title ->
-            ( { model | formData = updateFormDataTitle model.formData title }, Cmd.none )
-
-        UpdateFormDescription description ->
-            ( { model | formData = updateFormDataDescription model.formData description }, Cmd.none )
+        FormMsg subMsg ->
+            ( { model | formData = Form.update subMsg model.formData }, Cmd.none )
 
         SubmitForm ->
             ( model, createRecord model.formData )

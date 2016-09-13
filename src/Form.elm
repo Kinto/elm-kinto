@@ -1,14 +1,50 @@
-module Form exposing (recordForm)
+module Form exposing (view, Model, init, update, Msg)
 
 import Html exposing (..)
 import Html.Attributes exposing (id, for, attribute, class, type', value)
 import Html.Events exposing (onInput, onSubmit)
-import Model exposing (FormData, Msg(..))
 
 
-recordForm : FormData -> Html Msg
-recordForm { title, description } =
-    form [ onSubmit SubmitForm ]
+type alias Model =
+    { title : String
+    , description : String
+    }
+
+
+init : Model
+init =
+    { title = ""
+    , description = ""
+    }
+
+
+
+-- Update
+
+
+type Msg
+    = UpdateFormTitle String
+    | UpdateFormDescription String
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        UpdateFormTitle title ->
+            { model | title = title }
+
+        UpdateFormDescription description ->
+            { model | description = description }
+
+
+
+-- View
+
+
+view : Model -> Html Msg
+view { title, description } =
+    -- form [ onSubmit SubmitForm ]
+    form []
         [ div [ class "form-group" ]
             [ label [ for "title" ] [ text "Title" ]
             , input
