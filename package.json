@@ -4,7 +4,7 @@
   "description": "Experimenting with Elm and Kinto.",
   "main": "index.js",
   "scripts": {
-    "build": "node_modules/.bin/elm-make src/Main.elm --output=build/index.html",
+    "build": "node_modules/.bin/elm-make src/Main.elm --output=build/app.js",
     "publish-to-gh-pages": "npm run build && cp html/index.html build/ && node_modules/.bin/gh-pages --dist build/",
     "test": "echo \"Testing is cheating!\" && exit 1"
   },
