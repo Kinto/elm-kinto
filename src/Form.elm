@@ -38,6 +38,7 @@ update msg model =
             { model | description = description }
 
         CreateRecord ->
+            -- This is an "out message" for the parent
             model
 
 

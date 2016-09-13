@@ -4,7 +4,6 @@ import Task
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
 import Json.Decode exposing (Decoder, string, at, list, object3, (:=), maybe)
 import Json.Encode as Encode
-
 import Form exposing (Msg(CreateRecord))
 
 
@@ -64,25 +63,6 @@ initialModel =
     }
 
 
-initialFormData : FormData
-initialFormData =
-    { title = ""
-    , description = ""
-    }
-
-
-updateFormDataTitle : FormData -> String -> FormData
-updateFormDataTitle formData title =
-    -- no really there should be a better way
-    { formData | title = title }
-
-
-updateFormDataDescription : FormData -> String -> FormData
-updateFormDataDescription formData description =
-    -- no really there should be a better way
-    { formData | description = description }
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -105,7 +85,7 @@ update msg model =
             ( { model | formData = Form.update subMsg model.formData }, Cmd.none )
 
         CreateSucceed _ ->
-            ( { model | formData = initialFormData }, fetchRecords )
+            ( { model | formData = Form.init }, fetchRecords )
 
         CreateFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
