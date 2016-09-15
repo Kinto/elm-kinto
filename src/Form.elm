@@ -1,4 +1,4 @@
-module Form exposing (view, Model, init, update, Msg(CreateRecord))
+module Form exposing (view, Model, init, update, Msg, OutMsg(..))
 
 import Html exposing (..)
 import Html.Attributes exposing (id, for, attribute, class, type', value)
@@ -25,21 +25,24 @@ init =
 type Msg
     = UpdateFormTitle String
     | UpdateFormDescription String
-    | CreateRecord
+    | Submit
 
 
-update : Msg -> Model -> Model
+type OutMsg
+    = FormSubmitted
+
+
+update : Msg -> Model -> ( Model, Maybe OutMsg )
 update msg model =
     case msg of
         UpdateFormTitle title ->
-            { model | title = title }
+            ( { model | title = title }, Nothing )
 
         UpdateFormDescription description ->
-            { model | description = description }
+            ( { model | description = description }, Nothing )
 
-        CreateRecord ->
-            -- This is an "out message" for the parent
-            model
+        Submit ->
+            ( model, Just FormSubmitted )
 
 
 
@@ -48,7 +51,7 @@ update msg model =
 
 view : Model -> Html Msg
 view { title, description } =
-    form [ onSubmit CreateRecord ]
+    form [ onSubmit Submit ]
         [ div [ class "form-group" ]
             [ label [ for "title" ] [ text "Title" ]
             , input
