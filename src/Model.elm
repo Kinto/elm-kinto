@@ -4,7 +4,7 @@ import Task
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
 import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
 import Json.Encode as Encode
-import Form exposing (Msg(CreateRecord))
+import Form
 
 
 -- TODO:
@@ -78,11 +78,18 @@ update msg model =
         FetchRecordsFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
-        FormMsg CreateRecord ->
-            ( model, createRecord model.formData )
-
         FormMsg subMsg ->
-            ( { model | formData = Form.update subMsg model.formData }, Cmd.none )
+            let
+                ( updated, formMsg ) =
+                    Form.update subMsg model.formData
+            in
+                case formMsg of
+                    Nothing ->
+                        ( { model | formData = updated }, Cmd.none )
+
+                    Just (Form.FormSubmitted data) ->
+                        ( { model | formData = updated }
+                        , createRecord data )
 
         CreateSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
