@@ -23,18 +23,27 @@ all =
         [ test "<1mn diff" <|
             \() ->
                 Expect.equal (timeDiff 30) "less than a minute ago"
+        , test "=1mn diff" <|
+            \() ->
+                Expect.equal (timeDiff 60) "a minute ago"
         , test "<1h diff" <|
             \() ->
                 Expect.equal (timeDiff (60 * 30)) "30 minutes ago"
-        , test "~=1h diff" <|
+        , test "=1h diff" <|
             \() ->
                 Expect.equal (timeDiff (60 * 60)) "an hour ago"
         , test "<1d diff" <|
             \() ->
                 Expect.equal (timeDiff (60 * 60 * 12)) "12 hours ago"
+        , test "=1d diff" <|
+            \() ->
+                Expect.equal (timeDiff (60 * 60 * 24)) "a day ago"
         , test "<1month diff" <|
             \() ->
                 Expect.equal (timeDiff (60 * 60 * 24 * 12)) "12 days ago"
+        , test "=1month diff" <|
+            \() ->
+                Expect.equal (timeDiff (60 * 60 * 24 * 31)) "a month ago"
         , test "<1month diff, week match" <|
             \() ->
                 Expect.equal (timeDiff (60 * 60 * 24 * 14)) "2 weeks ago"
