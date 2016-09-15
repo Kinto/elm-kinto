@@ -9419,41 +9419,25 @@ var _mgold$elm_date_format$Date_Format$format = F2(
 	});
 var _mgold$elm_date_format$Date_Format$formatISO8601 = _mgold$elm_date_format$Date_Format$format('%Y-%m-%dT%H:%M:%SZ');
 
-var _n1k0$kinto_elm_experiments$Form$update = F2(
-	function (msg, model) {
-		var _p0 = msg;
-		switch (_p0.ctor) {
-			case 'UpdateFormTitle':
-				return _elm_lang$core$Native_Utils.update(
-					model,
-					{title: _p0._0});
-			case 'UpdateFormDescription':
-				return _elm_lang$core$Native_Utils.update(
-					model,
-					{description: _p0._0});
-			default:
-				return model;
-		}
-	});
 var _n1k0$kinto_elm_experiments$Form$init = {title: '', description: ''};
 var _n1k0$kinto_elm_experiments$Form$Model = F2(
 	function (a, b) {
 		return {title: a, description: b};
 	});
-var _n1k0$kinto_elm_experiments$Form$CreateRecord = {ctor: 'CreateRecord'};
+var _n1k0$kinto_elm_experiments$Form$Submit = {ctor: 'Submit'};
 var _n1k0$kinto_elm_experiments$Form$UpdateFormDescription = function (a) {
 	return {ctor: 'UpdateFormDescription', _0: a};
 };
 var _n1k0$kinto_elm_experiments$Form$UpdateFormTitle = function (a) {
 	return {ctor: 'UpdateFormTitle', _0: a};
 };
-var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
-	var _p2 = _p1;
+var _n1k0$kinto_elm_experiments$Form$view = function (_p0) {
+	var _p1 = _p0;
 	return A2(
 		_elm_lang$html$Html$form,
 		_elm_lang$core$Native_List.fromArray(
 			[
-				_elm_lang$html$Html_Events$onSubmit(_n1k0$kinto_elm_experiments$Form$CreateRecord)
+				_elm_lang$html$Html_Events$onSubmit(_n1k0$kinto_elm_experiments$Form$Submit)
 			]),
 		_elm_lang$core$Native_List.fromArray(
 			[
@@ -9482,6 +9466,7 @@ var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
 								_elm_lang$html$Html_Attributes$id('title'),
 								_elm_lang$html$Html_Attributes$type$('text'),
 								_elm_lang$html$Html_Attributes$class('form-control'),
+								_elm_lang$html$Html_Attributes$value(_p1.title),
 								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Form$UpdateFormTitle)
 							]),
 						_elm_lang$core$Native_List.fromArray(
@@ -9511,6 +9496,7 @@ var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
 							[
 								_elm_lang$html$Html_Attributes$id('description'),
 								_elm_lang$html$Html_Attributes$class('form-control'),
+								_elm_lang$html$Html_Attributes$value(_p1.description),
 								_elm_lang$html$Html_Events$onInput(_n1k0$kinto_elm_experiments$Form$UpdateFormDescription)
 							]),
 						_elm_lang$core$Native_List.fromArray(
@@ -9536,6 +9522,38 @@ var _n1k0$kinto_elm_experiments$Form$view = function (_p1) {
 					]))
 			]));
 };
+var _n1k0$kinto_elm_experiments$Form$FormSubmitted = function (a) {
+	return {ctor: 'FormSubmitted', _0: a};
+};
+var _n1k0$kinto_elm_experiments$Form$update = F2(
+	function (msg, model) {
+		var _p2 = msg;
+		switch (_p2.ctor) {
+			case 'UpdateFormTitle':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{title: _p2._0}),
+					_1: _elm_lang$core$Maybe$Nothing
+				};
+			case 'UpdateFormDescription':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{description: _p2._0}),
+					_1: _elm_lang$core$Maybe$Nothing
+				};
+			default:
+				return {
+					ctor: '_Tuple2',
+					_0: _n1k0$kinto_elm_experiments$Form$init,
+					_1: _elm_lang$core$Maybe$Just(
+						_n1k0$kinto_elm_experiments$Form$FormSubmitted(model))
+				};
+		}
+	});
 
 var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p0) {
 	var _p1 = _p0;
@@ -9685,21 +9703,25 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FormMsg':
-				if (_p2._0.ctor === 'CreateRecord') {
+				var _p3 = A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData);
+				var updated = _p3._0;
+				var formMsg = _p3._1;
+				var _p4 = formMsg;
+				if (_p4.ctor === 'Nothing') {
 					return {
 						ctor: '_Tuple2',
-						_0: model,
-						_1: _n1k0$kinto_elm_experiments$Model$createRecord(model.formData)
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{formData: updated}),
+						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{
-								formData: A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData)
-							}),
-						_1: _elm_lang$core$Platform_Cmd$none
+							{formData: updated}),
+						_1: _n1k0$kinto_elm_experiments$Model$createRecord(_p4._0._0)
 					};
 				}
 			case 'CreateSucceed':
