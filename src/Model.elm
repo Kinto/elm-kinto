@@ -1,6 +1,7 @@
 module Model exposing (..)
 
 import Task
+import Time exposing (Time, second)
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
 import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
 import Json.Encode as Encode
@@ -34,11 +35,13 @@ type alias Model =
     , errorMsg : String
     , records : List Record
     , formData : Form.Model
+    , currentTime : Time
     }
 
 
 type Msg
     = NoOp
+    | Tick Time
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
     | FetchRecordsFail (Error String)
@@ -60,6 +63,7 @@ initialModel =
     , errorMsg = ""
     , records = []
     , formData = Form.init
+    , currentTime = 0
     }
 
 
@@ -68,6 +72,9 @@ update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
+        Tick newTime ->
+            ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
             ( { model | records = [], error = False }, fetchRecords )
@@ -97,6 +104,15 @@ update msg model =
 
         CreateFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+
+
+
+-- Subscriptions
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every second Tick
 
 
 
