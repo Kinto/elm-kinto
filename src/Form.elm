@@ -42,8 +42,10 @@ update msg model =
             ( { model | description = description }, Nothing )
 
         Submit ->
-            ( init  -- empty the fields on submission
-            , Just (FormSubmitted model) )
+            ( init
+              -- empty the fields on submission
+            , Just (FormSubmitted model)
+            )
 
 
 
