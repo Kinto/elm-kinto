@@ -87,8 +87,9 @@ update msg model =
                     Nothing ->
                         ( { model | formData = updated }, Cmd.none )
 
-                    Just Form.FormSubmitted ->
-                        ( model, createRecord model.formData )
+                    Just (Form.FormSubmitted data) ->
+                        ( { model | formData = updated }
+                        , createRecord data )
 
         CreateSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )

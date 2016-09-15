@@ -29,7 +29,7 @@ type Msg
 
 
 type OutMsg
-    = FormSubmitted
+    = FormSubmitted Model
 
 
 update : Msg -> Model -> ( Model, Maybe OutMsg )
@@ -42,7 +42,8 @@ update msg model =
             ( { model | description = description }, Nothing )
 
         Submit ->
-            ( model, Just FormSubmitted )
+            ( init  -- empty the fields on submission
+            , Just (FormSubmitted model) )
 
 
 
@@ -58,7 +59,7 @@ view { title, description } =
                 [ id "title"
                 , type' "text"
                 , class "form-control"
-                  --, value title
+                , value title
                 , onInput UpdateFormTitle
                 ]
                 []
@@ -68,6 +69,7 @@ view { title, description } =
             , textarea
                 [ id "description"
                 , class "form-control"
+                , value description
                 , onInput UpdateFormDescription
                 ]
                 []
