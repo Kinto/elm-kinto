@@ -23,10 +23,10 @@ timeAgo time now =
             days / 7
 
         months =
-            days / 31
+            days / (365.25 / 12)
 
         years =
-            days / 365
+            days / 365.25
     in
         if seconds < 10 then
             "a few seconds ago"
@@ -52,7 +52,7 @@ timeAgo time now =
             plural "day" days
         else if days <= 33 then
             "about a month ago"
-        else if months >= 11 && months <= 13 then
+        else if months >= 11.25 && months <= 12.75 then
             "about a year ago"
         else if months < 12 then
             plural "month" months
