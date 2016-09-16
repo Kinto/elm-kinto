@@ -28,6 +28,7 @@ all =
         , timeAgoTest "=1mn- diff" 58 "about a minute ago"
         , timeAgoTest "=1mn= diff" 60 "about a minute ago"
         , timeAgoTest "=1mn+ diff" 62 "about a minute ago"
+        , timeAgoTest "=1mn+ diff" 70 "one minute ago"
         , timeAgoTest "<1h diff" (60 * 30) "30 minutes ago"
         , timeAgoTest "=1h- diff" (60 * 58) "about an hour ago"
         , timeAgoTest "=1h= diff" (60 * 60) "about an hour ago"

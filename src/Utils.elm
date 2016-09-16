@@ -19,9 +19,6 @@ timeAgo time now =
         days =
             hours / 24
 
-        weeks =
-            days / 7
-
         months =
             days / (365.25 / 12)
 
@@ -63,10 +60,19 @@ timeAgo time now =
 plural : String -> Float -> String
 plural unit amount =
     let
+        roundAmount =
+            round amount
+
+        humanAmount =
+            if roundAmount == 1 then
+                "one"
+            else
+                toString roundAmount
+
         unitPlural =
-            if amount > 1 then
+            if roundAmount > 1 then
                 unit ++ "s"
             else
                 unit
     in
-        (toString (round amount)) ++ " " ++ unitPlural ++ " ago"
+        humanAmount ++ " " ++ unitPlural ++ " ago"
