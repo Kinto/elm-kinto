@@ -33,5 +33,6 @@ all =
         , timeAgoTest "=1month diff" (60 * 60 * 24 * 31) "a month ago"
         , timeAgoTest "<1month diff, week match" (60 * 60 * 24 * 14) "2 weeks ago"
         , timeAgoTest "<1year diff" (60 * 60 * 24 * 30 * 6) "6 months ago"
+        , timeAgoTest "=1year diff" (60 * 60 * 24 * 365) "a year ago"
         , timeAgoTest ">1 year" (60 * 60 * 24 * 365 * 12) "12 years ago"
         ]
