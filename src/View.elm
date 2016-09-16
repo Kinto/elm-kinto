@@ -1,31 +1,31 @@
 module View exposing (view)
 
-import Date
-import Date.Format exposing (format)
+import Time exposing (Time)
 import Html exposing (..)
 import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
+import Utils exposing (timeAgo)
 import Model exposing (Model, Record, Msg(..))
 import Form
 
 
-formatLatsModified : Float -> String
-formatLatsModified timestamp =
-    format "%Y-%m-%d@%H:%M" (Date.fromTime timestamp)
+formatLastModified : Int -> Time -> String
+formatLastModified timestamp currentTime =
+    timeAgo (toFloat timestamp) currentTime
 
 
-recordRow : Record -> Html Msg
-recordRow { id, title, description, last_modified } =
+recordRow : Time -> Record -> Html Msg
+recordRow currentTime { id, title, description, last_modified } =
     tr []
         [ td [] [ text id ]
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
         , td [] [ text (Maybe.withDefault "[empty]" description) ]
-        , td [] [ text (formatLatsModified (toFloat last_modified)) ]
+        , td [] [ text (formatLastModified last_modified currentTime) ]
         ]
 
 
-recordsList : List Record -> Html Msg
-recordsList records =
+recordsList : List Record -> Time -> Html Msg
+recordsList records currentTime =
     table [ class "table" ]
         [ thead []
             [ tr []
@@ -35,7 +35,7 @@ recordsList records =
                 , th [] [ text "last_modified" ]
                 ]
             ]
-        , tbody [] (List.map recordRow records)
+        , tbody [] (List.map (recordRow currentTime) records)
         ]
 
 
@@ -66,11 +66,11 @@ errorNotif error errorMsg =
 
 
 view : Model -> Html Msg
-view { error, errorMsg, records, formData } =
+view { error, errorMsg, records, formData, currentTime } =
     div [ class "container" ]
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error errorMsg
-        , recordsList records
+        , recordsList records currentTime
         , Html.App.map FormMsg (Form.view formData)
           -- , stylesheet
         ]

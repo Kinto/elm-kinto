@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node_modules/.bin/elm-make src/Main.elm --output=build/app.js",
     "publish-to-gh-pages": "npm run build && cp html/index.html build/ && node_modules/.bin/gh-pages --dist build/",
-    "test": "echo \"Testing is cheating!\" && exit 1"
+    "test": "node_modules/.bin/elm-test"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "homepage": "https://github.com/n1k0/kinto-elm-experiments#readme",
   "devDependencies": {
     "elm": "^0.17.1",
+    "elm-test": "^0.17.3",
     "gh-pages": "^0.11.0"
   }
 }
