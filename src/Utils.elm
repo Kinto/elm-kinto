@@ -5,45 +5,62 @@ import Time exposing (Time)
 
 timeAgo : Time -> Time -> String
 timeAgo time now =
+    -- Hint: Time is a Float
     let
         seconds =
-            round ((now - time) / 1000)
+            (now - time) / 1000
 
         minutes =
-            seconds // 60
+            seconds / 60
 
         hours =
-            minutes // 60
+            minutes / 60
 
         days =
-            hours // 24
+            hours / 24
 
         weeks =
-            days // 7
+            days / 7
 
         months =
-            days // 30
+            days / 31
 
         years =
-            days // 365
+            days / 365
     in
-        if seconds < 60 then
+        if seconds < 10 then
+            "a few seconds ago"
+        else if seconds < 55 then
             "less than a minute ago"
-        else if minutes < 60 then
+        else if seconds <= 65 then
+            "about a minute ago"
+        else if minutes <= 55 then
             plural "minute" minutes
-        else if hours < 24 then
+        else if minutes <= 65 then
+            "about an hour ago"
+        else if hours <= 22 then
             plural "hour" hours
-        else if weeks == 2 || weeks == 3 then
-            plural "week" weeks
-        else if days < 31 then
+        else if hours <= 26 then
+            "about a day ago"
+        else if days >= 6 && days <= 8 then
+            "about a week ago"
+        else if days >= 14 && days <= 15 then
+            "about 2 weeks ago"
+        else if days >= 20 && days <= 22 then
+            "about 3 weeks ago"
+        else if days <= 27 then
             plural "day" days
+        else if days <= 33 then
+            "about a month ago"
+        else if months >= 11 && months <= 13 then
+            "about a year ago"
         else if months < 12 then
             plural "month" months
         else
             plural "year" years
 
 
-plural : String -> Int -> String
+plural : String -> Float -> String
 plural unit amount =
     let
         unitPlural =
@@ -51,14 +68,5 @@ plural unit amount =
                 unit ++ "s"
             else
                 unit
-
-        humanAmount =
-            if amount == 1 then
-                if unit == "hour" then
-                    "an"
-                else
-                    "a"
-            else
-                toString amount
     in
-        humanAmount ++ " " ++ unitPlural ++ " ago"
+        (toString (round amount)) ++ " " ++ unitPlural ++ " ago"
