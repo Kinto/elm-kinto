@@ -66,16 +66,10 @@ plural unit amount =
         roundAmount =
             round amount
 
-        humanAmount =
-            if roundAmount == 1 then
-                "one"
-            else
-                toString roundAmount
-
         unitPlural =
             if roundAmount > 1 then
                 unit ++ "s"
             else
                 unit
     in
-        humanAmount ++ " " ++ unitPlural ++ " ago"
+        (toString roundAmount) ++ " " ++ unitPlural ++ " ago"
