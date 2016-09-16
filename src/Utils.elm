@@ -27,34 +27,37 @@ timeAgo time now =
     in
         if seconds < 10 then
             "a few seconds ago"
-        else if seconds < 55 then
-            "less than a minute ago"
-        else if seconds <= 65 then
+        else if seconds |> within 55 65 then
             "about a minute ago"
-        else if minutes <= 55 then
+        else if minutes < 55 then
             plural "minute" minutes
-        else if minutes <= 65 then
+        else if minutes |> within 55 65 then
             "about an hour ago"
-        else if hours <= 22 then
+        else if hours < 22 then
             plural "hour" hours
-        else if hours <= 26 then
+        else if hours |> within 22 26 then
             "about a day ago"
-        else if days >= 6 && days <= 8 then
+        else if days |> within 6 8 then
             "about a week ago"
-        else if days >= 14 && days <= 15 then
+        else if days |> within 14 16 then
             "about 2 weeks ago"
-        else if days >= 20 && days <= 22 then
+        else if days |> within 20 22 then
             "about 3 weeks ago"
-        else if days <= 27 then
+        else if days < 27 then
             plural "day" days
-        else if days <= 33 then
+        else if days |> within 27 33 then
             "about a month ago"
-        else if months >= 11.25 && months <= 12.75 then
-            "about a year ago"
-        else if months < 12 then
+        else if months < 11 then
             plural "month" months
+        else if months |> within 11 13 then
+            "about a year ago"
         else
             plural "year" years
+
+
+within : Float -> Float -> Float -> Bool
+within low high value =
+    value >= low && value <= high
 
 
 plural : String -> Float -> String
