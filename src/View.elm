@@ -15,6 +15,12 @@ formatLastModified timestamp currentTime =
     timeAgo (toFloat timestamp) currentTime
 
 
+iconBtn : String -> Msg -> Html Msg
+iconBtn icon action =
+    button [ class "btn btn-xs btn-default", onClick action ]
+        [ i [ class ("glyphicon glyphicon-" ++ icon) ] [] ]
+
+
 recordRow : Time -> Record -> Html Msg
 recordRow currentTime { id, title, description, last_modified } =
     tr []
@@ -22,8 +28,7 @@ recordRow currentTime { id, title, description, last_modified } =
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
         , td [] [ text (Maybe.withDefault "[empty]" description) ]
         , td [] [ text (formatLastModified last_modified currentTime) ]
-        , td [] [ button [ class "btn btn-link glyphicon glyphicon-remove"
-                         , onClick (DeleteRecord id)] []]
+        , td [] [ iconBtn "trash" (DeleteRecord id) ]
         ]
 
 
@@ -36,7 +41,7 @@ recordsList records currentTime =
                 , th [] [ text "title" ]
                 , th [] [ text "description" ]
                 , th [] [ text "last_modified" ]
-                , th [] []  -- Remove icon
+                , th [] []
                 ]
             ]
         , tbody [] (List.map (recordRow currentTime) records)
