@@ -27,7 +27,7 @@ init =
 type Msg
     = UpdateFormTitle String
     | UpdateFormDescription String
-    | Submit (Maybe String)
+    | Submit
 
 
 type OutMsg
@@ -43,7 +43,7 @@ update msg model =
         UpdateFormDescription description ->
             ( { model | description = description }, Nothing )
 
-        Submit id ->
+        Submit ->
             ( model
             , Just (FormSubmitted model)
             )
@@ -65,7 +65,7 @@ btnText { id } =
 
 view : Model -> Html Msg
 view model =
-    form [ onSubmit (Submit model.id) ]
+    form [ onSubmit Submit ]
         [ div [ class "form-group" ]
             [ label [ for "title" ] [ text "Title" ]
             , input
