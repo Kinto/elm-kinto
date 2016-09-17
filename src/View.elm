@@ -2,6 +2,7 @@ module View exposing (view)
 
 import Time exposing (Time)
 import Html exposing (..)
+import Html.Events exposing (onClick)
 import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
 import Utils exposing (timeAgo)
@@ -21,6 +22,8 @@ recordRow currentTime { id, title, description, last_modified } =
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
         , td [] [ text (Maybe.withDefault "[empty]" description) ]
         , td [] [ text (formatLastModified last_modified currentTime) ]
+        , td [] [ button [ class "btn btn-link glyphicon glyphicon-remove"
+                         , onClick (DeleteRecord id)] []]
         ]
 
 
@@ -33,6 +36,7 @@ recordsList records currentTime =
                 , th [] [ text "title" ]
                 , th [] [ text "description" ]
                 , th [] [ text "last_modified" ]
+                , th [] []  -- Remove icon
                 ]
             ]
         , tbody [] (List.map (recordRow currentTime) records)

@@ -6,6 +6,7 @@ import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, js
 import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
 import Json.Encode as Encode
 import Form
+import List
 
 
 -- TODO:
@@ -48,6 +49,9 @@ type Msg
     | FormMsg Form.Msg
     | CreateSucceed (Response Record)
     | CreateFail (Error String)
+    | DeleteRecord RecordId
+    | DeleteRecordSucceed (Response Record)
+    | DeleteRecordFail (Error String)
 
 
 init : ( Model, Cmd Msg )
@@ -105,6 +109,20 @@ update msg model =
         CreateFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
+        DeleteRecord recordId ->
+            ( model, deleteRecord recordId )
+
+        DeleteRecordSucceed { data } ->
+            ( { model
+                | records = removeRecordFromList data model.records
+                , error = False
+              }
+            , Cmd.none
+            )
+
+        DeleteRecordFail err ->
+            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+
 
 
 -- Subscriptions
@@ -159,6 +177,22 @@ createRecord formData =
         Task.perform CreateFail CreateSucceed request
 
 
+deleteRecord : RecordId -> Cmd Msg
+deleteRecord recordId =
+    -- TODO: handle auth with provided credentials
+    let
+        delete_url =
+            "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ recordId
+
+        request =
+            HttpBuilder.delete delete_url
+                |> withHeader "Content-Type" "application/json"
+                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
+                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
+    in
+        Task.perform DeleteRecordFail DeleteRecordSucceed request
+
+
 encodeFormData : FormData -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
@@ -169,3 +203,8 @@ encodeFormData { title, description } =
                 ]
           )
         ]
+
+
+removeRecordFromList : Record -> List Record -> List Record
+removeRecordFromList { id } records =
+    List.filter (\record -> record.id /= id) records
