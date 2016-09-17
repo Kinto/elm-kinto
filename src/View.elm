@@ -28,7 +28,11 @@ recordRow currentTime { id, title, description, last_modified } =
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
         , td [] [ text (Maybe.withDefault "[empty]" description) ]
         , td [] [ text (formatLastModified last_modified currentTime) ]
-        , td [] [ iconBtn "trash" (DeleteRecord id) ]
+        , td []
+            [ iconBtn "edit" (EditRecord id)
+            , text " "
+            , iconBtn "trash" (DeleteRecord id)
+            ]
         ]
 
 

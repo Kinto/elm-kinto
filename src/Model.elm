@@ -43,12 +43,17 @@ type alias Model =
 type Msg
     = NoOp
     | Tick Time
+    | FetchRecordSucceed (Response Record)
+    | FetchRecordFail (Error String)
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
     | FetchRecordsFail (Error String)
     | FormMsg Form.Msg
     | CreateSucceed (Response Record)
     | CreateFail (Error String)
+    | EditRecord RecordId
+    | EditRecordSucceed (Response Record)
+    | EditRecordFail (Error String)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
     | DeleteRecordFail (Error String)
@@ -71,6 +76,13 @@ initialModel =
     }
 
 
+recordToFormData : Record -> Form.Model
+recordToFormData { title, description } =
+    Form.Model
+        (Maybe.withDefault "" title)
+        (Maybe.withDefault "" description)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -82,6 +94,13 @@ update msg model =
 
         FetchRecords ->
             ( { model | records = [], error = False }, fetchRecords )
+
+        FetchRecordSucceed { data } ->
+            -- XXX: map Record -> FormData
+            ( { model | formData = recordToFormData data, error = False }, Cmd.none )
+
+        FetchRecordFail err ->
+            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
         FetchRecordsSucceed { data } ->
             ( { model | records = data, error = False }, Cmd.none )
@@ -109,6 +128,15 @@ update msg model =
         CreateFail err ->
             ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
+        EditRecord recordId ->
+            ( model, fetchRecord recordId )
+
+        EditRecordSucceed { data } ->
+            ( model, Cmd.none )
+
+        EditRecordFail err ->
+            ( model, Cmd.none )
+
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
 
@@ -135,6 +163,18 @@ subscriptions model =
 
 
 -- HTTP
+
+
+fetchRecord : RecordId -> Cmd Msg
+fetchRecord recordId =
+    -- TODO: handle auth with provided credentials
+    let
+        request =
+            HttpBuilder.get ("https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ recordId)
+                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
+                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
+    in
+        Task.perform FetchRecordFail FetchRecordSucceed request
 
 
 fetchRecords : Cmd Msg
