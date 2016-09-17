@@ -33,8 +33,7 @@ type alias FormData =
 
 
 type alias Model =
-    { error : Bool
-    , errorMsg : String
+    { error : Maybe String
     , records : List Record
     , formData : Form.Model
     , currentTime : Time
@@ -54,7 +53,6 @@ type Msg
     | EditRecordSucceed (Response Record)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
-    | DeleteRecordFail (Error String)
 
 
 init : ( Model, Cmd Msg )
@@ -66,8 +64,7 @@ init =
 
 initialModel : Model
 initialModel =
-    { error = False
-    , errorMsg = ""
+    { error = Nothing
     , records = []
     , formData = Form.init
     , currentTime = 0
@@ -92,16 +89,16 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         HttpFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+            ( { model | error = Just (toString err) }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = [], error = False }, fetchRecords )
+            ( { model | records = [], error = Nothing }, fetchRecords )
 
         FetchRecordSucceed { data } ->
-            ( { model | formData = recordToFormData data, error = False }, Cmd.none )
+            ( { model | formData = recordToFormData data, error = Nothing }, Cmd.none )
 
         FetchRecordsSucceed { data } ->
-            ( { model | records = data, error = False }, Cmd.none )
+            ( { model | records = data, error = Nothing }, Cmd.none )
 
         FormMsg subMsg ->
             let
@@ -130,13 +127,10 @@ update msg model =
         DeleteRecordSucceed { data } ->
             ( { model
                 | records = removeRecordFromList data model.records
-                , error = False
+                , error = Nothing
               }
             , Cmd.none
             )
-
-        DeleteRecordFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
 
 
@@ -228,7 +222,7 @@ deleteRecord recordId =
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
-        Task.perform DeleteRecordFail DeleteRecordSucceed request
+        Task.perform HttpFail DeleteRecordSucceed request
 
 
 encodeFormData : FormData -> Encode.Value

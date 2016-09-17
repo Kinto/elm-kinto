@@ -52,19 +52,21 @@ recordsList records currentTime =
         ]
 
 
-errorNotif : Bool -> String -> Html Msg
-errorNotif error errorMsg =
-    if error == True then
-        div [ class "alert alert-danger" ] [ text ("Error: " ++ errorMsg) ]
-    else
-        text ""
+errorNotif : Maybe String -> Html Msg
+errorNotif error =
+    case error of
+        Nothing ->
+            text ""
+
+        Just message ->
+            div [ class "alert alert-danger" ] [ text ("Error: " ++ message) ]
 
 
 view : Model -> Html Msg
-view { error, errorMsg, records, formData, currentTime } =
+view { error, records, formData, currentTime } =
     div [ class "container" ]
         [ h1 [] [ text "Kinto Elm :-)" ]
-        , errorNotif error errorMsg
+        , errorNotif error
         , recordsList records currentTime
         , Html.App.map FormMsg (Form.view formData)
         ]
