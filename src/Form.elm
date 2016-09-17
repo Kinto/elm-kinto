@@ -6,14 +6,16 @@ import Html.Events exposing (onInput, onSubmit)
 
 
 type alias Model =
-    { title : String
+    { id : Maybe String
+    , title : String
     , description : String
     }
 
 
 init : Model
 init =
-    { title = ""
+    { id = Nothing
+    , title = ""
     , description = ""
     }
 
@@ -25,7 +27,7 @@ init =
 type Msg
     = UpdateFormTitle String
     | UpdateFormDescription String
-    | Submit
+    | Submit (Maybe String)
 
 
 type OutMsg
@@ -41,9 +43,8 @@ update msg model =
         UpdateFormDescription description ->
             ( { model | description = description }, Nothing )
 
-        Submit ->
-            ( init
-              -- empty the fields on submission
+        Submit id ->
+            ( model
             , Just (FormSubmitted model)
             )
 
@@ -52,16 +53,26 @@ update msg model =
 -- View
 
 
+btnText : Model -> String
+btnText { id } =
+    case id of
+        Nothing ->
+            "Create"
+
+        Just _ ->
+            "Update"
+
+
 view : Model -> Html Msg
-view { title, description } =
-    form [ onSubmit Submit ]
+view model =
+    form [ onSubmit (Submit model.id) ]
         [ div [ class "form-group" ]
             [ label [ for "title" ] [ text "Title" ]
             , input
                 [ id "title"
                 , type' "text"
                 , class "form-control"
-                , value title
+                , value model.title
                 , onInput UpdateFormTitle
                 ]
                 []
@@ -71,13 +82,13 @@ view { title, description } =
             , textarea
                 [ id "description"
                 , class "form-control"
-                , value description
+                , value model.description
                 , onInput UpdateFormDescription
                 ]
                 []
             ]
         , div []
             [ button [ type' "submit", class "btn btn-default" ]
-                [ text "Create" ]
+                [ text (btnText model) ]
             ]
         ]

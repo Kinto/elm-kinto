@@ -26,7 +26,8 @@ type alias Record =
 
 
 type alias FormData =
-    { title : String
+    { id : Maybe String
+    , title : String
     , description : String
     }
 
@@ -77,8 +78,9 @@ initialModel =
 
 
 recordToFormData : Record -> Form.Model
-recordToFormData { title, description } =
+recordToFormData { id, title, description } =
     Form.Model
+        (Just id)
         (Maybe.withDefault "" title)
         (Maybe.withDefault "" description)
 
@@ -96,7 +98,6 @@ update msg model =
             ( { model | records = [], error = False }, fetchRecords )
 
         FetchRecordSucceed { data } ->
-            -- XXX: map Record -> FormData
             ( { model | formData = recordToFormData data, error = False }, Cmd.none )
 
         FetchRecordFail err ->
@@ -118,9 +119,16 @@ update msg model =
                         ( { model | formData = updated }, Cmd.none )
 
                     Just (Form.FormSubmitted data) ->
-                        ( { model | formData = updated }
-                        , createRecord data
-                        )
+                        case data.id of
+                            Nothing ->
+                                ( { model | formData = updated }
+                                , createRecord data
+                                )
+
+                            Just id ->
+                                ( { model | formData = updated }
+                                , updateRecord data
+                                )
 
         CreateSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
@@ -132,10 +140,10 @@ update msg model =
             ( model, fetchRecord recordId )
 
         EditRecordSucceed { data } ->
-            ( model, Cmd.none )
+            ( model, fetchRecords )
 
         EditRecordFail err ->
-            ( model, Cmd.none )
+            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
@@ -215,6 +223,28 @@ createRecord formData =
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
         Task.perform CreateFail CreateSucceed request
+
+
+updateRecord : FormData -> Cmd Msg
+updateRecord formData =
+    -- TODO: handle auth with provided credentials
+    let
+        id =
+            case formData.id of
+                Nothing ->
+                    ""
+
+                Just id ->
+                    id
+
+        request =
+            HttpBuilder.patch ("https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ id)
+                |> withHeader "Content-Type" "application/json"
+                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
+                |> withJsonBody (encodeFormData formData)
+                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
+    in
+        Task.perform EditRecordFail EditRecordSucceed request
 
 
 deleteRecord : RecordId -> Cmd Msg
