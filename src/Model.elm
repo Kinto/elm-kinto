@@ -44,17 +44,14 @@ type alias Model =
 type Msg
     = NoOp
     | Tick Time
+    | HttpFail (Error String)
     | FetchRecordSucceed (Response Record)
-    | FetchRecordFail (Error String)
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
-    | FetchRecordsFail (Error String)
     | FormMsg Form.Msg
     | CreateSucceed (Response Record)
-    | CreateFail (Error String)
     | EditRecord RecordId
     | EditRecordSucceed (Response Record)
-    | EditRecordFail (Error String)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
     | DeleteRecordFail (Error String)
@@ -94,20 +91,17 @@ update msg model =
         Tick newTime ->
             ( { model | currentTime = newTime }, Cmd.none )
 
+        HttpFail err ->
+            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+
         FetchRecords ->
             ( { model | records = [], error = False }, fetchRecords )
 
         FetchRecordSucceed { data } ->
             ( { model | formData = recordToFormData data, error = False }, Cmd.none )
 
-        FetchRecordFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
-
         FetchRecordsSucceed { data } ->
             ( { model | records = data, error = False }, Cmd.none )
-
-        FetchRecordsFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
         FormMsg subMsg ->
             let
@@ -119,27 +113,16 @@ update msg model =
                         ( { model | formData = updated }, Cmd.none )
 
                     Just (Form.FormSubmitted data) ->
-                        case data.id of
-                            Nothing ->
-                                ( { model | formData = updated }, createRecord data )
-
-                            Just id ->
-                                ( { model | formData = updated }, updateRecord data )
+                        ( { model | formData = updated }, sendFormData data )
 
         CreateSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
-
-        CreateFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
         EditRecord recordId ->
             ( model, fetchRecord recordId )
 
         EditRecordSucceed { data } ->
             ( model, fetchRecords )
-
-        EditRecordFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
@@ -178,7 +161,7 @@ fetchRecord recordId =
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
-        Task.perform FetchRecordFail FetchRecordSucceed request
+        Task.perform HttpFail FetchRecordSucceed request
 
 
 fetchRecords : Cmd Msg
@@ -190,7 +173,7 @@ fetchRecords =
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> send (jsonReader decodeRecords) stringReader
     in
-        Task.perform FetchRecordsFail FetchRecordsSucceed request
+        Task.perform HttpFail FetchRecordsSucceed request
 
 
 decodeRecords : Decoder (List Record)
@@ -207,40 +190,29 @@ decodeRecord =
         ("last_modified" := int)
 
 
-createRecord : FormData -> Cmd Msg
-createRecord formData =
+sendFormData : FormData -> Cmd Msg
+sendFormData formData =
     -- TODO: handle auth with provided credentials
     let
-        request =
-            HttpBuilder.post "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
-                |> withHeader "Content-Type" "application/json"
-                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                |> withJsonBody (encodeFormData formData)
-                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
-    in
-        Task.perform CreateFail CreateSucceed request
+        rootUrl =
+            "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
 
-
-updateRecord : FormData -> Cmd Msg
-updateRecord formData =
-    -- TODO: handle auth with provided credentials
-    let
-        id =
+        ( method, url, failureMsg, successMsg ) =
             case formData.id of
                 Nothing ->
-                    ""
+                    ( HttpBuilder.post, rootUrl, HttpFail, CreateSucceed )
 
                 Just id ->
-                    id
+                    ( HttpBuilder.patch, rootUrl ++ "/" ++ id, HttpFail, EditRecordSucceed )
 
         request =
-            HttpBuilder.patch ("https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ id)
+            method url
                 |> withHeader "Content-Type" "application/json"
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> withJsonBody (encodeFormData formData)
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
-        Task.perform EditRecordFail EditRecordSucceed request
+        Task.perform failureMsg successMsg request
 
 
 deleteRecord : RecordId -> Cmd Msg
