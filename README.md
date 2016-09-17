@@ -16,15 +16,15 @@ $ npm install
 $ npm start
 ```
 
-Then open [http://localhost:8000/html/dev.html](http://localhost:8000/html/dev.html).
+Then open [localhost:8000/html/dev.html](http://localhost:8000/html/dev.html).
 
 ## Live server
 
-```
-$ npm live
-```
+This will recompile and reload your app in the browser evertyme you update a `.elm` file. App is available at [localhost:8000/](http://localhost:8000/).
 
-Note: this won't load the stylesheets, we're working on it.
+```
+$ npm run live
+```
 
 ## Deploying to gh-pages
 
