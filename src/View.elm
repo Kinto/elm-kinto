@@ -48,25 +48,7 @@ errorNotif error errorMsg =
     if error == True then
         div [ class "alert alert-danger" ] [ text ("Error: " ++ errorMsg) ]
     else
-        div [] [ text "" ]
-
-
-
---stylesheet : Html Msg
---stylesheet =
---    -- Silly hack to load bootstrap because other ways are clumsy.
---    let
---        tag =
---            "link"
---        attrs =
---            [ attribute "rel" "stylesheet"
---            , attribute "property" "stylesheet"
---            , attribute "href" "//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
---            ]
---        children =
---            []
---    in
---        node tag attrs children
+        text ""
 
 
 view : Model -> Html Msg
@@ -76,5 +58,4 @@ view { error, errorMsg, records, formData, currentTime } =
         , errorNotif error errorMsg
         , recordsList records currentTime
         , Html.App.map FormMsg (Form.view formData)
-          -- , stylesheet
         ]
