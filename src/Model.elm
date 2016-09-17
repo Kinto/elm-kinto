@@ -121,14 +121,10 @@ update msg model =
                     Just (Form.FormSubmitted data) ->
                         case data.id of
                             Nothing ->
-                                ( { model | formData = updated }
-                                , createRecord data
-                                )
+                                ( { model | formData = updated }, createRecord data )
 
                             Just id ->
-                                ( { model | formData = updated }
-                                , updateRecord data
-                                )
+                                ( { model | formData = updated }, updateRecord data )
 
         CreateSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
