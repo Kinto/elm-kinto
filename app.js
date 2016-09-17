@@ -9192,18 +9192,41 @@ var _n1k0$kinto_elm_experiments$Form$update = F2(
 		}
 	});
 
-var _n1k0$kinto_elm_experiments$Model$removeRecordFromList = F2(
+var _n1k0$kinto_elm_experiments$Model$updateRecordInList = F2(
 	function (_p0, records) {
 		var _p1 = _p0;
+		var _p3 = _p1.id;
+		var _p2 = _p3;
+		if (_p2.ctor === 'Nothing') {
+			return records;
+		} else {
+			return A2(
+				_elm_lang$core$List$map,
+				function (record) {
+					return _elm_lang$core$Native_Utils.eq(
+						record.id,
+						A2(_elm_lang$core$Maybe$withDefault, '', _p3)) ? _elm_lang$core$Native_Utils.update(
+						record,
+						{
+							title: _elm_lang$core$Maybe$Just(_p1.title),
+							description: _elm_lang$core$Maybe$Just(_p1.description)
+						}) : record;
+				},
+				records);
+		}
+	});
+var _n1k0$kinto_elm_experiments$Model$removeRecordFromList = F2(
+	function (_p4, records) {
+		var _p5 = _p4;
 		return A2(
 			_elm_lang$core$List$filter,
 			function (record) {
-				return !_elm_lang$core$Native_Utils.eq(record.id, _p1.id);
+				return !_elm_lang$core$Native_Utils.eq(record.id, _p5.id);
 			},
 			records);
 	});
-var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p2) {
-	var _p3 = _p2;
+var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p6) {
+	var _p7 = _p6;
 	return _elm_lang$core$Json_Encode$object(
 		_elm_lang$core$Native_List.fromArray(
 			[
@@ -9216,24 +9239,24 @@ var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p2) {
 							{
 							ctor: '_Tuple2',
 							_0: 'title',
-							_1: _elm_lang$core$Json_Encode$string(_p3.title)
+							_1: _elm_lang$core$Json_Encode$string(_p7.title)
 						},
 							{
 							ctor: '_Tuple2',
 							_0: 'description',
-							_1: _elm_lang$core$Json_Encode$string(_p3.description)
+							_1: _elm_lang$core$Json_Encode$string(_p7.description)
 						}
 						]))
 			}
 			]));
 };
-var _n1k0$kinto_elm_experiments$Model$recordToFormData = function (_p4) {
-	var _p5 = _p4;
+var _n1k0$kinto_elm_experiments$Model$recordToFormData = function (_p8) {
+	var _p9 = _p8;
 	return A3(
 		_n1k0$kinto_elm_experiments$Form$Model,
-		_elm_lang$core$Maybe$Just(_p5.id),
-		A2(_elm_lang$core$Maybe$withDefault, '', _p5.title),
-		A2(_elm_lang$core$Maybe$withDefault, '', _p5.description));
+		_elm_lang$core$Maybe$Just(_p9.id),
+		A2(_elm_lang$core$Maybe$withDefault, '', _p9.title),
+		A2(_elm_lang$core$Maybe$withDefault, '', _p9.description));
 };
 var _n1k0$kinto_elm_experiments$Model$initialModel = {
 	error: _elm_lang$core$Maybe$Nothing,
@@ -9329,9 +9352,9 @@ var _n1k0$kinto_elm_experiments$Model$fetchRecords = function () {
 var _n1k0$kinto_elm_experiments$Model$init = {ctor: '_Tuple2', _0: _n1k0$kinto_elm_experiments$Model$initialModel, _1: _n1k0$kinto_elm_experiments$Model$fetchRecords};
 var _n1k0$kinto_elm_experiments$Model$sendFormData = function (formData) {
 	var rootUrl = 'https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records';
-	var _p6 = function () {
-		var _p7 = formData.id;
-		if (_p7.ctor === 'Nothing') {
+	var _p10 = function () {
+		var _p11 = formData.id;
+		if (_p11.ctor === 'Nothing') {
 			return {ctor: '_Tuple4', _0: _lukewestby$elm_http_builder$HttpBuilder$post, _1: rootUrl, _2: _n1k0$kinto_elm_experiments$Model$HttpFail, _3: _n1k0$kinto_elm_experiments$Model$CreateSucceed};
 		} else {
 			return {
@@ -9340,16 +9363,16 @@ var _n1k0$kinto_elm_experiments$Model$sendFormData = function (formData) {
 				_1: A2(
 					_elm_lang$core$Basics_ops['++'],
 					rootUrl,
-					A2(_elm_lang$core$Basics_ops['++'], '/', _p7._0)),
+					A2(_elm_lang$core$Basics_ops['++'], '/', _p11._0)),
 				_2: _n1k0$kinto_elm_experiments$Model$HttpFail,
 				_3: _n1k0$kinto_elm_experiments$Model$EditRecordSucceed
 			};
 		}
 	}();
-	var method = _p6._0;
-	var url = _p6._1;
-	var failureMsg = _p6._2;
-	var successMsg = _p6._3;
+	var method = _p10._0;
+	var url = _p10._1;
+	var failureMsg = _p10._2;
+	var successMsg = _p10._3;
 	var request = A3(
 		_lukewestby$elm_http_builder$HttpBuilder$send,
 		_lukewestby$elm_http_builder$HttpBuilder$jsonReader(
@@ -9397,8 +9420,8 @@ var _n1k0$kinto_elm_experiments$Model$deleteRecord = function (recordId) {
 };
 var _n1k0$kinto_elm_experiments$Model$update = F2(
 	function (msg, model) {
-		var _p8 = msg;
-		switch (_p8.ctor) {
+		var _p12 = msg;
+		switch (_p12.ctor) {
 			case 'NoOp':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'Tick':
@@ -9406,7 +9429,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{currentTime: _p8._0}),
+						{currentTime: _p12._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'HttpFail':
@@ -9416,7 +9439,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						model,
 						{
 							error: _elm_lang$core$Maybe$Just(
-								_elm_lang$core$Basics$toString(_p8._0))
+								_elm_lang$core$Basics$toString(_p12._0))
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -9438,7 +9461,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							formData: _n1k0$kinto_elm_experiments$Model$recordToFormData(_p8._0.data),
+							formData: _n1k0$kinto_elm_experiments$Model$recordToFormData(_p12._0.data),
 							error: _elm_lang$core$Maybe$Nothing
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
@@ -9448,20 +9471,23 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{records: _p8._0.data, error: _elm_lang$core$Maybe$Nothing}),
+						{records: _p12._0.data, error: _elm_lang$core$Maybe$Nothing}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FormMsg':
-				var _p9 = A2(_n1k0$kinto_elm_experiments$Form$update, _p8._0, model.formData);
-				var updated = _p9._0;
-				var formMsg = _p9._1;
-				var _p10 = formMsg;
-				if (_p10.ctor === 'Nothing') {
+				var _p13 = A2(_n1k0$kinto_elm_experiments$Form$update, _p12._0, model.formData);
+				var updated = _p13._0;
+				var formMsg = _p13._1;
+				var _p14 = formMsg;
+				if (_p14.ctor === 'Nothing') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{formData: updated}),
+							{
+								formData: updated,
+								records: A2(_n1k0$kinto_elm_experiments$Model$updateRecordInList, updated, model.records)
+							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
@@ -9470,7 +9496,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{formData: updated}),
-						_1: _n1k0$kinto_elm_experiments$Model$sendFormData(_p10._0._0)
+						_1: _n1k0$kinto_elm_experiments$Model$sendFormData(_p14._0._0)
 					};
 				}
 			case 'CreateSucceed':
@@ -9485,7 +9511,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: _n1k0$kinto_elm_experiments$Model$fetchRecord(_p8._0)
+					_1: _n1k0$kinto_elm_experiments$Model$fetchRecord(_p12._0)
 				};
 			case 'EditRecordSucceed':
 				return {ctor: '_Tuple2', _0: model, _1: _n1k0$kinto_elm_experiments$Model$fetchRecords};
@@ -9493,7 +9519,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: _n1k0$kinto_elm_experiments$Model$deleteRecord(_p8._0)
+					_1: _n1k0$kinto_elm_experiments$Model$deleteRecord(_p12._0)
 				};
 			default:
 				return {
@@ -9501,7 +9527,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							records: A2(_n1k0$kinto_elm_experiments$Model$removeRecordFromList, _p8._0.data, model.records),
+							records: A2(_n1k0$kinto_elm_experiments$Model$removeRecordFromList, _p12._0.data, model.records),
 							error: _elm_lang$core$Maybe$Nothing
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
