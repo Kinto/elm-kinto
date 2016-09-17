@@ -45,9 +45,7 @@ update msg model =
             ( { model | description = description }, Nothing )
 
         Submit ->
-            ( model
-            , Just (FormSubmitted model)
-            )
+            ( model, Just (FormSubmitted model) )
 
 
 
@@ -66,7 +64,10 @@ formVerb { id } =
 
 formTitle : Model -> String
 formTitle model =
-    (formVerb model) ++ " " ++ (Maybe.withDefault "" model.id) |> String.trim
+    (formVerb model)
+        ++ " "
+        ++ (Maybe.withDefault "" model.id)
+        |> String.trim
 
 
 view : Model -> Html Msg

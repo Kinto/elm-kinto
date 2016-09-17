@@ -107,7 +107,12 @@ update msg model =
             in
                 case formMsg of
                     Nothing ->
-                        ( { model | formData = updated }, Cmd.none )
+                        ( { model
+                            | formData = updated
+                            , records = updateRecordInList updated model.records
+                          }
+                        , Cmd.none
+                        )
 
                     Just (Form.FormSubmitted data) ->
                         ( { model | formData = updated }, sendFormData data )
@@ -240,3 +245,24 @@ encodeFormData { title, description } =
 removeRecordFromList : Record -> List Record -> List Record
 removeRecordFromList { id } records =
     List.filter (\record -> record.id /= id) records
+
+
+updateRecordInList : Form.Model -> List Record -> List Record
+updateRecordInList { id, title, description } records =
+    -- This enables live reflecting ongoing form updates in the records list
+    case id of
+        Nothing ->
+            records
+
+        Just _ ->
+            List.map
+                (\record ->
+                    if record.id == (Maybe.withDefault "" id) then
+                        { record
+                            | title = Just title
+                            , description = Just description
+                        }
+                    else
+                        record
+                )
+                records
