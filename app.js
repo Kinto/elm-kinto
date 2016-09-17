@@ -9157,8 +9157,18 @@ var _n1k0$kinto_elm_experiments$Form$update = F2(
 		}
 	});
 
-var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p0) {
-	var _p1 = _p0;
+var _n1k0$kinto_elm_experiments$Model$removeRecordFromList = F2(
+	function (_p0, records) {
+		var _p1 = _p0;
+		return A2(
+			_elm_lang$core$List$filter,
+			function (record) {
+				return !_elm_lang$core$Native_Utils.eq(record.id, _p1.id);
+			},
+			records);
+	});
+var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p2) {
+	var _p3 = _p2;
 	return _elm_lang$core$Json_Encode$object(
 		_elm_lang$core$Native_List.fromArray(
 			[
@@ -9171,12 +9181,12 @@ var _n1k0$kinto_elm_experiments$Model$encodeFormData = function (_p0) {
 							{
 							ctor: '_Tuple2',
 							_0: 'title',
-							_1: _elm_lang$core$Json_Encode$string(_p1.title)
+							_1: _elm_lang$core$Json_Encode$string(_p3.title)
 						},
 							{
 							ctor: '_Tuple2',
 							_0: 'description',
-							_1: _elm_lang$core$Json_Encode$string(_p1.description)
+							_1: _elm_lang$core$Json_Encode$string(_p3.description)
 						}
 						]))
 			}
@@ -9216,6 +9226,37 @@ var _n1k0$kinto_elm_experiments$Model$Model = F5(
 	function (a, b, c, d, e) {
 		return {error: a, errorMsg: b, records: c, formData: d, currentTime: e};
 	});
+var _n1k0$kinto_elm_experiments$Model$DeleteRecordFail = function (a) {
+	return {ctor: 'DeleteRecordFail', _0: a};
+};
+var _n1k0$kinto_elm_experiments$Model$DeleteRecordSucceed = function (a) {
+	return {ctor: 'DeleteRecordSucceed', _0: a};
+};
+var _n1k0$kinto_elm_experiments$Model$deleteRecord = function (recordId) {
+	var delete_url = A2(_elm_lang$core$Basics_ops['++'], 'https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/', recordId);
+	var request = A3(
+		_lukewestby$elm_http_builder$HttpBuilder$send,
+		_lukewestby$elm_http_builder$HttpBuilder$jsonReader(
+			A2(
+				_elm_lang$core$Json_Decode$at,
+				_elm_lang$core$Native_List.fromArray(
+					['data']),
+				_n1k0$kinto_elm_experiments$Model$decodeRecord)),
+		_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+		A3(
+			_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+			'Authorization',
+			'Basic dGVzdDp0ZXN0',
+			A3(
+				_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+				'Content-Type',
+				'application/json',
+				_lukewestby$elm_http_builder$HttpBuilder$delete(delete_url))));
+	return A3(_elm_lang$core$Task$perform, _n1k0$kinto_elm_experiments$Model$DeleteRecordFail, _n1k0$kinto_elm_experiments$Model$DeleteRecordSucceed, request);
+};
+var _n1k0$kinto_elm_experiments$Model$DeleteRecord = function (a) {
+	return {ctor: 'DeleteRecord', _0: a};
+};
 var _n1k0$kinto_elm_experiments$Model$CreateFail = function (a) {
 	return {ctor: 'CreateFail', _0: a};
 };
@@ -9270,8 +9311,8 @@ var _n1k0$kinto_elm_experiments$Model$fetchRecords = function () {
 var _n1k0$kinto_elm_experiments$Model$init = {ctor: '_Tuple2', _0: _n1k0$kinto_elm_experiments$Model$initialModel, _1: _n1k0$kinto_elm_experiments$Model$fetchRecords};
 var _n1k0$kinto_elm_experiments$Model$update = F2(
 	function (msg, model) {
-		var _p2 = msg;
-		switch (_p2.ctor) {
+		var _p4 = msg;
+		switch (_p4.ctor) {
 			case 'NoOp':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'Tick':
@@ -9279,7 +9320,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{currentTime: _p2._0}),
+						{currentTime: _p4._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FetchRecords':
@@ -9299,7 +9340,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{records: _p2._0.data, error: false}),
+						{records: _p4._0.data, error: false}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FetchRecordsFail':
@@ -9309,16 +9350,16 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						model,
 						{
 							error: true,
-							errorMsg: _elm_lang$core$Basics$toString(_p2._0)
+							errorMsg: _elm_lang$core$Basics$toString(_p4._0)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FormMsg':
-				var _p3 = A2(_n1k0$kinto_elm_experiments$Form$update, _p2._0, model.formData);
-				var updated = _p3._0;
-				var formMsg = _p3._1;
-				var _p4 = formMsg;
-				if (_p4.ctor === 'Nothing') {
+				var _p5 = A2(_n1k0$kinto_elm_experiments$Form$update, _p4._0, model.formData);
+				var updated = _p5._0;
+				var formMsg = _p5._1;
+				var _p6 = formMsg;
+				if (_p6.ctor === 'Nothing') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
@@ -9332,7 +9373,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{formData: updated}),
-						_1: _n1k0$kinto_elm_experiments$Model$createRecord(_p4._0._0)
+						_1: _n1k0$kinto_elm_experiments$Model$createRecord(_p6._0._0)
 					};
 				}
 			case 'CreateSucceed':
@@ -9343,6 +9384,34 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						{formData: _n1k0$kinto_elm_experiments$Form$init}),
 					_1: _n1k0$kinto_elm_experiments$Model$fetchRecords
 				};
+			case 'CreateFail':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							error: true,
+							errorMsg: _elm_lang$core$Basics$toString(_p4._0)
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'DeleteRecord':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _n1k0$kinto_elm_experiments$Model$deleteRecord(_p4._0)
+				};
+			case 'DeleteRecordSucceed':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							records: A2(_n1k0$kinto_elm_experiments$Model$removeRecordFromList, _p4._0.data, model.records),
+							error: false
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 			default:
 				return {
 					ctor: '_Tuple2',
@@ -9350,7 +9419,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 						model,
 						{
 							error: true,
-							errorMsg: _elm_lang$core$Basics$toString(_p2._0)
+							errorMsg: _elm_lang$core$Basics$toString(_p4._0)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -9367,26 +9436,29 @@ var _n1k0$kinto_elm_experiments$Model$NoOp = {ctor: 'NoOp'};
 
 var _n1k0$kinto_elm_experiments$Utils$plural = F2(
 	function (unit, amount) {
-		var humanAmount = _elm_lang$core$Native_Utils.eq(amount, 1) ? (_elm_lang$core$Native_Utils.eq(unit, 'hour') ? 'an' : 'a') : _elm_lang$core$Basics$toString(amount);
-		var unitPlural = (_elm_lang$core$Native_Utils.cmp(amount, 1) > 0) ? A2(_elm_lang$core$Basics_ops['++'], unit, 's') : unit;
+		var roundAmount = _elm_lang$core$Basics$round(amount);
+		var unitPlural = (_elm_lang$core$Native_Utils.cmp(roundAmount, 1) > 0) ? A2(_elm_lang$core$Basics_ops['++'], unit, 's') : unit;
 		return A2(
 			_elm_lang$core$Basics_ops['++'],
-			humanAmount,
+			_elm_lang$core$Basics$toString(roundAmount),
 			A2(
 				_elm_lang$core$Basics_ops['++'],
 				' ',
 				A2(_elm_lang$core$Basics_ops['++'], unitPlural, ' ago')));
 	});
+var _n1k0$kinto_elm_experiments$Utils$within = F3(
+	function (low, high, value) {
+		return (_elm_lang$core$Native_Utils.cmp(value, low) > -1) && (_elm_lang$core$Native_Utils.cmp(value, high) < 1);
+	});
 var _n1k0$kinto_elm_experiments$Utils$timeAgo = F2(
 	function (time, now) {
-		var seconds = _elm_lang$core$Basics$round((now - time) / 1000);
-		var minutes = (seconds / 60) | 0;
-		var hours = (minutes / 60) | 0;
-		var days = (hours / 24) | 0;
-		var weeks = (days / 7) | 0;
-		var months = (days / 30) | 0;
-		var years = (days / 365) | 0;
-		return (_elm_lang$core$Native_Utils.cmp(seconds, 60) < 0) ? 'less than a minute ago' : ((_elm_lang$core$Native_Utils.cmp(minutes, 60) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'minute', minutes) : ((_elm_lang$core$Native_Utils.cmp(hours, 24) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'hour', hours) : ((_elm_lang$core$Native_Utils.eq(weeks, 2) || _elm_lang$core$Native_Utils.eq(weeks, 3)) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'week', weeks) : ((_elm_lang$core$Native_Utils.cmp(days, 31) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'day', days) : ((_elm_lang$core$Native_Utils.cmp(months, 12) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'month', months) : A2(_n1k0$kinto_elm_experiments$Utils$plural, 'year', years))))));
+		var seconds = (now - time) / 1000;
+		var minutes = seconds / 60;
+		var hours = minutes / 60;
+		var days = hours / 24;
+		var months = days / (365.25 / 12);
+		var years = days / 365.25;
+		return (_elm_lang$core$Native_Utils.cmp(seconds, 10) < 0) ? 'a few seconds ago' : (A3(_n1k0$kinto_elm_experiments$Utils$within, 55, 65, seconds) ? 'about a minute ago' : ((_elm_lang$core$Native_Utils.cmp(minutes, 55) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'minute', minutes) : (A3(_n1k0$kinto_elm_experiments$Utils$within, 55, 65, minutes) ? 'about an hour ago' : ((_elm_lang$core$Native_Utils.cmp(hours, 22) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'hour', hours) : (A3(_n1k0$kinto_elm_experiments$Utils$within, 22, 26, hours) ? 'about a day ago' : (A3(_n1k0$kinto_elm_experiments$Utils$within, 6, 8, days) ? 'about a week ago' : (A3(_n1k0$kinto_elm_experiments$Utils$within, 14, 16, days) ? 'about 2 weeks ago' : (A3(_n1k0$kinto_elm_experiments$Utils$within, 20, 22, days) ? 'about 3 weeks ago' : ((_elm_lang$core$Native_Utils.cmp(days, 27) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'day', days) : (A3(_n1k0$kinto_elm_experiments$Utils$within, 27, 33, days) ? 'about a month ago' : ((_elm_lang$core$Native_Utils.cmp(months, 11) < 0) ? A2(_n1k0$kinto_elm_experiments$Utils$plural, 'month', months) : (A3(_n1k0$kinto_elm_experiments$Utils$within, 11, 13, months) ? 'about a year ago' : A2(_n1k0$kinto_elm_experiments$Utils$plural, 'year', years)))))))))))));
 	});
 
 var _n1k0$kinto_elm_experiments$View$errorNotif = F2(
@@ -9401,14 +9473,7 @@ var _n1k0$kinto_elm_experiments$View$errorNotif = F2(
 				[
 					_elm_lang$html$Html$text(
 					A2(_elm_lang$core$Basics_ops['++'], 'Error: ', errorMsg))
-				])) : A2(
-			_elm_lang$html$Html$div,
-			_elm_lang$core$Native_List.fromArray(
-				[]),
-			_elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$html$Html$text('')
-				]));
+				])) : _elm_lang$html$Html$text('');
 	});
 var _n1k0$kinto_elm_experiments$View$formatLastModified = F2(
 	function (timestamp, currentTime) {
@@ -9420,6 +9485,7 @@ var _n1k0$kinto_elm_experiments$View$formatLastModified = F2(
 var _n1k0$kinto_elm_experiments$View$recordRow = F2(
 	function (currentTime, _p0) {
 		var _p1 = _p0;
+		var _p2 = _p1.id;
 		return A2(
 			_elm_lang$html$Html$tr,
 			_elm_lang$core$Native_List.fromArray(
@@ -9432,7 +9498,7 @@ var _n1k0$kinto_elm_experiments$View$recordRow = F2(
 						[]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html$text(_p1.id)
+							_elm_lang$html$Html$text(_p2)
 						])),
 					A2(
 					_elm_lang$html$Html$td,
@@ -9460,6 +9526,23 @@ var _n1k0$kinto_elm_experiments$View$recordRow = F2(
 						[
 							_elm_lang$html$Html$text(
 							A2(_n1k0$kinto_elm_experiments$View$formatLastModified, _p1.last_modified, currentTime))
+						])),
+					A2(
+					_elm_lang$html$Html$td,
+					_elm_lang$core$Native_List.fromArray(
+						[]),
+					_elm_lang$core$Native_List.fromArray(
+						[
+							A2(
+							_elm_lang$html$Html$button,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									_elm_lang$html$Html_Attributes$class('btn btn-link glyphicon glyphicon-remove'),
+									_elm_lang$html$Html_Events$onClick(
+									_n1k0$kinto_elm_experiments$Model$DeleteRecord(_p2))
+								]),
+							_elm_lang$core$Native_List.fromArray(
+								[]))
 						]))
 				]));
 	});
@@ -9516,7 +9599,13 @@ var _n1k0$kinto_elm_experiments$View$recordsList = F2(
 									_elm_lang$core$Native_List.fromArray(
 										[
 											_elm_lang$html$Html$text('last_modified')
-										]))
+										])),
+									A2(
+									_elm_lang$html$Html$th,
+									_elm_lang$core$Native_List.fromArray(
+										[]),
+									_elm_lang$core$Native_List.fromArray(
+										[]))
 								]))
 						])),
 					A2(
@@ -9529,8 +9618,8 @@ var _n1k0$kinto_elm_experiments$View$recordsList = F2(
 						records))
 				]));
 	});
-var _n1k0$kinto_elm_experiments$View$view = function (_p2) {
-	var _p3 = _p2;
+var _n1k0$kinto_elm_experiments$View$view = function (_p3) {
+	var _p4 = _p3;
 	return A2(
 		_elm_lang$html$Html$div,
 		_elm_lang$core$Native_List.fromArray(
@@ -9547,12 +9636,12 @@ var _n1k0$kinto_elm_experiments$View$view = function (_p2) {
 					[
 						_elm_lang$html$Html$text('Kinto Elm :-)')
 					])),
-				A2(_n1k0$kinto_elm_experiments$View$errorNotif, _p3.error, _p3.errorMsg),
-				A2(_n1k0$kinto_elm_experiments$View$recordsList, _p3.records, _p3.currentTime),
+				A2(_n1k0$kinto_elm_experiments$View$errorNotif, _p4.error, _p4.errorMsg),
+				A2(_n1k0$kinto_elm_experiments$View$recordsList, _p4.records, _p4.currentTime),
 				A2(
 				_elm_lang$html$Html_App$map,
 				_n1k0$kinto_elm_experiments$Model$FormMsg,
-				_n1k0$kinto_elm_experiments$Form$view(_p3.formData))
+				_n1k0$kinto_elm_experiments$Form$view(_p4.formData))
 			]));
 };
 
