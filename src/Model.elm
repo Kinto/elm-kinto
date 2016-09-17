@@ -117,7 +117,7 @@ update msg model =
                 | records = removeRecordFromList data model.records
                 , error = False
               }
-            , Cmd.none
+            , fetchRecords
             )
 
         DeleteRecordFail err ->
