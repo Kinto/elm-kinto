@@ -9410,7 +9410,7 @@ var _n1k0$kinto_elm_experiments$Model$update = F2(
 							records: A2(_n1k0$kinto_elm_experiments$Model$removeRecordFromList, _p4._0.data, model.records),
 							error: false
 						}),
-					_1: _elm_lang$core$Platform_Cmd$none
+					_1: _n1k0$kinto_elm_experiments$Model$fetchRecords
 				};
 			default:
 				return {
