@@ -45,7 +45,7 @@ update msg model =
             ( { model | description = description }, Nothing )
 
         Submit ->
-            ( model, Just (FormSubmitted model) )
+            ( init, Just (FormSubmitted model) )
 
 
 

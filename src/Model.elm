@@ -25,13 +25,6 @@ type alias Record =
     }
 
 
-type alias FormData =
-    { id : Maybe String
-    , title : String
-    , description : String
-    }
-
-
 type alias Model =
     { error : Maybe String
     , records : List Record
@@ -189,7 +182,7 @@ decodeRecord =
         ("last_modified" := int)
 
 
-sendFormData : FormData -> Cmd Msg
+sendFormData : Form.Model -> Cmd Msg
 sendFormData formData =
     -- TODO: handle auth with provided credentials
     let
@@ -230,7 +223,7 @@ deleteRecord recordId =
         Task.perform HttpFail DeleteRecordSucceed request
 
 
-encodeFormData : FormData -> Encode.Value
+encodeFormData : Form.Model -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
         [ ( "data"
