@@ -24,9 +24,12 @@ all : Test
 all =
     describe "Date.TimeAgo"
         [ timeAgoTest "<10s diff" (seconds 4) "a few seconds ago"
+        , timeAgoTest "<1mn diff" (seconds 12) "12 seconds ago"
+        , timeAgoTest "=1mn- diff" (seconds 55) "about a minute ago"
         , timeAgoTest "=1mn- diff" (seconds 58) "about a minute ago"
         , timeAgoTest "=1mn= diff" (seconds 60) "about a minute ago"
         , timeAgoTest "=1mn+ diff" (seconds 62) "about a minute ago"
+        , timeAgoTest "=1mn+ diff" (seconds 65) "about a minute ago"
         , timeAgoTest "<1h diff" (minutes 12) "12 minutes ago"
         , timeAgoTest "<1h diff" (minutes 30) "30 minutes ago"
         , timeAgoTest "<1h diff" (minutes 48) "48 minutes ago"
