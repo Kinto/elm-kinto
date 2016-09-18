@@ -9185,7 +9185,7 @@ var _n1k0$kinto_elm_experiments$Form$update = F2(
 			default:
 				return {
 					ctor: '_Tuple2',
-					_0: model,
+					_0: _n1k0$kinto_elm_experiments$Form$init,
 					_1: _elm_lang$core$Maybe$Just(
 						_n1k0$kinto_elm_experiments$Form$FormSubmitted(model))
 				};
@@ -9283,10 +9283,6 @@ var _n1k0$kinto_elm_experiments$Model$decodeRecords = A2(
 	_elm_lang$core$Native_List.fromArray(
 		['data']),
 	_elm_lang$core$Json_Decode$list(_n1k0$kinto_elm_experiments$Model$decodeRecord));
-var _n1k0$kinto_elm_experiments$Model$FormData = F3(
-	function (a, b, c) {
-		return {id: a, title: b, description: c};
-	});
 var _n1k0$kinto_elm_experiments$Model$Model = F4(
 	function (a, b, c, d) {
 		return {error: a, records: b, formData: c, currentTime: d};
