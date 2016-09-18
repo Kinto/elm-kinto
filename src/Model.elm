@@ -41,7 +41,7 @@ type Msg
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
     | FormMsg Form.Msg
-    | CreateSucceed (Response Record)
+    | CreateRecordSucceed (Response Record)
     | EditRecord RecordId
     | EditRecordSucceed (Response Record)
     | DeleteRecord RecordId
@@ -110,7 +110,7 @@ update msg model =
                     Just (Form.FormSubmitted data) ->
                         ( { model | formData = updated }, sendFormData data )
 
-        CreateSucceed _ ->
+        CreateRecordSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
 
         EditRecord recordId ->
@@ -192,7 +192,7 @@ sendFormData formData =
         ( method, url, failureMsg, successMsg ) =
             case formData.id of
                 Nothing ->
-                    ( HttpBuilder.post, rootUrl, HttpFail, CreateSucceed )
+                    ( HttpBuilder.post, rootUrl, HttpFail, CreateRecordSucceed )
 
                 Just id ->
                     ( HttpBuilder.patch, rootUrl ++ "/" ++ id, HttpFail, EditRecordSucceed )
