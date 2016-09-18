@@ -27,6 +27,8 @@ timeAgo time now =
     in
         if seconds < 10 then
             "a few seconds ago"
+        else if seconds < 55 then
+            plural "second" seconds
         else if seconds |> within 55 65 then
             "about a minute ago"
         else if minutes < 55 then
