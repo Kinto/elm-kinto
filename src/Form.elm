@@ -3,17 +3,20 @@ module Form exposing (view, Model, init, update, Msg, OutMsg(..))
 import Html exposing (..)
 import Html.Attributes exposing (id, for, attribute, class, type', value)
 import Html.Events exposing (onInput, onSubmit)
+import String
 
 
 type alias Model =
-    { title : String
+    { id : Maybe String
+    , title : String
     , description : String
     }
 
 
 init : Model
 init =
-    { title = ""
+    { id = Nothing
+    , title = ""
     , description = ""
     }
 
@@ -42,42 +45,60 @@ update msg model =
             ( { model | description = description }, Nothing )
 
         Submit ->
-            ( init
-              -- empty the fields on submission
-            , Just (FormSubmitted model)
-            )
+            ( init, Just (FormSubmitted model) )
 
 
 
 -- View
 
 
+formVerb : Model -> String
+formVerb { id } =
+    case id of
+        Nothing ->
+            "Create"
+
+        Just _ ->
+            "Update"
+
+
+formTitle : Model -> String
+formTitle model =
+    (formVerb model)
+        ++ " "
+        ++ (Maybe.withDefault "" model.id)
+        |> String.trim
+
+
 view : Model -> Html Msg
-view { title, description } =
+view model =
     form [ onSubmit Submit ]
-        [ div [ class "form-group" ]
-            [ label [ for "title" ] [ text "Title" ]
-            , input
-                [ id "title"
-                , type' "text"
-                , class "form-control"
-                , value title
-                , onInput UpdateFormTitle
+        [ fieldset []
+            [ legend [] [ text (formTitle model) ]
+            , div [ class "form-group" ]
+                [ label [ for "title" ] [ text "Title" ]
+                , input
+                    [ id "title"
+                    , type' "text"
+                    , class "form-control"
+                    , value model.title
+                    , onInput UpdateFormTitle
+                    ]
+                    []
                 ]
-                []
-            ]
-        , div [ class "form-group" ]
-            [ label [ for "description" ] [ text "Description" ]
-            , textarea
-                [ id "description"
-                , class "form-control"
-                , value description
-                , onInput UpdateFormDescription
+            , div [ class "form-group" ]
+                [ label [ for "description" ] [ text "Description" ]
+                , textarea
+                    [ id "description"
+                    , class "form-control"
+                    , value model.description
+                    , onInput UpdateFormDescription
+                    ]
+                    []
                 ]
-                []
-            ]
-        , div []
-            [ button [ type' "submit", class "btn btn-default" ]
-                [ text "Create" ]
+            , div []
+                [ button [ type' "submit", class "btn btn-default" ]
+                    [ text (formVerb model) ]
+                ]
             ]
         ]

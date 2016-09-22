@@ -6,7 +6,7 @@ import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, js
 import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
 import Json.Encode as Encode
 import Form
-import List
+import Dict
 
 
 -- TODO:
@@ -25,16 +25,13 @@ type alias Record =
     }
 
 
-type alias FormData =
-    { title : String
-    , description : String
-    }
+type alias Records =
+    Dict.Dict RecordId Record
 
 
 type alias Model =
-    { error : Bool
-    , errorMsg : String
-    , records : List Record
+    { error : Maybe String
+    , records : Records
     , formData : Form.Model
     , currentTime : Time
     }
@@ -43,15 +40,16 @@ type alias Model =
 type Msg
     = NoOp
     | Tick Time
+    | HttpFail (Error String)
+    | FetchRecordSucceed (Response Record)
     | FetchRecords
     | FetchRecordsSucceed (Response (List Record))
-    | FetchRecordsFail (Error String)
     | FormMsg Form.Msg
-    | CreateSucceed (Response Record)
-    | CreateFail (Error String)
+    | CreateRecordSucceed (Response Record)
+    | EditRecord RecordId
+    | EditRecordSucceed (Response Record)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
-    | DeleteRecordFail (Error String)
 
 
 init : ( Model, Cmd Msg )
@@ -63,12 +61,19 @@ init =
 
 initialModel : Model
 initialModel =
-    { error = False
-    , errorMsg = ""
-    , records = []
+    { error = Nothing
+    , records = Dict.empty
     , formData = Form.init
     , currentTime = 0
     }
+
+
+recordToFormData : Record -> Form.Model
+recordToFormData { id, title, description } =
+    Form.Model
+        (Just id)
+        (Maybe.withDefault "" title)
+        (Maybe.withDefault "" description)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -80,14 +85,24 @@ update msg model =
         Tick newTime ->
             ( { model | currentTime = newTime }, Cmd.none )
 
+        HttpFail err ->
+            ( { model | error = Just (toString err) }, Cmd.none )
+
         FetchRecords ->
-            ( { model | records = [], error = False }, fetchRecords )
+            ( { model | records = Dict.empty, error = Nothing }, fetchRecords )
+
+        FetchRecordSucceed { data } ->
+            ( { model | formData = recordToFormData data, error = Nothing }, Cmd.none )
 
         FetchRecordsSucceed { data } ->
-            ( { model | records = data, error = False }, Cmd.none )
-
-        FetchRecordsFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+            ( { model
+                | records =
+                    List.map (\r -> ( r.id, r )) data
+                        |> Dict.fromList
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
         FormMsg subMsg ->
             let
@@ -96,18 +111,24 @@ update msg model =
             in
                 case formMsg of
                     Nothing ->
-                        ( { model | formData = updated }, Cmd.none )
-
-                    Just (Form.FormSubmitted data) ->
-                        ( { model | formData = updated }
-                        , createRecord data
+                        ( { model
+                            | formData = updated
+                            , records = updateRecordInList updated model.records
+                          }
+                        , Cmd.none
                         )
 
-        CreateSucceed _ ->
+                    Just (Form.FormSubmitted data) ->
+                        ( { model | formData = updated }, sendFormData data )
+
+        CreateRecordSucceed _ ->
             ( { model | formData = Form.init }, fetchRecords )
 
-        CreateFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
+        EditRecord recordId ->
+            ( model, fetchRecord recordId )
+
+        EditRecordSucceed { data } ->
+            ( model, fetchRecords )
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
@@ -115,13 +136,10 @@ update msg model =
         DeleteRecordSucceed { data } ->
             ( { model
                 | records = removeRecordFromList data model.records
-                , error = False
+                , error = Nothing
               }
-            , Cmd.none
+            , fetchRecords
             )
-
-        DeleteRecordFail err ->
-            ( { model | error = True, errorMsg = (toString err) }, Cmd.none )
 
 
 
@@ -137,6 +155,18 @@ subscriptions model =
 -- HTTP
 
 
+fetchRecord : RecordId -> Cmd Msg
+fetchRecord recordId =
+    -- TODO: handle auth with provided credentials
+    let
+        request =
+            HttpBuilder.get ("https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ recordId)
+                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
+                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
+    in
+        Task.perform HttpFail FetchRecordSucceed request
+
+
 fetchRecords : Cmd Msg
 fetchRecords =
     -- TODO: handle auth with provided credentials
@@ -146,7 +176,7 @@ fetchRecords =
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> send (jsonReader decodeRecords) stringReader
     in
-        Task.perform FetchRecordsFail FetchRecordsSucceed request
+        Task.perform HttpFail FetchRecordsSucceed request
 
 
 decodeRecords : Decoder (List Record)
@@ -163,18 +193,29 @@ decodeRecord =
         ("last_modified" := int)
 
 
-createRecord : FormData -> Cmd Msg
-createRecord formData =
+sendFormData : Form.Model -> Cmd Msg
+sendFormData formData =
     -- TODO: handle auth with provided credentials
     let
+        rootUrl =
+            "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
+
+        ( method, url, failureMsg, successMsg ) =
+            case formData.id of
+                Nothing ->
+                    ( HttpBuilder.post, rootUrl, HttpFail, CreateRecordSucceed )
+
+                Just id ->
+                    ( HttpBuilder.patch, rootUrl ++ "/" ++ id, HttpFail, EditRecordSucceed )
+
         request =
-            HttpBuilder.post "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
+            method url
                 |> withHeader "Content-Type" "application/json"
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> withJsonBody (encodeFormData formData)
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
-        Task.perform CreateFail CreateSucceed request
+        Task.perform failureMsg successMsg request
 
 
 deleteRecord : RecordId -> Cmd Msg
@@ -190,10 +231,10 @@ deleteRecord recordId =
                 |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
                 |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
     in
-        Task.perform DeleteRecordFail DeleteRecordSucceed request
+        Task.perform HttpFail DeleteRecordSucceed request
 
 
-encodeFormData : FormData -> Encode.Value
+encodeFormData : Form.Model -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
         [ ( "data"
@@ -205,6 +246,31 @@ encodeFormData { title, description } =
         ]
 
 
-removeRecordFromList : Record -> List Record -> List Record
+removeRecordFromList : Record -> Records -> Records
 removeRecordFromList { id } records =
-    List.filter (\record -> record.id /= id) records
+    Dict.remove id records
+
+
+updateRecordInList : Form.Model -> Records -> Records
+updateRecordInList formData records =
+    -- This enables live reflecting ongoing form updates in the records list
+    case formData.id of
+        Nothing ->
+            records
+
+        Just id ->
+            Dict.update id (updateRecord formData) records
+
+
+updateRecord : Form.Model -> Maybe Record -> Maybe Record
+updateRecord formData record =
+    case record of
+        Nothing ->
+            record
+
+        Just record ->
+            Just
+                { record
+                    | title = Just formData.title
+                    , description = Just formData.description
+                }

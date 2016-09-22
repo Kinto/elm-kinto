@@ -6,8 +6,9 @@ import Html.Events exposing (onClick)
 import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
 import Utils exposing (timeAgo)
-import Model exposing (Model, Record, Msg(..))
+import Model exposing (Model, Record, Records, Msg(..))
 import Form
+import Dict
 
 
 formatLastModified : Int -> Time -> String
@@ -28,7 +29,11 @@ recordRow currentTime { id, title, description, last_modified } =
         , td [] [ text (Maybe.withDefault "[empty]" title) ]
         , td [] [ text (Maybe.withDefault "[empty]" description) ]
         , td [] [ text (formatLastModified last_modified currentTime) ]
-        , td [] [ iconBtn "trash" (DeleteRecord id) ]
+        , td []
+            [ iconBtn "edit" (EditRecord id)
+            , text " "
+            , iconBtn "trash" (DeleteRecord id)
+            ]
         ]
 
 
@@ -48,19 +53,28 @@ recordsList records currentTime =
         ]
 
 
-errorNotif : Bool -> String -> Html Msg
-errorNotif error errorMsg =
-    if error == True then
-        div [ class "alert alert-danger" ] [ text ("Error: " ++ errorMsg) ]
-    else
-        text ""
+errorNotif : Maybe String -> Html Msg
+errorNotif error =
+    case error of
+        Nothing ->
+            text ""
+
+        Just message ->
+            div [ class "alert alert-danger" ] [ text ("Error: " ++ message) ]
+
+
+sortedRecords : Records -> List Record
+sortedRecords records =
+    Dict.values records
+        |> List.sortBy .last_modified
+        |> List.reverse
 
 
 view : Model -> Html Msg
-view { error, errorMsg, records, formData, currentTime } =
+view { error, records, formData, currentTime } =
     div [ class "container" ]
         [ h1 [] [ text "Kinto Elm :-)" ]
-        , errorNotif error errorMsg
-        , recordsList records currentTime
+        , errorNotif error
+        , recordsList (sortedRecords records) currentTime
         , Html.App.map FormMsg (Form.view formData)
         ]
