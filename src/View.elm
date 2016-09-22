@@ -6,8 +6,9 @@ import Html.Events exposing (onClick)
 import Html.App
 import Html.Attributes exposing (id, for, attribute, class, type', value)
 import Utils exposing (timeAgo)
-import Model exposing (Model, Record, Msg(..))
+import Model exposing (Model, Record, Records, Msg(..))
 import Form
+import Dict
 
 
 formatLastModified : Int -> Time -> String
@@ -62,11 +63,18 @@ errorNotif error =
             div [ class "alert alert-danger" ] [ text ("Error: " ++ message) ]
 
 
+sortedRecords : Records -> List Record
+sortedRecords records =
+    Dict.values records
+        |> List.sortBy .last_modified
+        |> List.reverse
+
+
 view : Model -> Html Msg
 view { error, records, formData, currentTime } =
     div [ class "container" ]
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error
-        , recordsList records currentTime
+        , recordsList (sortedRecords records) currentTime
         , Html.App.map FormMsg (Form.view formData)
         ]

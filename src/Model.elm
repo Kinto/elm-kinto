@@ -6,7 +6,7 @@ import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, js
 import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
 import Json.Encode as Encode
 import Form
-import List
+import Dict
 
 
 -- TODO:
@@ -25,9 +25,13 @@ type alias Record =
     }
 
 
+type alias Records =
+    Dict.Dict RecordId Record
+
+
 type alias Model =
     { error : Maybe String
-    , records : List Record
+    , records : Records
     , formData : Form.Model
     , currentTime : Time
     }
@@ -58,7 +62,7 @@ init =
 initialModel : Model
 initialModel =
     { error = Nothing
-    , records = []
+    , records = Dict.empty
     , formData = Form.init
     , currentTime = 0
     }
@@ -85,13 +89,20 @@ update msg model =
             ( { model | error = Just (toString err) }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = [], error = Nothing }, fetchRecords )
+            ( { model | records = Dict.empty, error = Nothing }, fetchRecords )
 
         FetchRecordSucceed { data } ->
             ( { model | formData = recordToFormData data, error = Nothing }, Cmd.none )
 
         FetchRecordsSucceed { data } ->
-            ( { model | records = data, error = Nothing }, Cmd.none )
+            ( { model
+                | records =
+                    List.map (\r -> ( r.id, r )) data
+                        |> Dict.fromList
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
         FormMsg subMsg ->
             let
@@ -235,27 +246,31 @@ encodeFormData { title, description } =
         ]
 
 
-removeRecordFromList : Record -> List Record -> List Record
+removeRecordFromList : Record -> Records -> Records
 removeRecordFromList { id } records =
-    List.filter (\record -> record.id /= id) records
+    Dict.remove id records
 
 
-updateRecordInList : Form.Model -> List Record -> List Record
-updateRecordInList { id, title, description } records =
+updateRecordInList : Form.Model -> Records -> Records
+updateRecordInList formData records =
     -- This enables live reflecting ongoing form updates in the records list
-    case id of
+    case formData.id of
         Nothing ->
             records
 
-        Just _ ->
-            List.map
-                (\record ->
-                    if record.id == (Maybe.withDefault "" id) then
-                        { record
-                            | title = Just title
-                            , description = Just description
-                        }
-                    else
-                        record
-                )
-                records
+        Just id ->
+            Dict.update id (updateRecord formData) records
+
+
+updateRecord : Form.Model -> Maybe Record -> Maybe Record
+updateRecord formData record =
+    case record of
+        Nothing ->
+            record
+
+        Just record ->
+            Just
+                { record
+                    | title = Just formData.title
+                    , description = Just formData.description
+                }
