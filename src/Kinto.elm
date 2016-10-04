@@ -1,9 +1,15 @@
 module Kinto exposing (..)
 
 import Http
+import String
+import Task exposing (Task)
 
 
 type alias Url =
+    String
+
+
+type alias Verb =
     String
 
 
@@ -46,66 +52,119 @@ type alias RecordId =
 
 type Endpoint
     = RootEndpoint
-    | BuckedEndpoint BucketName
-    | CollectionEndpoint BucketName CollectionName
-    | RecordEndpoint BucketName CollectionName RecordId
+    | BucketEndpoint (Maybe BucketName)
+    | CollectionEndpoint BucketName (Maybe CollectionName)
+    | RecordEndpoint BucketName CollectionName (Maybe RecordId)
 
 
-type alias Request =
-    { verb : String
-    , url : String
+type alias Config =
+    { baseUrl : String
     , headers : List ( String, String )
-    , body : Http.Body
-    , endpoint : Endpoint
     }
-
-
-kintoBaseUrl =
-    "https://kinto.dev.mozaws.net/v1/"
 
 
 
 -- Kinto implementation
 
 
-client : Url -> Maybe Auth -> Request
-client baseUrl auth =
+endpointUrl : Config -> Endpoint -> Url
+endpointUrl config endpoint =
     let
-        request =
-            Request "GET" baseUrl [] Http.empty RootEndpoint
+        baseUrl =
+            if String.endsWith "/" config.baseUrl then
+                String.dropRight 1 config.baseUrl
+            else
+                config.baseUrl
+        joinUrl = String.join "/"
     in
-        case auth of
-            Nothing ->
-                request
+        case endpoint of
+            RootEndpoint ->
+                baseUrl
 
-            Just auth ->
-                request |> withAuthHeader auth
+            BucketEndpoint Nothing ->
+                joinUrl [ baseUrl, "buckets" ]
+
+            BucketEndpoint (Just bucketName) ->
+                joinUrl [ baseUrl, "buckets", bucketName ]
+
+            CollectionEndpoint bucketName Nothing ->
+                joinUrl [ baseUrl, "buckets", bucketName, "collections" ]
+
+            CollectionEndpoint bucketName (Just collectionName) ->
+                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName ]
+
+            RecordEndpoint bucketName collectionName Nothing ->
+                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records" ]
+
+            RecordEndpoint bucketName collectionName (Just recordId) ->
+                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
+
+makeRequest : Config -> Endpoint -> Verb -> Http.Request
+makeRequest config endpoint verb =
+    { verb = verb
+    , url = endpointUrl config endpoint
+    , headers = config.headers
+    , body = Http.empty
+    }
 
 
-withHeader : String -> String -> Request -> Request
-withHeader name value ({ headers } as request) =
+client : Config -> Endpoint -> Verb -> Task Http.RawError Http.Response
+client config endpoint verb =
+    let
+        request = makeRequest config endpoint verb
+    in
+        Http.send Http.defaultSettings request
+
+
+
+-- -- client myConfig RootEndpoint Get
+-- client
+--     |> getRootEndpoint
+--     |> Result.formatError toString  -- in case of an error
+--     |> Html.text  -- if result is ok
+--     |> createBucket "BucketName" {}
+--     |> getBucketList
+--     |> putBucket
+-- request : Url -> Maybe Auth -> Request
+-- request baseUrl auth =
+--     let
+--         request =
+--             Request "GET" baseUrl [] Http.empty RootEndpoint
+--     in
+--         case auth of
+--             Nothing ->
+--                 request
+--             Just auth ->
+--                 request |> withAuthHeader auth
+
+
+withHeader : String -> String -> Config -> Config
+withHeader name value ({ headers } as config) =
     let
         newHeaders =
             ( name, value ) :: headers
     in
-        { request | headers = newHeaders }
+        { config | headers = newHeaders }
 
 
-withAuthHeader : Auth -> Request -> Request
-withAuthHeader auth request =
+withAuthHeader : Auth -> Config -> Config
+withAuthHeader auth config =
     case auth of
         Basic username password ->
-            request
+            config
                 |> withHeader
                     "Authorization"
                     ("Basic " ++ username ++ ":" ++ password)
 
         Bearer token ->
-            request
+            config
                 |> withHeader "Authorization" ("Bearer " ++ token)
 
 
 
+-- Example usage (dream api)
+-- serverInfo = request "https://kinto.dev.mozaws.net/v1" Nothing
+-- getServerInfo Json.value Json.value
 --getBuckets : BodyReader a -> BodyReader b -> RequestBuilder -> Task (Error a) (Response b)
 --getBuckets reqBuilder =
 --    get "buckets"

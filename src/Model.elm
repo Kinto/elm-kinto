@@ -7,6 +7,8 @@ import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, in
 import Json.Encode as Encode
 import Form
 import Dict
+import Http
+import Kinto
 
 
 -- TODO:
@@ -50,13 +52,32 @@ type Msg
     | EditRecordSucceed (Response Record)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
+    | TestClientFail Http.RawError
+    | TestClient Http.Response
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , fetchRecords
+    , Cmd.batch [ fetchRecords, testClient ]
     )
+
+
+
+-- client : Config -> Endpoint -> Verb -> Task Http.RawError Http.Response
+
+
+testClient : Cmd Msg
+testClient =
+    let
+        config =
+            Kinto.Config "https://kinto.dev.mozaws.net/v1/" []
+
+        client =
+            Kinto.client config Kinto.RootEndpoint "GET"
+    in
+        -- Kinto.request HttpError KintoError KintoSucces client
+        Task.perform TestClientFail TestClient client
 
 
 initialModel : Model
@@ -140,6 +161,20 @@ update msg model =
               }
             , fetchRecords
             )
+
+        TestClient response ->
+            let
+                _ =
+                    Debug.log "response" response
+            in
+                ( model, Cmd.none )
+
+        TestClientFail err ->
+            let
+                _ =
+                    Debug.log "error" err
+            in
+                ( model, Cmd.none )
 
 
 
