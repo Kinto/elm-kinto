@@ -23,7 +23,7 @@ config =
 authConfig =
     Config
         "http://example.com"
-        [ ( "Authorization", "Basic user:pass" ) ]
+        [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
 
 
 all : Test
@@ -39,7 +39,7 @@ all =
                 \() ->
                     Expect.equal
                         [ ( "foo", "bar" )
-                        , ( "Authorization", "Basic user:pass" )
+                        , ( "Authorization", "Basic dXNlcjpwYXNz" )
                         ]
                         (authConfig |> withHeader "foo" "bar").headers
             ]
@@ -47,24 +47,26 @@ all =
             [ test "adds the authentication headers to an empty config" <|
                 \() ->
                     Expect.equal
-                        [ ( "Authorization", "Basic user:pass" ) ]
+                        [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
                         (config
                             |> withAuthHeader (Basic "user" "pass")
+                            |> Result.withDefault config
                         ).headers
             , test "adds the authentication headers to the existing ones" <|
                 \() ->
                     Expect.equal
-                        [ ( "Authorization", "Basic foo:bar" )
-                        , ( "Authorization", "Basic user:pass" )
+                        [ ( "Authorization", "Basic Zm9vOmJhcg==" )
+                        , ( "Authorization", "Basic dXNlcjpwYXNz" )
                         ]
                         (authConfig
                             |> withAuthHeader (Basic "foo" "bar")
+                            |> Result.withDefault config
                         ).headers
             ]
         , describe "endpointUrl helper"
             (List.map
                 endpointTest
-                [ ( "http://example.com", RootEndpoint )
+                [ ( "http://example.com/", RootEndpoint )
                 , ( "http://example.com/buckets"
                   , BucketEndpoint Nothing
                   )
@@ -90,7 +92,7 @@ all =
                 \() ->
                     Expect.equal
                         { verb = "GET"
-                        , url = config.baseUrl
+                        , url = config.baseUrl ++ "/"
                         , headers = []
                         , body = Http.empty
                         }
@@ -100,7 +102,7 @@ all =
                     Expect.equal
                         { verb = "POST"
                         , url = authConfig.baseUrl ++ "/buckets/bucketName/collections/collectionName/records/record_id"
-                        , headers = [ ( "Authorization", "Basic user:pass" ) ]
+                        , headers = [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
                         , body = Http.empty
                         }
                         (makeRequest
