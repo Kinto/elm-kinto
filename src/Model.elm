@@ -3,7 +3,7 @@ module Model exposing (..)
 import Task
 import Time exposing (Time, second)
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
-import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int)
+import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int, Value)
 import Json.Encode as Encode
 import Form
 import Dict
@@ -52,8 +52,8 @@ type Msg
     | EditRecordSucceed (Response Record)
     | DeleteRecord RecordId
     | DeleteRecordSucceed (Response Record)
-    | TestClientFail Http.RawError
-    | TestClient Http.Response
+    | TestClientFail Kinto.Error
+    | TestClient Json.Decode.Value
 
 
 init : ( Model, Cmd Msg )
@@ -63,21 +63,28 @@ init =
     )
 
 
+-- testClient : Cmd Msg
+-- testClient =
+--     let
+--         config = makeConfig "https://kinto.dev.mozaws.net/v1/" (Kinto.Basic "test" "test")
+--     in
+--         case config of
+--             Nothing ->
+--                 Task.perform TestClientFail TestClient (Task.fail "failure")
 
--- client : Config -> Endpoint -> Verb -> Task Http.RawError Http.Response
-
+--             Just config ->
+--                 Task.perform
+--                     TestClientFail
+--                     TestClient
+--                     (Kinto.getRecordList config "default" "test-items")
 
 testClient : Cmd Msg
 testClient =
     let
-        config =
-            Kinto.Config "https://kinto.dev.mozaws.net/v1/" []
-
-        client =
-            Kinto.client config Kinto.RootEndpoint "GET"
+        config = Kinto.configure "https://kinto.dev.mozaws.net/v1/" (Kinto.Basic "test" "test")
+        recordList = Kinto.getRecordList config "default" "test-items"
     in
-        -- Kinto.request HttpError KintoError KintoSucces client
-        Task.perform TestClientFail TestClient client
+        Task.perform TestClientFail TestClient recordList
 
 
 initialModel : Model
