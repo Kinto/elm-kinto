@@ -134,20 +134,15 @@ endpointUrl config endpoint =
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
-makeRequest : Config -> Endpoint -> Verb -> Http.Request
-makeRequest config endpoint verb =
-    { verb = verb
-    , url = endpointUrl config endpoint
-    , headers = config.headers
-    , body = Http.empty
-    }
-
-
 client : Config -> Endpoint -> Verb -> Task Error Json.Value
 client config endpoint verb =
     let
         request =
-            makeRequest config endpoint verb
+            { verb = verb
+            , url = endpointUrl config endpoint
+            , headers = config.headers
+            , body = Http.empty
+            }
     in
         (Http.send Http.defaultSettings request)
             |> toKintoResponse
@@ -261,15 +256,61 @@ handleResponse handle response =
 -- High level API
 
 
-getRecordList : Result Error Config -> BucketName -> CollectionName -> Task Error Json.Value
-getRecordList config bucket collection =
-    let
-        endpoint =
-            RecordEndpoint bucket collection Nothing
-    in
-        case config of
-            Err error ->
-                Task.fail error
+performQuery : Result Error Config -> Endpoint -> Verb -> Task Error Json.Value
+performQuery config endpoint verb =
+    case config of
+        Err error ->
+            Task.fail error
 
-            Ok config ->
-                client config endpoint "GET"
+        Ok config ->
+            client config endpoint verb
+
+
+
+-- GET
+
+
+getBucketList : Result Error Config -> Task Error Json.Value
+getBucketList config =
+    performQuery config (BucketEndpoint Nothing) "GET"
+
+
+getBucket : Result Error Config -> BucketName -> Task Error Json.Value
+getBucket config bucket =
+    performQuery config (BucketEndpoint (Just bucket)) "GET"
+
+
+getCollectionList : Result Error Config -> BucketName -> Task Error Json.Value
+getCollectionList config bucket =
+    performQuery config (CollectionEndpoint bucket Nothing) "GET"
+
+
+getCollection :
+    Result Error Config
+    -> BucketName
+    -> CollectionName
+    -> Task Error Json.Value
+getCollection config bucket collection =
+    performQuery config (CollectionEndpoint bucket (Just collection)) "GET"
+
+
+getRecordList :
+    Result Error Config
+    -> BucketName
+    -> CollectionName
+    -> Task Error Json.Value
+getRecordList config bucket collection =
+    performQuery config (RecordEndpoint bucket collection Nothing) "GET"
+
+
+getRecord :
+    Result Error Config
+    -> BucketName
+    -> CollectionName
+    -> RecordId
+    -> Task Error Json.Value
+getRecord config bucket collection recordId =
+    performQuery
+        config
+        (RecordEndpoint bucket collection (Just recordId))
+        "GET"

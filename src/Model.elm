@@ -66,10 +66,19 @@ init =
 testClient : Cmd Msg
 testClient =
     let
-        config = Kinto.configure "https://kinto.dev.mozaws.net/v1/" (Kinto.Basic "test" "test")
-        recordList = Kinto.getRecordList config "default" "test-items"
+        config =
+            Kinto.configure
+                "https://kinto.dev.mozaws.net/v1/"
+                (Kinto.Basic "test" "test")
+
+        record =
+            Kinto.getRecord
+                config
+                "default"
+                "test-items"
+                "b76d791e-6db9-4799-84ca-8318923f67f8"
     in
-        Task.perform TestClientFail TestClient recordList
+        Task.perform TestClientFail TestClient record
 
 
 initialModel : Model
