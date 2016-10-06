@@ -3,7 +3,7 @@ module Model exposing (..)
 import Task
 import Time exposing (Time, second)
 import HttpBuilder exposing (Response, Error, send, withJsonBody, withHeader, jsonReader, stringReader)
-import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int, Value)
+import Json.Decode exposing (Decoder, string, at, list, object4, (:=), maybe, int, Value, decodeValue)
 import Json.Encode as Encode
 import Form
 import Dict
@@ -36,6 +36,7 @@ type alias Model =
     , records : Records
     , formData : Form.Model
     , currentTime : Time
+    , kintoConfig : Result Kinto.Error Kinto.Config
     }
 
 
@@ -43,9 +44,10 @@ type Msg
     = NoOp
     | Tick Time
     | HttpFail (Error String)
-    | FetchRecordSucceed (Response Record)
+    | KintoFail Kinto.Error
+    | FetchRecordSucceed Value
     | FetchRecords
-    | FetchRecordsSucceed (Response (List Record))
+    | FetchRecordsSucceed Value
     | FormMsg Form.Msg
     | CreateRecordSucceed (Response Record)
     | EditRecord RecordId
@@ -59,7 +61,7 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecords, testClient ]
+    , Cmd.batch [ fetchRecords initialModel, testClient ]
     )
 
 
@@ -87,6 +89,10 @@ initialModel =
     , records = Dict.empty
     , formData = Form.init
     , currentTime = 0
+    , kintoConfig =
+        Kinto.configure
+            "https://kinto.dev.mozaws.net/v1/"
+            (Kinto.Basic "test" "test")
     }
 
 
@@ -110,21 +116,46 @@ update msg model =
         HttpFail err ->
             ( { model | error = Just (toString err) }, Cmd.none )
 
+        KintoFail err ->
+            let
+                _ =
+                    Debug.log "KintoFail error" err
+            in
+                ( model, Cmd.none )
+
         FetchRecords ->
-            ( { model | records = Dict.empty, error = Nothing }, fetchRecords )
+            ( { model | records = Dict.empty, error = Nothing }, fetchRecords model )
 
-        FetchRecordSucceed { data } ->
-            ( { model | formData = recordToFormData data, error = Nothing }, Cmd.none )
+        FetchRecordSucceed data ->
+            case (decodeValue decodeRecord data) of
+                Err msg ->
+                    ( { model | error = Just msg }, Cmd.none )
 
-        FetchRecordsSucceed { data } ->
-            ( { model
-                | records =
-                    List.map (\r -> ( r.id, r )) data
+                Ok record ->
+                    ( { model
+                        | formData = recordToFormData record
+                        , error = Nothing
+                      }
+                    , Cmd.none
+                    )
+
+        FetchRecordsSucceed data ->
+            let
+                recordsToDict records =
+                    List.map (\r -> ( r.id, r )) records
                         |> Dict.fromList
-                , error = Nothing
-              }
-            , Cmd.none
-            )
+            in
+                case (decodeValue decodeRecords data) of
+                    Err msg ->
+                        ( { model | error = Just msg }, Cmd.none )
+
+                    Ok recordList ->
+                        ( { model
+                            | records = recordsToDict recordList
+                            , error = Nothing
+                          }
+                        , Cmd.none
+                        )
 
         FormMsg subMsg ->
             let
@@ -144,13 +175,13 @@ update msg model =
                         ( { model | formData = updated }, sendFormData data )
 
         CreateRecordSucceed _ ->
-            ( { model | formData = Form.init }, fetchRecords )
+            ( { model | formData = Form.init }, fetchRecords model )
 
         EditRecord recordId ->
-            ( model, fetchRecord recordId )
+            ( model, fetchRecord model recordId )
 
         EditRecordSucceed { data } ->
-            ( model, fetchRecords )
+            ( model, fetchRecords model )
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
@@ -160,7 +191,7 @@ update msg model =
                 | records = removeRecordFromList data model.records
                 , error = Nothing
               }
-            , fetchRecords
+            , fetchRecords model
             )
 
         TestClient response ->
@@ -191,33 +222,27 @@ subscriptions model =
 -- HTTP
 
 
-fetchRecord : RecordId -> Cmd Msg
-fetchRecord recordId =
-    -- TODO: handle auth with provided credentials
+fetchRecord : Model -> RecordId -> Cmd Msg
+fetchRecord model recordId =
     let
-        request =
-            HttpBuilder.get ("https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ recordId)
-                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                |> send (jsonReader (at [ "data" ] decodeRecord)) stringReader
+        record =
+            Kinto.getRecord model.kintoConfig "default" "test-items" recordId
     in
-        Task.perform HttpFail FetchRecordSucceed request
+        Task.perform KintoFail FetchRecordSucceed record
 
 
-fetchRecords : Cmd Msg
-fetchRecords =
-    -- TODO: handle auth with provided credentials
+fetchRecords : Model -> Cmd Msg
+fetchRecords model =
     let
-        request =
-            HttpBuilder.get "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
-                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                |> send (jsonReader decodeRecords) stringReader
+        recordList =
+            Kinto.getRecordList model.kintoConfig "default" "test-items"
     in
-        Task.perform HttpFail FetchRecordsSucceed request
+        Task.perform KintoFail FetchRecordsSucceed recordList
 
 
 decodeRecords : Decoder (List Record)
 decodeRecords =
-    at [ "data" ] (list decodeRecord)
+    list decodeRecord
 
 
 decodeRecord : Decoder Record

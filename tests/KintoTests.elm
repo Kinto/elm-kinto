@@ -7,7 +7,6 @@ import Kinto
     exposing
         ( client
         , endpointUrl
-        , makeRequest
         , withHeader
         , withAuthHeader
         , Auth(..)
@@ -87,34 +86,6 @@ all =
                   )
                 ]
             )
-        , describe "makeRequest helper"
-            [ test "creates a Http.Request for the given config, endpoint and verb" <|
-                \() ->
-                    Expect.equal
-                        { verb = "GET"
-                        , url = config.baseUrl ++ "/"
-                        , headers = []
-                        , body = Http.empty
-                        }
-                        (makeRequest config Kinto.RootEndpoint "GET")
-            , test "creates a Http.Request for the given authenticated config, endpoint and verb" <|
-                \() ->
-                    Expect.equal
-                        { verb = "POST"
-                        , url = authConfig.baseUrl ++ "/buckets/bucketName/collections/collectionName/records/record_id"
-                        , headers = [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
-                        , body = Http.empty
-                        }
-                        (makeRequest
-                            authConfig
-                            (Kinto.RecordEndpoint
-                                "bucketName"
-                                "collectionName"
-                                (Just "record_id")
-                            )
-                            "POST"
-                        )
-            ]
         ]
 
 
