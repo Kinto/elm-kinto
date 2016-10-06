@@ -63,21 +63,6 @@ init =
     )
 
 
--- testClient : Cmd Msg
--- testClient =
---     let
---         config = makeConfig "https://kinto.dev.mozaws.net/v1/" (Kinto.Basic "test" "test")
---     in
---         case config of
---             Nothing ->
---                 Task.perform TestClientFail TestClient (Task.fail "failure")
-
---             Just config ->
---                 Task.perform
---                     TestClientFail
---                     TestClient
---                     (Kinto.getRecordList config "default" "test-items")
-
 testClient : Cmd Msg
 testClient =
     let

@@ -78,10 +78,19 @@ type alias ErrorRecord =
     }
 
 
+type alias StatusCode =
+    Int
+
+
+type alias StatusMsg =
+    String
+
+
 type Error
     = ConfigError String
-    | ServerError Http.RawError
-    | KintoError String
+    | ServerError StatusCode StatusMsg String
+    | KintoError StatusCode StatusMsg ErrorRecord
+    | NetworkError Http.RawError
 
 
 
@@ -133,27 +142,62 @@ makeRequest config endpoint verb =
     }
 
 
-kintoRecordDecoder : Json.Decoder Json.Value
-kintoRecordDecoder =
+bodyDataDecoder : Json.Decoder Json.Value
+bodyDataDecoder =
     ("data" := Json.value)
 
 
-detectKintoError : Http.Response -> Task Error Json.Value
-detectKintoError response =
+extractData : String -> StatusCode -> StatusMsg -> Task Error Json.Value
+extractData body statusCode statusMsg =
+    let
+        responseResult =
+            Json.decodeString bodyDataDecoder body
+    in
+        case responseResult of
+            Ok data ->
+                Task.succeed data
+
+            Err _ ->
+                decodeError body statusCode statusMsg
+
+
+errorDecoder : Json.Decoder ErrorRecord
+errorDecoder =
+    Json.object4 ErrorRecord
+        ("errno" := Json.int)
+        ("message" := Json.string)
+        ("code" := Json.int)
+        ("error" := Json.string)
+
+
+decodeError : String -> StatusCode -> StatusMsg -> Task Error a
+decodeError body statusCode statusMsg =
+    case Json.decodeString errorDecoder body of
+        Ok errorRecord ->
+            Task.fail (KintoError statusCode statusMsg errorRecord)
+
+        Err msg ->
+            Task.fail (ServerError statusCode statusMsg body)
+
+
+toKintoResponse : Task Http.RawError Http.Response -> Task Error Json.Value
+toKintoResponse response =
+    Task.andThen
+        (Task.mapError NetworkError response)
+        (handleResponse extractData)
+
+
+handleResponse :
+    (String -> StatusCode -> StatusMsg -> Task Error Json.Value)
+    -> Http.Response
+    -> Task Error Json.Value
+handleResponse handle response =
     case response.value of
         Http.Text body ->
-            let
-                responseResult = Json.decodeString kintoRecordDecoder body
-            in
-                case responseResult of
-                    Ok data ->
-                        Task.succeed data
+            handle body response.status response.statusText
 
-                    Err _ ->
-                        -- We failed to decode an "ErrorRecord", so we have a success
-                        Task.fail (KintoError body)
-        Http.Blob _ ->
-            Debug.crash "We shouldn't have a blob in 0.17!"
+        _ ->
+            Task.fail (ServerError 0 "Response body is a blob, expecting a string." "")
 
 
 client : Config -> Endpoint -> Verb -> Task Error Json.Value
@@ -162,12 +206,8 @@ client config endpoint verb =
         request =
             makeRequest config endpoint verb
     in
-        Task.andThen
-            (Task.mapError
-                -- TODO: Check if there's a ErrorRecord returned, if so use it
-                ServerError -- Transform the "Http.RawError into a ServerError
-                (Http.send Http.defaultSettings request))
-            detectKintoError
+        (Http.send Http.defaultSettings request)
+            |> toKintoResponse
 
 
 withHeader : String -> String -> Config -> Config
