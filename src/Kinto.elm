@@ -206,7 +206,7 @@ extractData body statusCode statusMsg =
 
             Err _ ->
                 -- Is it an ErrorRecord json?
-                decodeError body statusCode statusMsg
+                Task.fail (decodeError body statusCode statusMsg)
 
 
 errorDecoder : Json.Decoder ErrorRecord
@@ -218,14 +218,14 @@ errorDecoder =
         ("error" := Json.string)
 
 
-decodeError : String -> StatusCode -> StatusMsg -> Task Error a
+decodeError : String -> StatusCode -> StatusMsg -> Error
 decodeError body statusCode statusMsg =
     case Json.decodeString errorDecoder body of
         Ok errorRecord ->
-            Task.fail (KintoError statusCode statusMsg errorRecord)
+            KintoError statusCode statusMsg errorRecord
 
         Err msg ->
-            Task.fail (ServerError statusCode statusMsg body)
+            ServerError statusCode statusMsg body
 
 
 toKintoResponse : Task Http.RawError Http.Response -> Task Error Json.Value
