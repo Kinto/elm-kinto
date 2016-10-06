@@ -94,7 +94,7 @@ type Error
 
 
 
--- Kinto implementation
+-- Making requests
 
 
 endpointUrl : Config -> Endpoint -> Url
@@ -111,9 +111,10 @@ endpointUrl config endpoint =
     in
         case endpoint of
             RootEndpoint ->
+                -- Otherwise Kinto returns a 307
+                -- See https://github.com/Kinto/kinto/issues/852
                 baseUrl ++ "/"
 
-            -- Otherwise Kinto returns a 307
             BucketEndpoint Nothing ->
                 joinUrl [ baseUrl, "buckets" ]
 
@@ -142,6 +143,57 @@ makeRequest config endpoint verb =
     }
 
 
+client : Config -> Endpoint -> Verb -> Task Error Json.Value
+client config endpoint verb =
+    let
+        request =
+            makeRequest config endpoint verb
+    in
+        (Http.send Http.defaultSettings request)
+            |> toKintoResponse
+
+
+withHeader : String -> String -> Config -> Config
+withHeader name value ({ headers } as config) =
+    let
+        newHeaders =
+            ( name, value ) :: headers
+    in
+        { config | headers = newHeaders }
+
+
+withAuthHeader : Auth -> Config -> Result Error Config
+withAuthHeader auth config =
+    case auth of
+        NoAuth ->
+            Ok config
+
+        Basic username password ->
+            let
+                hash str =
+                    Base64.encode str |> Result.formatError ConfigError
+
+                addAuthHeader hash =
+                    Ok (withHeader "Authorization" ("Basic " ++ hash) config)
+            in
+                hash (username ++ ":" ++ password)
+                    `Result.andThen` addAuthHeader
+
+        Bearer token ->
+            Ok (config |> withHeader "Authorization" ("Bearer " ++ token))
+
+
+configure : Url -> Auth -> Result Error Config
+configure baseUrl auth =
+    Config baseUrl []
+        |> withAuthHeader auth
+        |> Debug.log "Kinto request"
+
+
+
+-- Dealing with answers from the Kinto server
+
+
 bodyDataDecoder : Json.Decoder Json.Value
 bodyDataDecoder =
     ("data" := Json.value)
@@ -158,6 +210,7 @@ extractData body statusCode statusMsg =
                 Task.succeed data
 
             Err _ ->
+                -- Is it an ErrorRecord json?
                 decodeError body statusCode statusMsg
 
 
@@ -182,9 +235,8 @@ decodeError body statusCode statusMsg =
 
 toKintoResponse : Task Http.RawError Http.Response -> Task Error Json.Value
 toKintoResponse response =
-    Task.andThen
-        (Task.mapError NetworkError response)
-        (handleResponse extractData)
+    (Task.mapError NetworkError response)
+        `Task.andThen` (handleResponse extractData)
 
 
 handleResponse :
@@ -197,76 +249,16 @@ handleResponse handle response =
             handle body response.status response.statusText
 
         _ ->
-            Task.fail (ServerError 0 "Response body is a blob, expecting a string." "")
+            Task.fail
+                (ServerError
+                    response.status
+                    response.statusText
+                    "Response body is a blob"
+                )
 
 
-client : Config -> Endpoint -> Verb -> Task Error Json.Value
-client config endpoint verb =
-    let
-        request =
-            makeRequest config endpoint verb
-    in
-        (Http.send Http.defaultSettings request)
-            |> toKintoResponse
 
-
-withHeader : String -> String -> Config -> Config
-withHeader name value ({ headers } as config) =
-    let
-        newHeaders =
-            ( name, value ) :: headers
-    in
-        { config | headers = newHeaders }
-
-
-basicAuthHash : Username -> Password -> Result String String
-basicAuthHash user pass =
-    let
-        token =
-            user ++ ":" ++ pass
-    in
-        Base64.encode token
-
-
-withAuthHeader : Auth -> Config -> Result String Config
-withAuthHeader auth config =
-    case auth of
-        NoAuth ->
-            Ok config
-
-        Basic username password ->
-            let
-                hash =
-                    basicAuthHash username password
-            in
-                case hash of
-                    Err error ->
-                        Err ("Failed to encode credentials: " ++ error)
-
-                    Ok hash ->
-                        Ok
-                            (config
-                                |> withHeader "Authorization" ("Basic " ++ hash)
-                            )
-
-        Bearer token ->
-            Ok (config |> withHeader "Authorization" ("Bearer " ++ token))
-
-
-configure : Url -> Auth -> Result Error Config
-configure baseUrl auth =
-    let
-        config =
-            Config baseUrl []
-                |> withAuthHeader auth
-                |> Debug.log "Kinto request"
-    in
-        case config of
-            Err error ->
-                Err (ConfigError error)
-
-            Ok config ->
-                Ok config
+-- High level API
 
 
 getRecordList : Result Error Config -> BucketName -> CollectionName -> Task Error Json.Value
