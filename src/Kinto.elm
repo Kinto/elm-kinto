@@ -63,6 +63,7 @@ type Endpoint
 type alias Config =
     { baseUrl : String
     , headers : List ( String, String )
+    , auth : Auth
     }
 
 
@@ -87,8 +88,7 @@ type alias StatusMsg =
 
 
 type Error
-    = ConfigError String
-    | ServerError StatusCode StatusMsg String
+    = ServerError StatusCode StatusMsg String
     | KintoError StatusCode StatusMsg ErrorRecord
     | NetworkError Http.RawError
 
@@ -140,7 +140,7 @@ performQuery config endpoint verb =
         request =
             { verb = verb
             , url = endpointUrl config endpoint
-            , headers = config.headers
+            , headers = headersFromConfig config
             , body = Http.empty
             }
     in
@@ -157,32 +157,35 @@ withHeader name value ({ headers } as config) =
         { config | headers = newHeaders }
 
 
-withAuthHeader : Auth -> Config -> Result Error Config
-withAuthHeader auth config =
-    case auth of
+headersFromConfig : Config -> List ( String, String )
+headersFromConfig config =
+    case config.auth of
         NoAuth ->
-            Ok config
+            config.headers
 
         Basic username password ->
             let
-                hash str =
-                    Base64.encode str |> Result.formatError ConfigError
+                hash =
+                    case Base64.encode (username ++ ":" ++ password) of
+                        Err msg ->
+                            Debug.crash "b64encoding failed" msg
 
-                addAuthHeader hash =
-                    Ok (withHeader "Authorization" ("Basic " ++ hash) config)
+                        Ok hash ->
+                            hash
             in
-                hash (username ++ ":" ++ password)
-                    `Result.andThen` addAuthHeader
+                config
+                    |> withHeader "Authorization" ("Basic " ++ hash)
+                    |> .headers
 
         Bearer token ->
-            Ok (config |> withHeader "Authorization" ("Bearer " ++ token))
+            config
+                |> withHeader "Authorization" ("Bearer " ++ token)
+                |> .headers
 
 
-configure : Url -> Auth -> Result Error Config
+configure : Url -> Auth -> Config
 configure baseUrl auth =
-    Config baseUrl []
-        |> withAuthHeader auth
-        |> Debug.log "Kinto request"
+    Config baseUrl [] auth
 
 
 

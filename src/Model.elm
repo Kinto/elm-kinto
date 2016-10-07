@@ -66,26 +66,17 @@ init =
 
 
 config =
-    case
-        (Kinto.configure
-            "https://kinto.dev.mozaws.net/v1/"
-            (Kinto.Basic "test" "test")
-        )
-    of
-        Err msg ->
-            Debug.crash "Bad config" msg
-
-        Ok config ->
-            config
+    Kinto.configure
+        "https://kinto.dev.mozaws.net/v1/"
+        (Kinto.Basic "test" "test")
 
 
 testClient : Cmd Msg
 testClient =
-    (Kinto.getRecord
+    (Kinto.getRecordList
         config
         "default"
         "test-items"
-        "b76d791e-6db9-4799-84ca-8318923f67f8"
     )
         |> Task.perform TestClientFail TestClient
 

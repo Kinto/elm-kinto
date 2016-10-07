@@ -5,9 +5,10 @@ import Test exposing (..)
 import Expect
 import Kinto
     exposing
-        ( endpointUrl
+        ( configure
+        , endpointUrl
         , withHeader
-        , withAuthHeader
+        , headersFromConfig
         , Auth(..)
         , Endpoint(..)
         , Config
@@ -15,13 +16,11 @@ import Kinto
 
 
 config =
-    Config "http://example.com" []
+    configure "http://example.com" NoAuth
 
 
 authConfig =
-    Config
-        "http://example.com"
-        [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
+    configure "http://example.com" (Basic "user" "pass")
 
 
 all : Test
@@ -36,30 +35,27 @@ all =
             , test "adds the headers to the previous list of headers" <|
                 \() ->
                     Expect.equal
-                        [ ( "foo", "bar" )
-                        , ( "Authorization", "Basic dXNlcjpwYXNz" )
+                        [ ( "baz", "crux" )
+                        , ( "foo", "bar" )
                         ]
-                        (authConfig |> withHeader "foo" "bar").headers
+                        (config
+                            |> withHeader "foo" "bar"
+                            |> withHeader "baz" "crux"
+                        ).headers
             ]
-        , describe "withAuthHeader helper"
+        , describe "headersFromConfig helper"
             [ test "adds the authentication headers to an empty config" <|
                 \() ->
                     Expect.equal
                         [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
-                        (config
-                            |> withAuthHeader (Basic "user" "pass")
-                            |> Result.withDefault config
-                        ).headers
+                        (headersFromConfig authConfig)
             , test "adds the authentication headers to the existing ones" <|
                 \() ->
                     Expect.equal
-                        [ ( "Authorization", "Basic Zm9vOmJhcg==" )
-                        , ( "Authorization", "Basic dXNlcjpwYXNz" )
+                        [ ( "Authorization", "Basic dXNlcjpwYXNz" )
+                        , ( "foo", "bar" )
                         ]
-                        (authConfig
-                            |> withAuthHeader (Basic "foo" "bar")
-                            |> Result.withDefault config
-                        ).headers
+                        (headersFromConfig (withHeader "foo" "bar" authConfig))
             ]
         , describe "endpointUrl helper"
             (List.map
