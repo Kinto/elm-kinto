@@ -36,7 +36,7 @@ type alias Model =
     , records : Records
     , formData : Form.Model
     , currentTime : Time
-    , kintoConfig : Result Kinto.Error Kinto.Config
+    , kintoConfig : Kinto.Config
     }
 
 
@@ -65,22 +65,29 @@ init =
     )
 
 
+config =
+    case
+        (Kinto.configure
+            "https://kinto.dev.mozaws.net/v1/"
+            (Kinto.Basic "test" "test")
+        )
+    of
+        Err msg ->
+            Debug.crash "Bad config" msg
+
+        Ok config ->
+            config
+
+
 testClient : Cmd Msg
 testClient =
-    let
-        config =
-            Kinto.configure
-                "https://kinto.dev.mozaws.net/v1/"
-                (Kinto.Basic "test" "test")
-
-        record =
-            Kinto.getRecord
-                config
-                "default"
-                "test-items"
-                "b76d791e-6db9-4799-84ca-8318923f67f8"
-    in
-        Task.perform TestClientFail TestClient record
+    (Kinto.getRecord
+        config
+        "default"
+        "test-items"
+        "b76d791e-6db9-4799-84ca-8318923f67f8"
+    )
+        |> Task.perform TestClientFail TestClient
 
 
 initialModel : Model
@@ -89,10 +96,7 @@ initialModel =
     , records = Dict.empty
     , formData = Form.init
     , currentTime = 0
-    , kintoConfig =
-        Kinto.configure
-            "https://kinto.dev.mozaws.net/v1/"
-            (Kinto.Basic "test" "test")
+    , kintoConfig = config
     }
 
 

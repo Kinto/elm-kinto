@@ -134,8 +134,8 @@ endpointUrl config endpoint =
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
-client : Config -> Endpoint -> Verb -> Task Error Json.Value
-client config endpoint verb =
+performQuery : Config -> Endpoint -> Verb -> Task Error Json.Value
+performQuery config endpoint verb =
     let
         request =
             { verb = verb
@@ -254,57 +254,36 @@ handleResponse handle response =
 
 
 -- High level API
-
-
-performQuery : Result Error Config -> Endpoint -> Verb -> Task Error Json.Value
-performQuery config endpoint verb =
-    case config of
-        Err error ->
-            Task.fail error
-
-        Ok config ->
-            client config endpoint verb
-
-
-
 -- GET
 
 
-getBucketList : Result Error Config -> Task Error Json.Value
+getBucketList : Config -> Task Error Json.Value
 getBucketList config =
     performQuery config (BucketEndpoint Nothing) "GET"
 
 
-getBucket : Result Error Config -> BucketName -> Task Error Json.Value
+getBucket : Config -> BucketName -> Task Error Json.Value
 getBucket config bucket =
     performQuery config (BucketEndpoint (Just bucket)) "GET"
 
 
-getCollectionList : Result Error Config -> BucketName -> Task Error Json.Value
+getCollectionList : Config -> BucketName -> Task Error Json.Value
 getCollectionList config bucket =
     performQuery config (CollectionEndpoint bucket Nothing) "GET"
 
 
-getCollection :
-    Result Error Config
-    -> BucketName
-    -> CollectionName
-    -> Task Error Json.Value
+getCollection : Config -> BucketName -> CollectionName -> Task Error Json.Value
 getCollection config bucket collection =
     performQuery config (CollectionEndpoint bucket (Just collection)) "GET"
 
 
-getRecordList :
-    Result Error Config
-    -> BucketName
-    -> CollectionName
-    -> Task Error Json.Value
+getRecordList : Config -> BucketName -> CollectionName -> Task Error Json.Value
 getRecordList config bucket collection =
     performQuery config (RecordEndpoint bucket collection Nothing) "GET"
 
 
 getRecord :
-    Result Error Config
+    Config
     -> BucketName
     -> CollectionName
     -> RecordId

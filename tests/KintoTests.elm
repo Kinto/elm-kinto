@@ -5,8 +5,7 @@ import Test exposing (..)
 import Expect
 import Kinto
     exposing
-        ( client
-        , endpointUrl
+        ( endpointUrl
         , withHeader
         , withAuthHeader
         , Auth(..)
