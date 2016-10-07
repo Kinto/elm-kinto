@@ -62,22 +62,22 @@ all =
                 endpointTest
                 [ ( "http://example.com/", RootEndpoint )
                 , ( "http://example.com/buckets"
-                  , BucketEndpoint Nothing
+                  , BucketListEndpoint
                   )
                 , ( "http://example.com/buckets/bucketName"
-                  , BucketEndpoint (Just "bucketName")
+                  , BucketEndpoint "bucketName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections"
-                  , CollectionEndpoint "bucketName" Nothing
+                  , CollectionListEndpoint "bucketName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName"
-                  , CollectionEndpoint "bucketName" (Just "collectionName")
+                  , CollectionEndpoint "bucketName" "collectionName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName/records"
-                  , RecordEndpoint "bucketName" "collectionName" Nothing
+                  , RecordListEndpoint "bucketName" "collectionName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName/records/record_id"
-                  , RecordEndpoint "bucketName" "collectionName" (Just "record_id")
+                  , RecordEndpoint "bucketName" "collectionName" "record_id"
                   )
                 ]
             )

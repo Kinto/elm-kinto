@@ -55,9 +55,12 @@ type alias RecordId =
 
 type Endpoint
     = RootEndpoint
-    | BucketEndpoint (Maybe BucketName)
-    | CollectionEndpoint BucketName (Maybe CollectionName)
-    | RecordEndpoint BucketName CollectionName (Maybe RecordId)
+    | BucketListEndpoint
+    | BucketEndpoint BucketName
+    | CollectionListEndpoint BucketName
+    | CollectionEndpoint BucketName CollectionName
+    | RecordListEndpoint BucketName CollectionName
+    | RecordEndpoint BucketName CollectionName RecordId
 
 
 type alias Config =
@@ -115,22 +118,22 @@ endpointUrl config endpoint =
                 -- See https://github.com/Kinto/kinto/issues/852
                 baseUrl ++ "/"
 
-            BucketEndpoint Nothing ->
+            BucketListEndpoint ->
                 joinUrl [ baseUrl, "buckets" ]
 
-            BucketEndpoint (Just bucketName) ->
+            BucketEndpoint bucketName ->
                 joinUrl [ baseUrl, "buckets", bucketName ]
 
-            CollectionEndpoint bucketName Nothing ->
+            CollectionListEndpoint bucketName ->
                 joinUrl [ baseUrl, "buckets", bucketName, "collections" ]
 
-            CollectionEndpoint bucketName (Just collectionName) ->
+            CollectionEndpoint bucketName collectionName ->
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName ]
 
-            RecordEndpoint bucketName collectionName Nothing ->
+            RecordListEndpoint bucketName collectionName ->
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records" ]
 
-            RecordEndpoint bucketName collectionName (Just recordId) ->
+            RecordEndpoint bucketName collectionName recordId ->
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
@@ -262,27 +265,27 @@ handleResponse handle response =
 
 getBucketList : Config -> Task Error Json.Value
 getBucketList config =
-    performQuery config (BucketEndpoint Nothing) "GET"
+    performQuery config BucketListEndpoint "GET"
 
 
 getBucket : Config -> BucketName -> Task Error Json.Value
 getBucket config bucket =
-    performQuery config (BucketEndpoint (Just bucket)) "GET"
+    performQuery config (BucketEndpoint bucket) "GET"
 
 
 getCollectionList : Config -> BucketName -> Task Error Json.Value
 getCollectionList config bucket =
-    performQuery config (CollectionEndpoint bucket Nothing) "GET"
+    performQuery config (CollectionListEndpoint bucket) "GET"
 
 
 getCollection : Config -> BucketName -> CollectionName -> Task Error Json.Value
 getCollection config bucket collection =
-    performQuery config (CollectionEndpoint bucket (Just collection)) "GET"
+    performQuery config (CollectionEndpoint bucket collection) "GET"
 
 
 getRecordList : Config -> BucketName -> CollectionName -> Task Error Json.Value
 getRecordList config bucket collection =
-    performQuery config (RecordEndpoint bucket collection Nothing) "GET"
+    performQuery config (RecordListEndpoint bucket collection) "GET"
 
 
 getRecord :
@@ -294,5 +297,5 @@ getRecord :
 getRecord config bucket collection recordId =
     performQuery
         config
-        (RecordEndpoint bucket collection (Just recordId))
+        (RecordEndpoint bucket collection recordId)
         "GET"
