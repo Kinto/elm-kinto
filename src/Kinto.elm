@@ -15,6 +15,10 @@ type alias Verb =
     String
 
 
+type alias Headers =
+    List ( String, String )
+
+
 
 -- Auth
 
@@ -65,7 +69,7 @@ type Endpoint
 
 type alias Config =
     { baseUrl : String
-    , headers : List ( String, String )
+    , headers : Headers
     , auth : Auth
     }
 
@@ -153,32 +157,30 @@ performQuery config endpoint verb =
 
 withHeader : String -> String -> Config -> Config
 withHeader name value ({ headers } as config) =
-    let
-        newHeaders =
-            ( name, value ) :: headers
-    in
-        { config | headers = newHeaders }
+    { config | headers = ( name, value ) :: headers }
 
 
-headersFromConfig : Config -> List ( String, String )
-headersFromConfig config =
-    case config.auth of
+alwaysEncode : String -> String
+alwaysEncode string =
+    case Base64.encode string of
+        Err msg ->
+            Debug.crash "b64encoding failed" msg
+
+        Ok hash ->
+            hash
+
+
+headersFromConfig : Config -> Headers
+headersFromConfig ({ auth, headers } as config) =
+    case auth of
         NoAuth ->
-            config.headers
+            headers
 
         Basic username password ->
-            let
-                hash =
-                    case Base64.encode (username ++ ":" ++ password) of
-                        Err msg ->
-                            Debug.crash "b64encoding failed" msg
-
-                        Ok hash ->
-                            hash
-            in
-                config
-                    |> withHeader "Authorization" ("Basic " ++ hash)
-                    |> .headers
+            config
+                |> withHeader "Authorization"
+                    ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
+                |> .headers
 
         Bearer token ->
             config
@@ -244,18 +246,14 @@ handleResponse :
     (String -> StatusCode -> StatusMsg -> Task Error Json.Value)
     -> Http.Response
     -> Task Error Json.Value
-handleResponse handle response =
-    case response.value of
+handleResponse handle { value, status, statusText } =
+    case value of
         Http.Text body ->
-            handle body response.status response.statusText
+            handle body status statusText
 
         _ ->
             Task.fail
-                (ServerError
-                    response.status
-                    response.statusText
-                    "Response body is a blob"
-                )
+                (ServerError status statusText "Unsupported response body")
 
 
 
