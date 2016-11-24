@@ -151,8 +151,14 @@ performQuery config endpoint verb =
             , body = Http.empty
             }
     in
-        (Http.send Http.defaultSettings request)
-            |> toKintoResponse
+        ((Http.send Http.defaultSettings request)
+            |> Task.mapError NetworkError
+        )
+            `Task.andThen`
+                (\response ->
+                    toKintoResponse response
+                        |> Task.fromResult
+                )
 
 
 withHeader : String -> String -> Config -> Config
@@ -211,18 +217,29 @@ errorDecoder =
         ("error" := Json.string)
 
 
-toKintoResponse : Task Http.RawError Http.Response -> Task Error Json.Value
-toKintoResponse response =
-    (response
-        |> Task.mapError NetworkError
-    )
-        `Task.andThen` handleResponse
+toKintoResponse : Http.Response -> Result Error Json.Value
+toKintoResponse ({ value, status, statusText } as response) =
+    (extractBody response)
+        `Result.andThen`
+            (\body ->
+                extractData body
+                    |> Result.formatError (extractError status statusText)
+            )
 
 
-extractText : String -> Task String Json.Value
-extractText body =
-    Json.decodeString bodyDataDecoder body
-        |> Task.fromResult
+extractBody : Http.Response -> Result Error String
+extractBody { value, status, statusText } =
+    case value of
+        Http.Text body ->
+            Ok body
+
+        _ ->
+            Err (ServerError status statusText "Unsupported response body")
+
+
+extractData : String -> Result String Json.Value
+extractData data =
+    Json.decodeString bodyDataDecoder data
 
 
 extractError : StatusCode -> StatusMsg -> String -> Error
@@ -233,19 +250,6 @@ extractError statusCode statusMsg body =
 
         Err err ->
             ServerError statusCode statusMsg err
-
-
-handleResponse : Http.Response -> Task Error Json.Value
-handleResponse { value, status, statusText } =
-    case value of
-        Http.Text body ->
-            body
-                |> extractText
-                |> Task.mapError (extractError status statusText)
-
-        _ ->
-            Task.fail
-                (ServerError status statusText "Unsupported response body")
 
 
 
