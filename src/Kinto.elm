@@ -154,11 +154,7 @@ performQuery config endpoint verb =
         ((Http.send Http.defaultSettings request)
             |> Task.mapError NetworkError
         )
-            `Task.andThen`
-                (\response ->
-                    toKintoResponse response
-                        |> Task.fromResult
-                )
+            `Task.andThen` (toKintoResponse >> Task.fromResult)
 
 
 withHeader : String -> String -> Config -> Config
@@ -221,9 +217,8 @@ toKintoResponse : Http.Response -> Result Error Json.Value
 toKintoResponse ({ value, status, statusText } as response) =
     (extractBody response)
         `Result.andThen`
-            (\body ->
-                extractData body
-                    |> Result.formatError (extractError status statusText)
+            (extractData
+                >> Result.formatError (extractError status statusText)
             )
 
 
