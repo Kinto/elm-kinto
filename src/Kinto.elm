@@ -202,21 +202,6 @@ bodyDataDecoder =
     ("data" := Json.value)
 
 
-extractData : String -> StatusCode -> StatusMsg -> Task Error Json.Value
-extractData body statusCode statusMsg =
-    let
-        responseResult =
-            Json.decodeString bodyDataDecoder body
-    in
-        case responseResult of
-            Ok data ->
-                Task.succeed data
-
-            Err _ ->
-                -- Is it an ErrorRecord json?
-                Task.fail (decodeError body statusCode statusMsg)
-
-
 errorDecoder : Json.Decoder ErrorRecord
 errorDecoder =
     Json.object4 ErrorRecord
@@ -226,30 +211,37 @@ errorDecoder =
         ("error" := Json.string)
 
 
-decodeError : String -> StatusCode -> StatusMsg -> Error
-decodeError body statusCode statusMsg =
-    case Json.decodeString errorDecoder body of
-        Ok errorRecord ->
-            KintoError statusCode statusMsg errorRecord
-
-        Err msg ->
-            ServerError statusCode statusMsg body
-
-
 toKintoResponse : Task Http.RawError Http.Response -> Task Error Json.Value
 toKintoResponse response =
-    (Task.mapError NetworkError response)
-        `Task.andThen` (handleResponse extractData)
+    (response
+        |> Task.mapError NetworkError
+    )
+        `Task.andThen` handleResponse
 
 
-handleResponse :
-    (String -> StatusCode -> StatusMsg -> Task Error Json.Value)
-    -> Http.Response
-    -> Task Error Json.Value
-handleResponse handle { value, status, statusText } =
+extractText : String -> Task String Json.Value
+extractText body =
+    Json.decodeString bodyDataDecoder body
+        |> Task.fromResult
+
+
+extractError : StatusCode -> StatusMsg -> String -> Error
+extractError statusCode statusMsg body =
+    case Json.decodeString errorDecoder body of
+        Ok errRecord ->
+            KintoError statusCode statusMsg errRecord
+
+        Err err ->
+            ServerError statusCode statusMsg err
+
+
+handleResponse : Http.Response -> Task Error Json.Value
+handleResponse { value, status, statusText } =
     case value of
         Http.Text body ->
-            handle body status statusText
+            body
+                |> extractText
+                |> Task.mapError (extractError status statusText)
 
         _ ->
             Task.fail
