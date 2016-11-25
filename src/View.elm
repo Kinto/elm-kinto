@@ -3,8 +3,7 @@ module View exposing (view)
 import Time exposing (Time)
 import Html exposing (..)
 import Html.Events exposing (onClick)
-import Html.App
-import Html.Attributes exposing (id, for, attribute, class, type', value)
+import Html.Attributes exposing (id, for, attribute, class, value)
 import Utils exposing (timeAgo)
 import Model exposing (Model, Record, Records, Msg(..))
 import Form
@@ -76,5 +75,5 @@ view { error, records, formData, currentTime } =
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error
         , recordsList (sortedRecords records) currentTime
-        , Html.App.map FormMsg (Form.view formData)
+        , Html.map FormMsg (Form.view formData)
         ]

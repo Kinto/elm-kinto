@@ -30,13 +30,13 @@ all =
             [ test "returns the new header if previously empty" <|
                 \() ->
                     Expect.equal
-                        [ ( "foo", "bar" ) ]
+                        [ (Http.header "foo" "bar") ]
                         (config |> withHeader "foo" "bar").headers
             , test "adds the headers to the previous list of headers" <|
                 \() ->
                     Expect.equal
-                        [ ( "baz", "crux" )
-                        , ( "foo", "bar" )
+                        [ (Http.header "baz" "crux" )
+                        , (Http.header "foo" "bar" )
                         ]
                         (config
                             |> withHeader "foo" "bar"
@@ -47,13 +47,13 @@ all =
             [ test "adds the authentication headers to an empty config" <|
                 \() ->
                     Expect.equal
-                        [ ( "Authorization", "Basic dXNlcjpwYXNz" ) ]
+                        [ (Http.header "Authorization" "Basic dXNlcjpwYXNz" ) ]
                         (headersFromConfig authConfig)
             , test "adds the authentication headers to the existing ones" <|
                 \() ->
                     Expect.equal
-                        [ ( "Authorization", "Basic dXNlcjpwYXNz" )
-                        , ( "foo", "bar" )
+                        [ (Http.header "Authorization" "Basic dXNlcjpwYXNz" )
+                        , (Http.header "foo" "bar" )
                         ]
                         (headersFromConfig (withHeader "foo" "bar" authConfig))
             ]

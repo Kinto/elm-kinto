@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html.App as Html
+import Html
 import Model exposing (..)
 import View exposing (view)
 
@@ -12,7 +12,7 @@ import View exposing (view)
 -- - Styling
 
 
-main : Program Never
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
