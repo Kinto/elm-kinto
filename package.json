@@ -22,9 +22,9 @@
   },
   "homepage": "https://github.com/n1k0/kinto-elm-experiments#readme",
   "devDependencies": {
-    "elm": "^0.17.1",
-    "elm-live": "^2.5.0",
-    "elm-test": "^0.17.3",
+    "elm": "^0.18.0",
+    "elm-live": "^2.6.0",
+    "elm-test": "^0.18.0",
     "gh-pages": "^0.11.0"
   }
 }
