@@ -151,7 +151,7 @@ performQuery config endpoint method toMsg =
                 , withCredentials = False
                 }
     in
-        Http.send (toKintoResponse toMsg) request
+        Http.send (toKintoResponse >> toMsg) request
 
 
 withHeader : String -> String -> Config -> Config
@@ -211,14 +211,10 @@ errorDecoder =
         (field "error" Json.string)
 
 
-toKintoResponse :
-    (Result Error Json.Value -> msg)
-    -> Result Http.Error Json.Value
-    -> msg
-toKintoResponse toMsg response =
+toKintoResponse : Result Http.Error Json.Value -> Result Error Json.Value
+toKintoResponse response =
     response
         |> Result.mapError extractError
-        |> toMsg
 
 
 extractError : Http.Error -> Error

@@ -113,11 +113,7 @@ update msg model =
                             )
 
                 Err error ->
-                    let
-                        _ =
-                            Debug.log "FetchRecordResponse failed:" error
-                    in
-                        ( model, Cmd.none )
+                    ( { model | error = Just <| toString error }, Cmd.none )
 
         FetchRecordsResponse response ->
             case response of
