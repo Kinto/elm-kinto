@@ -32,7 +32,7 @@ $ npm run live
 $ npm run publish-to-gh-pages
 ```
 
-Then result is visible [here](https://n1k0.github.io/kinto-elm-experiments).
+Then result is visible [here](https://Kinto.github.io/kinto-elm-experiments).
 
 ## Tests
 
