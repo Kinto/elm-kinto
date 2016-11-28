@@ -437,6 +437,59 @@ updateRecord config bucket collection recordId body toMsg =
 
 
 
+-- REPLACE
+
+
+replaceBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
+replaceBucket config bucket body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (BucketEndpoint bucket)
+            "PUT"
+            body
+        )
+        toMsg
+
+
+replaceCollection :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+replaceCollection config bucket collection body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (CollectionEndpoint bucket collection)
+            "PUT"
+            body
+        )
+        toMsg
+
+
+replaceRecord :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> RecordId
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+replaceRecord config bucket collection recordId body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (RecordEndpoint bucket collection recordId)
+            "PUT"
+            body
+        )
+        toMsg
+
+
+
 -- DELETE
 
 
