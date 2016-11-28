@@ -49,7 +49,7 @@ type Msg
     | FormMsg Form.Msg
     | CreateRecordResponse (Result Kinto.Error Value)
     | EditRecord RecordId
-    | EditRecordResponse (Result Http.Error Record)
+    | EditRecordResponse (Result Kinto.Error Value)
     | DeleteRecord RecordId
     | DeleteRecordResponse (Result Http.Error Record)
 
@@ -243,32 +243,27 @@ decodeRecord =
 
 sendFormData : Model -> Form.Model -> Cmd Msg
 sendFormData model formData =
-    case formData.id of
-        Nothing ->
-            Kinto.createRecord
-                model.kintoConfig
-                "default"
-                "test-items"
-                (encodeFormData formData)
-                CreateRecordResponse
+    let
+        data =
+            encodeFormData formData
+    in
+        case formData.id of
+            Nothing ->
+                Kinto.createRecord
+                    model.kintoConfig
+                    "default"
+                    "test-items"
+                    data
+                    CreateRecordResponse
 
-        Just id ->
-            let
-                rootUrl =
-                    "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
-
-                ( method, url, responseMsg ) =
-                    ( HttpBuilder.patch, rootUrl ++ "/" ++ id, EditRecordResponse )
-
-                request =
-                    method url
-                        -- TODO: handle auth with provided credentials
-                        |>
-                            withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                        |> withJsonBody (encodeFormData formData)
-                        |> withExpect (Http.expectJson (field "data" decodeRecord))
-            in
-                HttpBuilder.send responseMsg request
+            Just id ->
+                Kinto.updateRecord
+                    model.kintoConfig
+                    "default"
+                    "test-items"
+                    id
+                    data
+                    EditRecordResponse
 
 
 deleteRecord : RecordId -> Cmd Msg

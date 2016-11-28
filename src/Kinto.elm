@@ -381,3 +381,56 @@ createRecord config bucket collection body toMsg =
             body
         )
         toMsg
+
+
+
+-- UPDATE
+
+
+updateBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
+updateBucket config bucket body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (BucketEndpoint bucket)
+            "PATCH"
+            body
+        )
+        toMsg
+
+
+updateCollection :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+updateCollection config bucket collection body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (CollectionEndpoint bucket collection)
+            "PATCH"
+            body
+        )
+        toMsg
+
+
+updateRecord :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> RecordId
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+updateRecord config bucket collection recordId body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (RecordEndpoint bucket collection recordId)
+            "PATCH"
+            body
+        )
+        toMsg
