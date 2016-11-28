@@ -9,18 +9,19 @@
     "debug": "node_modules/.bin/elm-live src/Main.elm --output=html/live/app.js --dir=html/live -- --debug",
     "live": "node_modules/.bin/elm-live src/Main.elm --output=html/live/app.js --dir=html/live",
     "publish-to-gh-pages": "npm run build && cp html/index.html build/ && node_modules/.bin/gh-pages --dist build/",
-    "test": "node_modules/.bin/elm-test"
+    "test": "node_modules/.bin/elm-test",
+    "tdd": "node_modules/.bin/elm-test --watch"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/n1k0/kinto-elm-experiments.git"
+    "url": "git+https://github.com/Kinto/kinto-elm-experiments.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/n1k0/kinto-elm-experiments/issues"
+    "url": "https://github.com/Kinto/kinto-elm-experiments/issues"
   },
-  "homepage": "https://github.com/n1k0/kinto-elm-experiments#readme",
+  "homepage": "https://github.com/Kinto/kinto-elm-experiments#readme",
   "devDependencies": {
     "elm": "^0.18.0",
     "elm-live": "^2.6.0",
