@@ -434,3 +434,51 @@ updateRecord config bucket collection recordId body toMsg =
             body
         )
         toMsg
+
+
+
+-- DELETE
+
+
+deleteBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
+deleteBucket config bucket toMsg =
+    performQuery
+        (KintoRequest
+            config
+            (BucketEndpoint bucket)
+            "DELETE"
+        )
+        toMsg
+
+
+deleteCollection :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+deleteCollection config bucket collection toMsg =
+    performQuery
+        (KintoRequest
+            config
+            (CollectionEndpoint bucket collection)
+            "DELETE"
+        )
+        toMsg
+
+
+deleteRecord :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> RecordId
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+deleteRecord config bucket collection recordId toMsg =
+    performQuery
+        (KintoRequest
+            config
+            (RecordEndpoint bucket collection recordId)
+            "DELETE"
+        )
+        toMsg

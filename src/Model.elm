@@ -51,7 +51,7 @@ type Msg
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Value)
     | DeleteRecord RecordId
-    | DeleteRecordResponse (Result Http.Error Record)
+    | DeleteRecordResponse (Result Kinto.Error Value)
 
 
 init : ( Model, Cmd Msg )
@@ -179,17 +179,22 @@ update msg model =
                     ( { model | error = Just (toString err) }, Cmd.none )
 
         DeleteRecord recordId ->
-            ( model, deleteRecord recordId )
+            ( model, deleteRecord model recordId )
 
         DeleteRecordResponse response ->
             case response of
                 Ok data ->
-                    ( { model
-                        | records = removeRecordFromList data model.records
-                        , error = Nothing
-                      }
-                    , fetchRecords model
-                    )
+                    case (decodeValue decodeRecord data) of
+                        Err msg ->
+                            ( { model | error = Just msg }, Cmd.none )
+
+                        Ok record ->
+                            ( { model
+                                | records = removeRecordFromList record model.records
+                                , error = Nothing
+                              }
+                            , fetchRecords model
+                            )
 
                 Err err ->
                     ( { model | error = Just (toString err) }, Cmd.none )
@@ -256,29 +261,24 @@ sendFormData model formData =
                     data
                     CreateRecordResponse
 
-            Just id ->
+            Just recordId ->
                 Kinto.updateRecord
                     model.kintoConfig
                     "default"
                     "test-items"
-                    id
+                    recordId
                     data
                     EditRecordResponse
 
 
-deleteRecord : RecordId -> Cmd Msg
-deleteRecord recordId =
-    -- TODO: handle auth with provided credentials
-    let
-        delete_url =
-            "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records/" ++ recordId
-
-        request =
-            HttpBuilder.delete delete_url
-                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                |> withExpect (Http.expectJson (field "data" decodeRecord))
-    in
-        HttpBuilder.send DeleteRecordResponse request
+deleteRecord : Model -> RecordId -> Cmd Msg
+deleteRecord model recordId =
+    Kinto.deleteRecord
+        model.kintoConfig
+        "default"
+        "test-items"
+        recordId
+        DeleteRecordResponse
 
 
 encodeFormData : Form.Model -> Encode.Value
