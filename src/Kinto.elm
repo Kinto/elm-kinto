@@ -137,21 +137,23 @@ endpointUrl config endpoint =
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
+kintoRequest : Config -> Endpoint -> Method -> Http.Request Json.Value
+kintoRequest config endpoint method =
+    Http.request
+        { method = method
+        , headers = headersFromConfig config
+        , url = endpointUrl config endpoint
+        , body = Http.emptyBody
+        , expect = Http.expectJson bodyDataDecoder
+        , timeout = Nothing
+        , withCredentials = False
+        }
+
+
 performQuery : Config -> Endpoint -> Method -> (Result Error Json.Value -> msg) -> Cmd msg
 performQuery config endpoint method toMsg =
-    let
-        request =
-            Http.request
-                { method = method
-                , headers = headersFromConfig config
-                , url = endpointUrl config endpoint
-                , body = Http.emptyBody
-                , expect = Http.expectJson bodyDataDecoder
-                , timeout = Nothing
-                , withCredentials = False
-                }
-    in
-        Http.send (toKintoResponse >> toMsg) request
+    kintoRequest config endpoint method
+        |> Http.send (toKintoResponse >> toMsg)
 
 
 withHeader : String -> String -> Config -> Config

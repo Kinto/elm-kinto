@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "Experimenting with Elm and Kinto.",
-    "repository": "https://github.com/n1k0/kinto-elm-experiments.git",
+    "repository": "https://github.com/Kinto/kinto-elm-experiments.git",
     "license": "MIT",
     "source-directories": [
         "src"
