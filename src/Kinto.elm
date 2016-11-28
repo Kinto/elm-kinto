@@ -2,7 +2,7 @@ module Kinto exposing (..)
 
 import Base64
 import Http
-import Json.Decode as Json exposing ((:=))
+import Json.Decode as Json exposing (field)
 import String
 import Task exposing (Task)
 
@@ -11,12 +11,8 @@ type alias Url =
     String
 
 
-type alias Verb =
+type alias Method =
     String
-
-
-type alias Headers =
-    List ( String, String )
 
 
 
@@ -69,7 +65,7 @@ type Endpoint
 
 type alias Config =
     { baseUrl : String
-    , headers : Headers
+    , headers : List Http.Header
     , auth : Auth
     }
 
@@ -97,7 +93,7 @@ type alias StatusMsg =
 type Error
     = ServerError StatusCode StatusMsg String
     | KintoError StatusCode StatusMsg ErrorRecord
-    | NetworkError Http.RawError
+    | NetworkError Http.Error
 
 
 
@@ -141,25 +137,26 @@ endpointUrl config endpoint =
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
-performQuery : Config -> Endpoint -> Verb -> Task Error Json.Value
-performQuery config endpoint verb =
+performQuery : Config -> Endpoint -> Method -> (Result Error Json.Value -> msg) -> Cmd msg
+performQuery config endpoint method toMsg =
     let
         request =
-            { verb = verb
-            , url = endpointUrl config endpoint
-            , headers = headersFromConfig config
-            , body = Http.empty
-            }
+            Http.request
+                { method = method
+                , headers = headersFromConfig config
+                , url = endpointUrl config endpoint
+                , body = Http.emptyBody
+                , expect = Http.expectJson bodyDataDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
     in
-        ((Http.send Http.defaultSettings request)
-            |> Task.mapError NetworkError
-        )
-            `Task.andThen` (toKintoResponse >> Task.fromResult)
+        Http.send (toKintoResponse >> toMsg) request
 
 
 withHeader : String -> String -> Config -> Config
 withHeader name value ({ headers } as config) =
-    { config | headers = ( name, value ) :: headers }
+    { config | headers = (Http.header name value) :: headers }
 
 
 alwaysEncode : String -> String
@@ -172,7 +169,7 @@ alwaysEncode string =
             hash
 
 
-headersFromConfig : Config -> Headers
+headersFromConfig : Config -> List Http.Header
 headersFromConfig ({ auth, headers } as config) =
     case auth of
         NoAuth ->
@@ -180,7 +177,8 @@ headersFromConfig ({ auth, headers } as config) =
 
         Basic username password ->
             config
-                |> withHeader "Authorization"
+                |> withHeader
+                    "Authorization"
                     ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
                 |> .headers
 
@@ -201,44 +199,46 @@ configure baseUrl auth =
 
 bodyDataDecoder : Json.Decoder Json.Value
 bodyDataDecoder =
-    ("data" := Json.value)
+    (field "data" Json.value)
 
 
 errorDecoder : Json.Decoder ErrorRecord
 errorDecoder =
-    Json.object4 ErrorRecord
-        ("errno" := Json.int)
-        ("message" := Json.string)
-        ("code" := Json.int)
-        ("error" := Json.string)
+    Json.map4 ErrorRecord
+        (field "errno" Json.int)
+        (field "message" Json.string)
+        (field "code" Json.int)
+        (field "error" Json.string)
 
 
-toKintoResponse : Http.Response -> Result Error Json.Value
-toKintoResponse ({ value, status, statusText } as response) =
-    (extractBody response)
-        `Result.andThen`
-            (extractData
-                >> Result.formatError (extractError status statusText)
-            )
+toKintoResponse : Result Http.Error Json.Value -> Result Error Json.Value
+toKintoResponse response =
+    response
+        |> Result.mapError extractError
 
 
-extractBody : Http.Response -> Result Error String
-extractBody { value, status, statusText } =
-    case value of
-        Http.Text body ->
-            Ok body
+extractError : Http.Error -> Error
+extractError error =
+    case error of
+        Http.BadStatus { status, body } ->
+            extractKintoError status.code status.message body
 
-        _ ->
-            Err (ServerError status statusText "Unsupported response body")
+        Http.BadPayload str { status, body } ->
+            ServerError
+                status.code
+                status.message
+                ("failed decoding json: "
+                    ++ str
+                    ++ "\n\nBody received from server: "
+                    ++ body
+                )
+
+        anyError ->
+            NetworkError anyError
 
 
-extractData : String -> Result String Json.Value
-extractData data =
-    Json.decodeString bodyDataDecoder data
-
-
-extractError : StatusCode -> StatusMsg -> String -> Error
-extractError statusCode statusMsg body =
+extractKintoError : StatusCode -> StatusMsg -> String -> Error
+extractKintoError statusCode statusMsg body =
     case Json.decodeString errorDecoder body of
         Ok errRecord ->
             KintoError statusCode statusMsg errRecord
@@ -252,29 +252,43 @@ extractError statusCode statusMsg body =
 -- GET
 
 
-getBucketList : Config -> Task Error Json.Value
+getBucketList : Config -> (Result Error Json.Value -> msg) -> Cmd msg
 getBucketList config =
     performQuery config BucketListEndpoint "GET"
 
 
-getBucket : Config -> BucketName -> Task Error Json.Value
+getBucket : Config -> BucketName -> (Result Error Json.Value -> msg) -> Cmd msg
 getBucket config bucket =
     performQuery config (BucketEndpoint bucket) "GET"
 
 
-getCollectionList : Config -> BucketName -> Task Error Json.Value
+getCollectionList :
+    Config
+    -> BucketName
+    -> (Result Error Json.Value -> msg)
+    -> Cmd msg
 getCollectionList config bucket =
     performQuery config (CollectionListEndpoint bucket) "GET"
 
 
-getCollection : Config -> BucketName -> CollectionName -> Task Error Json.Value
+getCollection :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> (Result Error Json.Value -> msg)
+    -> Cmd msg
 getCollection config bucket collection =
     performQuery config (CollectionEndpoint bucket collection) "GET"
 
 
-getRecordList : Config -> BucketName -> CollectionName -> Task Error Json.Value
-getRecordList config bucket collection =
-    performQuery config (RecordListEndpoint bucket collection) "GET"
+getRecordList :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> (Result Error Json.Value -> msg)
+    -> Cmd msg
+getRecordList config bucket collection toMsg =
+    performQuery config (RecordListEndpoint bucket collection) "GET" toMsg
 
 
 getRecord :
@@ -282,9 +296,11 @@ getRecord :
     -> BucketName
     -> CollectionName
     -> RecordId
-    -> Task Error Json.Value
-getRecord config bucket collection recordId =
+    -> (Result Error Json.Value -> msg)
+    -> Cmd msg
+getRecord config bucket collection recordId toMsg =
     performQuery
         config
         (RecordEndpoint bucket collection recordId)
         "GET"
+        toMsg

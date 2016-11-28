@@ -3,7 +3,6 @@ module Tests exposing (..)
 import Test exposing (..)
 import Expect
 import Utils exposing (timeAgo)
-
 import KintoTests
 
 

@@ -1,7 +1,7 @@
 module Form exposing (view, Model, init, update, Msg, OutMsg(..))
 
 import Html exposing (..)
-import Html.Attributes exposing (id, for, attribute, class, type', value)
+import Html.Attributes exposing (id, for, attribute, class, type_, value)
 import Html.Events exposing (onInput, onSubmit)
 import String
 
@@ -79,7 +79,7 @@ view model =
                 [ label [ for "title" ] [ text "Title" ]
                 , input
                     [ id "title"
-                    , type' "text"
+                    , type_ "text"
                     , class "form-control"
                     , value model.title
                     , onInput UpdateFormTitle
@@ -97,7 +97,7 @@ view model =
                     []
                 ]
             , div []
-                [ button [ type' "submit", class "btn btn-default" ]
+                [ button [ type_ "submit", class "btn btn-default" ]
                     [ text (formVerb model) ]
                 ]
             ]
