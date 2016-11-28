@@ -47,7 +47,7 @@ type Msg
     | FetchRecords
     | FetchRecordsResponse (Result Kinto.Error Value)
     | FormMsg Form.Msg
-    | CreateRecordResponse (Result Http.Error Record)
+    | CreateRecordResponse (Result Kinto.Error Value)
     | EditRecord RecordId
     | EditRecordResponse (Result Http.Error Record)
     | DeleteRecord RecordId
@@ -157,7 +157,7 @@ update msg model =
                         )
 
                     Just (Form.FormSubmitted data) ->
-                        ( { model | formData = updated }, sendFormData data )
+                        ( { model | formData = updated }, sendFormData model data )
 
         CreateRecordResponse response ->
             case response of
@@ -241,28 +241,34 @@ decodeRecord =
         (field "last_modified" int)
 
 
-sendFormData : Form.Model -> Cmd Msg
-sendFormData formData =
-    -- TODO: handle auth with provided credentials
-    let
-        rootUrl =
-            "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
+sendFormData : Model -> Form.Model -> Cmd Msg
+sendFormData model formData =
+    case formData.id of
+        Nothing ->
+            Kinto.createRecord
+                model.kintoConfig
+                "default"
+                "test-items"
+                (encodeFormData formData)
+                CreateRecordResponse
 
-        ( method, url, responseMsg ) =
-            case formData.id of
-                Nothing ->
-                    ( HttpBuilder.post, rootUrl, CreateRecordResponse )
+        Just id ->
+            let
+                rootUrl =
+                    "https://kinto.dev.mozaws.net/v1/buckets/default/collections/test-items/records"
 
-                Just id ->
+                ( method, url, responseMsg ) =
                     ( HttpBuilder.patch, rootUrl ++ "/" ++ id, EditRecordResponse )
 
-        request =
-            method url
-                |> withHeader "Authorization" "Basic dGVzdDp0ZXN0"
-                |> withJsonBody (encodeFormData formData)
-                |> withExpect (Http.expectJson (field "data" decodeRecord))
-    in
-        HttpBuilder.send responseMsg request
+                request =
+                    method url
+                        -- TODO: handle auth with provided credentials
+                        |>
+                            withHeader "Authorization" "Basic dGVzdDp0ZXN0"
+                        |> withJsonBody (encodeFormData formData)
+                        |> withExpect (Http.expectJson (field "data" decodeRecord))
+            in
+                HttpBuilder.send responseMsg request
 
 
 deleteRecord : RecordId -> Cmd Msg

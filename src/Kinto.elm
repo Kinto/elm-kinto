@@ -2,7 +2,8 @@ module Kinto exposing (..)
 
 import Base64
 import Http
-import Json.Decode as Json exposing (field)
+import Json.Decode as Decode exposing (field)
+import Json.Encode as Encode
 import String
 import Task exposing (Task)
 
@@ -61,6 +62,15 @@ type Endpoint
     | CollectionEndpoint BucketName CollectionName
     | RecordListEndpoint BucketName CollectionName
     | RecordEndpoint BucketName CollectionName RecordId
+
+
+type alias Body =
+    Encode.Value
+
+
+type Request
+    = KintoRequest Config Endpoint Method
+    | KintoRequestWithBody Config Endpoint Method Body
 
 
 type alias Config =
@@ -137,23 +147,35 @@ endpointUrl config endpoint =
                 joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
-kintoRequest : Config -> Endpoint -> Method -> Http.Request Json.Value
-kintoRequest config endpoint method =
-    Http.request
-        { method = method
-        , headers = headersFromConfig config
-        , url = endpointUrl config endpoint
-        , body = Http.emptyBody
-        , expect = Http.expectJson bodyDataDecoder
-        , timeout = Nothing
-        , withCredentials = False
-        }
+fromRequest : Request -> Http.Request Encode.Value
+fromRequest request =
+    case request of
+        KintoRequest config endpoint method ->
+            Http.request
+                { method = method
+                , headers = headersFromConfig config
+                , url = endpointUrl config endpoint
+                , body = Http.emptyBody
+                , expect = Http.expectJson bodyDataDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
+
+        KintoRequestWithBody config endpoint method body ->
+            Http.request
+                { method = method
+                , headers = headersFromConfig config
+                , url = endpointUrl config endpoint
+                , body = Http.jsonBody body
+                , expect = Http.expectJson bodyDataDecoder
+                , timeout = Nothing
+                , withCredentials = False
+                }
 
 
-performQuery : Config -> Endpoint -> Method -> (Result Error Json.Value -> msg) -> Cmd msg
-performQuery config endpoint method toMsg =
-    kintoRequest config endpoint method
-        |> Http.send (toKintoResponse >> toMsg)
+performQuery : Request -> (Result Error Decode.Value -> msg) -> Cmd msg
+performQuery request toMsg =
+    Http.send (toKintoResponse >> toMsg) (fromRequest request)
 
 
 withHeader : String -> String -> Config -> Config
@@ -199,21 +221,21 @@ configure baseUrl auth =
 -- Dealing with answers from the Kinto server
 
 
-bodyDataDecoder : Json.Decoder Json.Value
+bodyDataDecoder : Decode.Decoder Decode.Value
 bodyDataDecoder =
-    (field "data" Json.value)
+    (field "data" Decode.value)
 
 
-errorDecoder : Json.Decoder ErrorRecord
+errorDecoder : Decode.Decoder ErrorRecord
 errorDecoder =
-    Json.map4 ErrorRecord
-        (field "errno" Json.int)
-        (field "message" Json.string)
-        (field "code" Json.int)
-        (field "error" Json.string)
+    Decode.map4 ErrorRecord
+        (field "errno" Decode.int)
+        (field "message" Decode.string)
+        (field "code" Decode.int)
+        (field "error" Decode.string)
 
 
-toKintoResponse : Result Http.Error Json.Value -> Result Error Json.Value
+toKintoResponse : Result Http.Error Decode.Value -> Result Error Decode.Value
 toKintoResponse response =
     response
         |> Result.mapError extractError
@@ -241,7 +263,7 @@ extractError error =
 
 extractKintoError : StatusCode -> StatusMsg -> String -> Error
 extractKintoError statusCode statusMsg body =
-    case Json.decodeString errorDecoder body of
+    case Decode.decodeString errorDecoder body of
         Ok errRecord ->
             KintoError statusCode statusMsg errRecord
 
@@ -254,43 +276,43 @@ extractKintoError statusCode statusMsg body =
 -- GET
 
 
-getBucketList : Config -> (Result Error Json.Value -> msg) -> Cmd msg
-getBucketList config =
-    performQuery config BucketListEndpoint "GET"
+getBucketList : Config -> (Result Error Decode.Value -> msg) -> Cmd msg
+getBucketList config toMsg =
+    performQuery (KintoRequest config BucketListEndpoint "GET") toMsg
 
 
-getBucket : Config -> BucketName -> (Result Error Json.Value -> msg) -> Cmd msg
-getBucket config bucket =
-    performQuery config (BucketEndpoint bucket) "GET"
+getBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
+getBucket config bucket toMsg =
+    performQuery (KintoRequest config (BucketEndpoint bucket) "GET") toMsg
 
 
 getCollectionList :
     Config
     -> BucketName
-    -> (Result Error Json.Value -> msg)
+    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getCollectionList config bucket =
-    performQuery config (CollectionListEndpoint bucket) "GET"
+getCollectionList config bucket toMsg =
+    performQuery (KintoRequest config (CollectionListEndpoint bucket) "GET") toMsg
 
 
 getCollection :
     Config
     -> BucketName
     -> CollectionName
-    -> (Result Error Json.Value -> msg)
+    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getCollection config bucket collection =
-    performQuery config (CollectionEndpoint bucket collection) "GET"
+getCollection config bucket collection toMsg =
+    performQuery (KintoRequest config (CollectionEndpoint bucket collection) "GET") toMsg
 
 
 getRecordList :
     Config
     -> BucketName
     -> CollectionName
-    -> (Result Error Json.Value -> msg)
+    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
 getRecordList config bucket collection toMsg =
-    performQuery config (RecordListEndpoint bucket collection) "GET" toMsg
+    performQuery (KintoRequest config (RecordListEndpoint bucket collection) "GET") toMsg
 
 
 getRecord :
@@ -298,11 +320,64 @@ getRecord :
     -> BucketName
     -> CollectionName
     -> RecordId
-    -> (Result Error Json.Value -> msg)
+    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
 getRecord config bucket collection recordId toMsg =
     performQuery
-        config
-        (RecordEndpoint bucket collection recordId)
-        "GET"
+        (KintoRequest
+            config
+            (RecordEndpoint bucket collection recordId)
+            "GET"
+        )
+        toMsg
+
+
+
+-- CREATE
+
+
+createBucket : Config -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
+createBucket config body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            BucketListEndpoint
+            "POST"
+            body
+        )
+        toMsg
+
+
+createCollection :
+    Config
+    -> BucketName
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+createCollection config bucket body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (CollectionListEndpoint bucket)
+            "POST"
+            body
+        )
+        toMsg
+
+
+createRecord :
+    Config
+    -> BucketName
+    -> CollectionName
+    -> Body
+    -> (Result Error Decode.Value -> msg)
+    -> Cmd msg
+createRecord config bucket collection body toMsg =
+    performQuery
+        (KintoRequestWithBody
+            config
+            (RecordListEndpoint bucket collection)
+            "POST"
+            body
+        )
         toMsg
