@@ -538,14 +538,23 @@ deleteRecord toMsg config bucket collection recordId =
 -- New API experiment
 
 
+withDecoder :
+    Decode.Decoder a
+    -> HttpBuilder.RequestBuilder b
+    -> HttpBuilder.RequestBuilder a
+withDecoder decoder builder =
+    builder
+        |> HttpBuilder.withExpect (Http.expectJson decoder)
+
+
 send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
 send tagger builder =
     builder
         |> HttpBuilder.send (toKintoResponse >> tagger)
 
 
-get : Config -> Endpoint -> HttpBuilder.RequestBuilder ()
-get config endpoint =
+get : Endpoint -> Config -> HttpBuilder.RequestBuilder ()
+get endpoint config =
     HttpBuilder.get (endpointUrl config endpoint)
         |> HttpBuilder.withHeaders [ (authFromConfig config.auth) ]
 

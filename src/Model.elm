@@ -210,8 +210,9 @@ subscriptions model =
 
 fetchRecord : Model -> RecordId -> Cmd Msg
 fetchRecord model recordId =
-    Kinto.get model.kintoConfig (Kinto.RecordEndpoint "default" "test-items" recordId)
-        |> HttpBuilder.withExpect (Http.expectJson decodeRecordNew)
+    model.kintoConfig
+        |> Kinto.get (Kinto.RecordEndpoint "default" "test-items" recordId)
+        |> Kinto.withDecoder decodeRecordNew
         |> Kinto.send FetchRecordResponse
 
 
