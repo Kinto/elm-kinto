@@ -3,7 +3,7 @@ module Model exposing (..)
 import Task
 import Time exposing (Time, second)
 import HttpBuilder exposing (withJsonBody, withHeader, withExpect)
-import Json.Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
+import Json.Decode as Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
 import Json.Encode as Encode
 import Form
 import Dict
@@ -45,19 +45,19 @@ type Msg
     | Tick Time
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
-    | FetchRecordsResponse (Result Kinto.Error Value)
+    | FetchRecordsResponse (Result Kinto.Error (List Record))
     | FormMsg Form.Msg
-    | CreateRecordResponse (Result Kinto.Error Value)
+    | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
-    | EditRecordResponse (Result Kinto.Error Value)
+    | EditRecordResponse (Result Kinto.Error Record)
     | DeleteRecord RecordId
-    | DeleteRecordResponse (Result Kinto.Error Value)
+    | DeleteRecordResponse (Result Kinto.Error Record)
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecords initialModel ]
+    , Cmd.batch [ fetchRecords ]
     )
 
 
@@ -67,13 +67,18 @@ config =
         (Kinto.Basic "test" "test")
 
 
-resourceConfig =
+recordConfig recordId =
     Kinto.configureResource
         "https://kinto.dev.mozaws.net/v1/"
+        (Kinto.RecordEndpoint "default" "test-items" recordId)
         (Kinto.Basic "test" "test")
-        "default"
-        "test-items"
-        decodeRecordNew
+
+
+recordListConfig =
+    Kinto.configureResource
+        "https://kinto.dev.mozaws.net/v1/"
+        (Kinto.RecordListEndpoint "default" "test-items")
+        (Kinto.Basic "test" "test")
 
 
 initialModel : Model
@@ -104,7 +109,7 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = Dict.empty, error = Nothing }, fetchRecords model )
+            ( { model | records = Dict.empty, error = Nothing }, fetchRecords )
 
         FetchRecordResponse response ->
             case response of
@@ -121,30 +126,21 @@ update msg model =
 
         FetchRecordsResponse response ->
             case response of
-                Ok data ->
+                Ok recordList ->
                     let
                         recordsToDict records =
                             List.map (\r -> ( r.id, r )) records
                                 |> Dict.fromList
                     in
-                        case (decodeValue decodeRecords data) of
-                            Err msg ->
-                                ( { model | error = Just msg }, Cmd.none )
-
-                            Ok recordList ->
-                                ( { model
-                                    | records = recordsToDict recordList
-                                    , error = Nothing
-                                  }
-                                , Cmd.none
-                                )
+                        ( { model
+                            | records = recordsToDict recordList
+                            , error = Nothing
+                          }
+                        , Cmd.none
+                        )
 
                 Err error ->
-                    let
-                        _ =
-                            Debug.log "FetchRecordsResponse failed:" error
-                    in
-                        ( model, Cmd.none )
+                    ( { model | error = Just <| toString error }, Cmd.none )
 
         FormMsg subMsg ->
             let
@@ -166,10 +162,10 @@ update msg model =
         CreateRecordResponse response ->
             case response of
                 Ok _ ->
-                    ( { model | formData = Form.init }, fetchRecords model )
+                    ( { model | formData = Form.init }, fetchRecords )
 
-                Err err ->
-                    ( { model | error = Just (toString err) }, Cmd.none )
+                Err error ->
+                    ( { model | error = Just <| toString error }, Cmd.none )
 
         EditRecord recordId ->
             ( model, fetchRecord recordId )
@@ -177,31 +173,26 @@ update msg model =
         EditRecordResponse response ->
             case response of
                 Ok _ ->
-                    ( model, fetchRecords model )
+                    ( model, fetchRecords )
 
                 Err err ->
-                    ( { model | error = Just (toString err) }, Cmd.none )
+                    ( { model | error = Just <| toString err }, Cmd.none )
 
         DeleteRecord recordId ->
-            ( model, deleteRecord model recordId )
+            ( model, deleteRecord recordId )
 
         DeleteRecordResponse response ->
             case response of
-                Ok data ->
-                    case (decodeValue decodeRecord data) of
-                        Err msg ->
-                            ( { model | error = Just msg }, Cmd.none )
-
-                        Ok record ->
-                            ( { model
-                                | records = removeRecordFromList record model.records
-                                , error = Nothing
-                              }
-                            , fetchRecords model
-                            )
+                Ok record ->
+                    ( { model
+                        | records = removeRecordFromList record model.records
+                        , error = Nothing
+                      }
+                    , fetchRecords
+                    )
 
                 Err err ->
-                    ( { model | error = Just (toString err) }, Cmd.none )
+                    ( { model | error = Just <| toString err }, Cmd.none )
 
 
 
@@ -219,18 +210,31 @@ subscriptions model =
 
 fetchRecord : RecordId -> Cmd Msg
 fetchRecord recordId =
-    resourceConfig
-        |> Kinto.get recordId
+    recordConfig recordId
+        |> Kinto.get
+        |> Kinto.withDecoder (decodeData decodeRecord)
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecords : Model -> Cmd Msg
-fetchRecords model =
-    Kinto.getRecordList
-        FetchRecordsResponse
-        model.kintoConfig
-        "default"
-        "test-items"
+fetchRecords : Cmd Msg
+fetchRecords =
+    recordListConfig
+        |> Kinto.get
+        |> Kinto.withDecoder (decodeData decodeRecords)
+        |> Kinto.send FetchRecordsResponse
+
+
+deleteRecord : RecordId -> Cmd Msg
+deleteRecord recordId =
+    recordConfig recordId
+        |> Kinto.delete
+        |> Kinto.withDecoder (decodeData decodeRecord)
+        |> Kinto.send DeleteRecordResponse
+
+
+decodeData : Decoder a -> Decoder a
+decodeData decoder =
+    field "data" decoder
 
 
 decodeRecords : Decoder (List Record)
@@ -240,22 +244,11 @@ decodeRecords =
 
 decodeRecord : Decoder Record
 decodeRecord =
-    map4 Record
+    (map4 Record
         (field "id" string)
         (maybe (field "title" string))
         (maybe (field "description" string))
         (field "last_modified" int)
-
-
-decodeRecordNew : Decoder Record
-decodeRecordNew =
-    (field "data"
-        (map4 Record
-            (field "id" string)
-            (maybe (field "title" string))
-            (maybe (field "description" string))
-            (field "last_modified" int)
-        )
     )
 
 
@@ -267,31 +260,16 @@ sendFormData model formData =
     in
         case formData.id of
             Nothing ->
-                Kinto.createRecord
-                    CreateRecordResponse
-                    model.kintoConfig
-                    "default"
-                    "test-items"
-                    data
+                recordListConfig
+                    |> Kinto.create data
+                    |> Kinto.withDecoder (decodeData decodeRecord)
+                    |> Kinto.send CreateRecordResponse
 
             Just recordId ->
-                Kinto.updateRecord
-                    EditRecordResponse
-                    model.kintoConfig
-                    "default"
-                    "test-items"
-                    recordId
-                    data
-
-
-deleteRecord : Model -> RecordId -> Cmd Msg
-deleteRecord model recordId =
-    Kinto.deleteRecord
-        DeleteRecordResponse
-        model.kintoConfig
-        "default"
-        "test-items"
-        recordId
+                recordConfig recordId
+                    |> Kinto.update data
+                    |> Kinto.withDecoder (decodeData decodeRecord)
+                    |> Kinto.send EditRecordResponse
 
 
 encodeFormData : Form.Model -> Encode.Value

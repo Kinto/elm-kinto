@@ -221,4 +221,4 @@ Body received from server: Some bad payload"""
 endpointTest : ( String, Endpoint ) -> Test
 endpointTest ( expected, endpoint ) =
     test (toString endpoint) <|
-        \() -> Expect.equal expected (endpointUrl config endpoint)
+        \() -> Expect.equal expected (endpointUrl config.baseUrl endpoint)

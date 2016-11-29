@@ -81,12 +81,10 @@ type alias Config =
     }
 
 
-type alias ResourceConfig a =
+type alias ResourceConfig =
     { baseUrl : String
+    , endpoint : Endpoint
     , headers : List ( String, String )
-    , bucket : BucketName
-    , collection : CollectionName
-    , recordDecoder : Decode.Decoder a
     }
 
 
@@ -553,13 +551,47 @@ send tagger builder =
         |> HttpBuilder.send (toKintoResponse >> tagger)
 
 
-get : RecordId -> ResourceConfig a -> HttpBuilder.RequestBuilder a
-get recordId config =
-    RecordEndpoint config.bucket config.collection recordId
-        |> endpointUrl config.baseUrl
+get : ResourceConfig -> HttpBuilder.RequestBuilder Decode.Value
+get config =
+    endpointUrl config.baseUrl config.endpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders config.headers
-        |> HttpBuilder.withExpect (Http.expectJson config.recordDecoder)
+        |> HttpBuilder.withExpect (Http.expectJson Decode.value)
+
+
+delete : ResourceConfig -> HttpBuilder.RequestBuilder Decode.Value
+delete config =
+    endpointUrl config.baseUrl config.endpoint
+        |> HttpBuilder.delete
+        |> HttpBuilder.withHeaders config.headers
+        |> HttpBuilder.withExpect (Http.expectJson Decode.value)
+
+
+create : Body -> ResourceConfig -> HttpBuilder.RequestBuilder Decode.Value
+create body config =
+    endpointUrl config.baseUrl config.endpoint
+        |> HttpBuilder.post
+        |> HttpBuilder.withHeaders config.headers
+        |> HttpBuilder.withJsonBody body
+        |> HttpBuilder.withExpect (Http.expectJson Decode.value)
+
+
+update : Body -> ResourceConfig -> HttpBuilder.RequestBuilder Decode.Value
+update body config =
+    endpointUrl config.baseUrl config.endpoint
+        |> HttpBuilder.patch
+        |> HttpBuilder.withHeaders config.headers
+        |> HttpBuilder.withJsonBody body
+        |> HttpBuilder.withExpect (Http.expectJson Decode.value)
+
+
+withDecoder :
+    Decode.Decoder a
+    -> HttpBuilder.RequestBuilder b
+    -> HttpBuilder.RequestBuilder a
+withDecoder decoder builder =
+    builder
+        |> HttpBuilder.withExpect (Http.expectJson decoder)
 
 
 authFromConfig : Auth -> ( String, String )
@@ -579,10 +611,8 @@ authFromConfig auth =
 
 configureResource :
     Url
+    -> Endpoint
     -> Auth
-    -> BucketName
-    -> CollectionName
-    -> Decode.Decoder a
-    -> ResourceConfig a
-configureResource baseUrl auth bucket collection decoder =
-    ResourceConfig baseUrl [ (authFromConfig auth) ] bucket collection decoder
+    -> ResourceConfig
+configureResource baseUrl endpoint auth =
+    ResourceConfig baseUrl endpoint [ (authFromConfig auth) ]
