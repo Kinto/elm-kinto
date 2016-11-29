@@ -67,6 +67,15 @@ config =
         (Kinto.Basic "test" "test")
 
 
+resourceConfig =
+    Kinto.configureResource
+        "https://kinto.dev.mozaws.net/v1/"
+        (Kinto.Basic "test" "test")
+        "default"
+        "test-items"
+        decodeRecordNew
+
+
 initialModel : Model
 initialModel =
     { error = Nothing
@@ -163,7 +172,7 @@ update msg model =
                     ( { model | error = Just (toString err) }, Cmd.none )
 
         EditRecord recordId ->
-            ( model, fetchRecord model recordId )
+            ( model, fetchRecord recordId )
 
         EditRecordResponse response ->
             case response of
@@ -208,11 +217,10 @@ subscriptions model =
 -- HTTP
 
 
-fetchRecord : Model -> RecordId -> Cmd Msg
-fetchRecord model recordId =
-    model.kintoConfig
-        |> Kinto.get (Kinto.RecordEndpoint "default" "test-items" recordId)
-        |> Kinto.withDecoder decodeRecordNew
+fetchRecord : RecordId -> Cmd Msg
+fetchRecord recordId =
+    resourceConfig
+        |> Kinto.get recordId
         |> Kinto.send FetchRecordResponse
 
 

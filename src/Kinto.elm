@@ -81,6 +81,15 @@ type alias Config =
     }
 
 
+type alias ResourceConfig a =
+    { baseUrl : String
+    , headers : List ( String, String )
+    , bucket : BucketName
+    , collection : CollectionName
+    , recordDecoder : Decode.Decoder a
+    }
+
+
 
 -- Kinto errors
 
@@ -111,14 +120,14 @@ type Error
 -- Making requests
 
 
-endpointUrl : Config -> Endpoint -> Url
-endpointUrl config endpoint =
+endpointUrl : String -> Endpoint -> Url
+endpointUrl baseUrl endpoint =
     let
-        baseUrl =
-            if String.endsWith "/" config.baseUrl then
-                String.dropRight 1 config.baseUrl
+        url =
+            if String.endsWith "/" baseUrl then
+                String.dropRight 1 baseUrl
             else
-                config.baseUrl
+                baseUrl
 
         joinUrl =
             String.join "/"
@@ -127,25 +136,25 @@ endpointUrl config endpoint =
             RootEndpoint ->
                 -- Otherwise Kinto returns a 307
                 -- See https://github.com/Kinto/kinto/issues/852
-                baseUrl ++ "/"
+                url ++ "/"
 
             BucketListEndpoint ->
-                joinUrl [ baseUrl, "buckets" ]
+                joinUrl [ url, "buckets" ]
 
             BucketEndpoint bucketName ->
-                joinUrl [ baseUrl, "buckets", bucketName ]
+                joinUrl [ url, "buckets", bucketName ]
 
             CollectionListEndpoint bucketName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections" ]
+                joinUrl [ url, "buckets", bucketName, "collections" ]
 
             CollectionEndpoint bucketName collectionName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName ]
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName ]
 
             RecordListEndpoint bucketName collectionName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records" ]
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records" ]
 
             RecordEndpoint bucketName collectionName recordId ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
 fromRequest : Request -> Http.Request Encode.Value
@@ -162,7 +171,7 @@ fromRequest request =
         Http.request
             { method = method
             , headers = headersFromConfig config
-            , url = endpointUrl config endpoint
+            , url = endpointUrl config.baseUrl endpoint
             , body = body
             , expect = Http.expectJson bodyDataDecoder
             , timeout = Nothing
@@ -538,25 +547,19 @@ deleteRecord toMsg config bucket collection recordId =
 -- New API experiment
 
 
-withDecoder :
-    Decode.Decoder a
-    -> HttpBuilder.RequestBuilder b
-    -> HttpBuilder.RequestBuilder a
-withDecoder decoder builder =
-    builder
-        |> HttpBuilder.withExpect (Http.expectJson decoder)
-
-
 send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
 send tagger builder =
     builder
         |> HttpBuilder.send (toKintoResponse >> tagger)
 
 
-get : Endpoint -> Config -> HttpBuilder.RequestBuilder ()
-get endpoint config =
-    HttpBuilder.get (endpointUrl config endpoint)
-        |> HttpBuilder.withHeaders [ (authFromConfig config.auth) ]
+get : RecordId -> ResourceConfig a -> HttpBuilder.RequestBuilder a
+get recordId config =
+    RecordEndpoint config.bucket config.collection recordId
+        |> endpointUrl config.baseUrl
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders config.headers
+        |> HttpBuilder.withExpect (Http.expectJson config.recordDecoder)
 
 
 authFromConfig : Auth -> ( String, String )
@@ -572,3 +575,14 @@ authFromConfig auth =
 
         Bearer token ->
             ( "Authorization", ("Bearer " ++ token) )
+
+
+configureResource :
+    Url
+    -> Auth
+    -> BucketName
+    -> CollectionName
+    -> Decode.Decoder a
+    -> ResourceConfig a
+configureResource baseUrl auth bucket collection decoder =
+    ResourceConfig baseUrl [ (authFromConfig auth) ] bucket collection decoder
