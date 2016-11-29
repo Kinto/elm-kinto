@@ -149,28 +149,24 @@ endpointUrl config endpoint =
 
 fromRequest : Request -> Http.Request Encode.Value
 fromRequest request =
-    case request of
-        KintoRequest config endpoint method ->
-            Http.request
-                { method = method
-                , headers = headersFromConfig config
-                , url = endpointUrl config endpoint
-                , body = Http.emptyBody
-                , expect = Http.expectJson bodyDataDecoder
-                , timeout = Nothing
-                , withCredentials = False
-                }
+    let
+        ( config, endpoint, method, body ) =
+            case request of
+                KintoRequest config endpoint method ->
+                    ( config, endpoint, method, Http.emptyBody )
 
-        KintoRequestWithBody config endpoint method body ->
-            Http.request
-                { method = method
-                , headers = headersFromConfig config
-                , url = endpointUrl config endpoint
-                , body = Http.jsonBody body
-                , expect = Http.expectJson bodyDataDecoder
-                , timeout = Nothing
-                , withCredentials = False
-                }
+                KintoRequestWithBody config endpoint method body ->
+                    ( config, endpoint, method, Http.jsonBody body )
+    in
+        Http.request
+            { method = method
+            , headers = headersFromConfig config
+            , url = endpointUrl config endpoint
+            , body = body
+            , expect = Http.expectJson bodyDataDecoder
+            , timeout = Nothing
+            , withCredentials = False
+            }
 
 
 performQuery : Request -> (Result Error Decode.Value -> msg) -> Cmd msg
