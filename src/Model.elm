@@ -216,20 +216,20 @@ subscriptions model =
 fetchRecord : Model -> RecordId -> Cmd Msg
 fetchRecord model recordId =
     Kinto.getRecord
+        FetchRecordResponse
         model.kintoConfig
         "default"
         "test-items"
         recordId
-        FetchRecordResponse
 
 
 fetchRecords : Model -> Cmd Msg
 fetchRecords model =
     Kinto.getRecordList
+        FetchRecordsResponse
         model.kintoConfig
         "default"
         "test-items"
-        FetchRecordsResponse
 
 
 decodeRecords : Decoder (List Record)
@@ -255,30 +255,30 @@ sendFormData model formData =
         case formData.id of
             Nothing ->
                 Kinto.createRecord
+                    CreateRecordResponse
                     model.kintoConfig
                     "default"
                     "test-items"
                     data
-                    CreateRecordResponse
 
             Just recordId ->
                 Kinto.updateRecord
+                    EditRecordResponse
                     model.kintoConfig
                     "default"
                     "test-items"
                     recordId
                     data
-                    EditRecordResponse
 
 
 deleteRecord : Model -> RecordId -> Cmd Msg
 deleteRecord model recordId =
     Kinto.deleteRecord
+        DeleteRecordResponse
         model.kintoConfig
         "default"
         "test-items"
         recordId
-        DeleteRecordResponse
 
 
 encodeFormData : Form.Model -> Encode.Value

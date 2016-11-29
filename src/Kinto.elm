@@ -169,8 +169,8 @@ fromRequest request =
             }
 
 
-performQuery : Request -> (Result Error Decode.Value -> msg) -> Cmd msg
-performQuery request toMsg =
+performQuery : (Result Error Decode.Value -> msg) -> Request -> Cmd msg
+performQuery toMsg request =
     Http.send (toKintoResponse >> toMsg) (fromRequest request)
 
 
@@ -272,262 +272,262 @@ extractKintoError statusCode statusMsg body =
 -- GET
 
 
-getBucketList : Config -> (Result Error Decode.Value -> msg) -> Cmd msg
-getBucketList config toMsg =
-    performQuery (KintoRequest config BucketListEndpoint "GET") toMsg
+getBucketList : (Result Error Decode.Value -> msg) -> Config -> Cmd msg
+getBucketList toMsg config =
+    performQuery toMsg (KintoRequest config BucketListEndpoint "GET")
 
 
-getBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
-getBucket config bucket toMsg =
-    performQuery (KintoRequest config (BucketEndpoint bucket) "GET") toMsg
+getBucket : (Result Error Decode.Value -> msg) -> Config -> BucketName -> Cmd msg
+getBucket toMsg config bucket =
+    performQuery toMsg (KintoRequest config (BucketEndpoint bucket) "GET")
 
 
 getCollectionList :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getCollectionList config bucket toMsg =
-    performQuery (KintoRequest config (CollectionListEndpoint bucket) "GET") toMsg
+getCollectionList toMsg config bucket =
+    performQuery toMsg (KintoRequest config (CollectionListEndpoint bucket) "GET")
 
 
 getCollection :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getCollection config bucket collection toMsg =
-    performQuery (KintoRequest config (CollectionEndpoint bucket collection) "GET") toMsg
+getCollection toMsg config bucket collection =
+    performQuery toMsg (KintoRequest config (CollectionEndpoint bucket collection) "GET")
 
 
 getRecordList :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getRecordList config bucket collection toMsg =
-    performQuery (KintoRequest config (RecordListEndpoint bucket collection) "GET") toMsg
+getRecordList toMsg config bucket collection =
+    performQuery toMsg (KintoRequest config (RecordListEndpoint bucket collection) "GET")
 
 
 getRecord :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> RecordId
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-getRecord config bucket collection recordId toMsg =
+getRecord toMsg config bucket collection recordId =
     performQuery
+        toMsg
         (KintoRequest
             config
             (RecordEndpoint bucket collection recordId)
             "GET"
         )
-        toMsg
 
 
 
 -- CREATE
 
 
-createBucket : Config -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-createBucket config body toMsg =
+createBucket : (Result Error Decode.Value -> msg) -> Config -> Body -> Cmd msg
+createBucket toMsg config body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             BucketListEndpoint
             "POST"
             body
         )
-        toMsg
 
 
 createCollection :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-createCollection config bucket body toMsg =
+createCollection toMsg config bucket body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (CollectionListEndpoint bucket)
             "POST"
             body
         )
-        toMsg
 
 
 createRecord :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-createRecord config bucket collection body toMsg =
+createRecord toMsg config bucket collection body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (RecordListEndpoint bucket collection)
             "POST"
             body
         )
-        toMsg
 
 
 
 -- UPDATE
 
 
-updateBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-updateBucket config bucket body toMsg =
+updateBucket : (Result Error Decode.Value -> msg) -> Config -> BucketName -> Body -> Cmd msg
+updateBucket toMsg config bucket body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (BucketEndpoint bucket)
             "PATCH"
             body
         )
-        toMsg
 
 
 updateCollection :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-updateCollection config bucket collection body toMsg =
+updateCollection toMsg config bucket collection body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (CollectionEndpoint bucket collection)
             "PATCH"
             body
         )
-        toMsg
 
 
 updateRecord :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> RecordId
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-updateRecord config bucket collection recordId body toMsg =
+updateRecord toMsg config bucket collection recordId body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (RecordEndpoint bucket collection recordId)
             "PATCH"
             body
         )
-        toMsg
 
 
 
 -- REPLACE
 
 
-replaceBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-replaceBucket config bucket body toMsg =
+replaceBucket : (Result Error Decode.Value -> msg) -> Config -> BucketName -> Body -> Cmd msg
+replaceBucket toMsg config bucket body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (BucketEndpoint bucket)
             "PUT"
             body
         )
-        toMsg
 
 
 replaceCollection :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-replaceCollection config bucket collection body toMsg =
+replaceCollection toMsg config bucket collection body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (CollectionEndpoint bucket collection)
             "PUT"
             body
         )
-        toMsg
 
 
 replaceRecord :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> RecordId
     -> Body
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-replaceRecord config bucket collection recordId body toMsg =
+replaceRecord toMsg config bucket collection recordId body =
     performQuery
+        toMsg
         (KintoRequestWithBody
             config
             (RecordEndpoint bucket collection recordId)
             "PUT"
             body
         )
-        toMsg
 
 
 
 -- DELETE
 
 
-deleteBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
-deleteBucket config bucket toMsg =
+deleteBucket : (Result Error Decode.Value -> msg) -> Config -> BucketName -> Cmd msg
+deleteBucket toMsg config bucket =
     performQuery
+        toMsg
         (KintoRequest
             config
             (BucketEndpoint bucket)
             "DELETE"
         )
-        toMsg
 
 
 deleteCollection :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-deleteCollection config bucket collection toMsg =
+deleteCollection toMsg config bucket collection =
     performQuery
+        toMsg
         (KintoRequest
             config
             (CollectionEndpoint bucket collection)
             "DELETE"
         )
-        toMsg
 
 
 deleteRecord :
-    Config
+    (Result Error Decode.Value -> msg)
+    -> Config
     -> BucketName
     -> CollectionName
     -> RecordId
-    -> (Result Error Decode.Value -> msg)
     -> Cmd msg
-deleteRecord config bucket collection recordId toMsg =
+deleteRecord toMsg config bucket collection recordId =
     performQuery
+        toMsg
         (KintoRequest
             config
             (RecordEndpoint bucket collection recordId)
             "DELETE"
         )
-        toMsg
