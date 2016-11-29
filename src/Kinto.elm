@@ -2,6 +2,7 @@ module Kinto exposing (..)
 
 import Base64
 import Http
+import HttpBuilder
 import Json.Decode as Decode exposing (field)
 import Json.Encode as Encode
 import String
@@ -231,7 +232,7 @@ errorDecoder =
         (field "error" Decode.string)
 
 
-toKintoResponse : Result Http.Error Decode.Value -> Result Error Decode.Value
+toKintoResponse : Result Http.Error a -> Result Error a
 toKintoResponse response =
     response
         |> Result.mapError extractError
@@ -531,3 +532,34 @@ deleteRecord toMsg config bucket collection recordId =
             (RecordEndpoint bucket collection recordId)
             "DELETE"
         )
+
+
+
+-- New API experiment
+
+
+send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
+send tagger builder =
+    builder
+        |> HttpBuilder.send (toKintoResponse >> tagger)
+
+
+get : Config -> Endpoint -> HttpBuilder.RequestBuilder ()
+get config endpoint =
+    HttpBuilder.get (endpointUrl config endpoint)
+        |> HttpBuilder.withHeaders [ (authFromConfig config.auth) ]
+
+
+authFromConfig : Auth -> ( String, String )
+authFromConfig auth =
+    case auth of
+        NoAuth ->
+            ( "", "" )
+
+        Basic username password ->
+            ( "Authorization"
+            , ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
+            )
+
+        Bearer token ->
+            ( "Authorization", ("Bearer " ++ token) )

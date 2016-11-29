@@ -43,7 +43,7 @@ type alias Model =
 type Msg
     = NoOp
     | Tick Time
-    | FetchRecordResponse (Result Kinto.Error Value)
+    | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
     | FetchRecordsResponse (Result Kinto.Error Value)
     | FormMsg Form.Msg
@@ -99,18 +99,13 @@ update msg model =
 
         FetchRecordResponse response ->
             case response of
-                Ok data ->
-                    case (decodeValue decodeRecord data) of
-                        Err msg ->
-                            ( { model | error = Just msg }, Cmd.none )
-
-                        Ok record ->
-                            ( { model
-                                | formData = recordToFormData record
-                                , error = Nothing
-                              }
-                            , Cmd.none
-                            )
+                Ok record ->
+                    ( { model
+                        | formData = recordToFormData record
+                        , error = Nothing
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
                     ( { model | error = Just <| toString error }, Cmd.none )
@@ -215,12 +210,9 @@ subscriptions model =
 
 fetchRecord : Model -> RecordId -> Cmd Msg
 fetchRecord model recordId =
-    Kinto.getRecord
-        FetchRecordResponse
-        model.kintoConfig
-        "default"
-        "test-items"
-        recordId
+    Kinto.get model.kintoConfig (Kinto.RecordEndpoint "default" "test-items" recordId)
+        |> HttpBuilder.withExpect (Http.expectJson decodeRecordNew)
+        |> Kinto.send FetchRecordResponse
 
 
 fetchRecords : Model -> Cmd Msg
@@ -244,6 +236,18 @@ decodeRecord =
         (maybe (field "title" string))
         (maybe (field "description" string))
         (field "last_modified" int)
+
+
+decodeRecordNew : Decoder Record
+decodeRecordNew =
+    (field "data"
+        (map4 Record
+            (field "id" string)
+            (maybe (field "title" string))
+            (maybe (field "description" string))
+            (field "last_modified" int)
+        )
+    )
 
 
 sendFormData : Model -> Form.Model -> Cmd Msg
