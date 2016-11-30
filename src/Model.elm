@@ -13,6 +13,7 @@ import Kinto
 
 -- TODO:
 -- - Expose only what's necessary
+-- MODEL and TYPES
 
 
 type alias RecordId =
@@ -36,7 +37,6 @@ type alias Model =
     , records : Records
     , formData : Form.Model
     , currentTime : Time
-    , kintoConfig : Kinto.Config
     }
 
 
@@ -61,42 +61,17 @@ init =
     )
 
 
-config =
-    Kinto.configure
-        "https://kinto.dev.mozaws.net/v1/"
-        (Kinto.Basic "test" "test")
-
-
-recordConfig recordId =
-    Kinto.configureResource
-        "https://kinto.dev.mozaws.net/v1/"
-        (Kinto.RecordEndpoint "default" "test-items" recordId)
-        (Kinto.Basic "test" "test")
-
-
-recordListConfig =
-    Kinto.configureResource
-        "https://kinto.dev.mozaws.net/v1/"
-        (Kinto.RecordListEndpoint "default" "test-items")
-        (Kinto.Basic "test" "test")
-
-
 initialModel : Model
 initialModel =
     { error = Nothing
     , records = Dict.empty
     , formData = Form.init
     , currentTime = 0
-    , kintoConfig = config
     }
 
 
-recordToFormData : Record -> Form.Model
-recordToFormData { id, title, description } =
-    Form.Model
-        (Just id)
-        (Maybe.withDefault "" title)
-        (Maybe.withDefault "" description)
+
+-- UPDATE
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -205,71 +180,15 @@ subscriptions model =
 
 
 
--- HTTP
+-- Helpers
 
 
-fetchRecord : RecordId -> Cmd Msg
-fetchRecord recordId =
-    recordConfig recordId
-        |> Kinto.get
-        |> Kinto.withDecoder (decodeData decodeRecord)
-        |> Kinto.send FetchRecordResponse
-
-
-fetchRecords : Cmd Msg
-fetchRecords =
-    recordListConfig
-        |> Kinto.get
-        |> Kinto.withDecoder (decodeData decodeRecords)
-        |> Kinto.send FetchRecordsResponse
-
-
-deleteRecord : RecordId -> Cmd Msg
-deleteRecord recordId =
-    recordConfig recordId
-        |> Kinto.delete
-        |> Kinto.withDecoder (decodeData decodeRecord)
-        |> Kinto.send DeleteRecordResponse
-
-
-decodeData : Decoder a -> Decoder a
-decodeData decoder =
-    field "data" decoder
-
-
-decodeRecords : Decoder (List Record)
-decodeRecords =
-    list decodeRecord
-
-
-decodeRecord : Decoder Record
-decodeRecord =
-    (map4 Record
-        (field "id" string)
-        (maybe (field "title" string))
-        (maybe (field "description" string))
-        (field "last_modified" int)
-    )
-
-
-sendFormData : Model -> Form.Model -> Cmd Msg
-sendFormData model formData =
-    let
-        data =
-            encodeFormData formData
-    in
-        case formData.id of
-            Nothing ->
-                recordListConfig
-                    |> Kinto.create data
-                    |> Kinto.withDecoder (decodeData decodeRecord)
-                    |> Kinto.send CreateRecordResponse
-
-            Just recordId ->
-                recordConfig recordId
-                    |> Kinto.update data
-                    |> Kinto.withDecoder (decodeData decodeRecord)
-                    |> Kinto.send EditRecordResponse
+recordToFormData : Record -> Form.Model
+recordToFormData { id, title, description } =
+    Form.Model
+        (Just id)
+        (Maybe.withDefault "" title)
+        (Maybe.withDefault "" description)
 
 
 encodeFormData : Form.Model -> Encode.Value
@@ -312,3 +231,72 @@ updateRecord formData record =
                     | title = Just formData.title
                     , description = Just formData.description
                 }
+
+
+
+-- Kinto client configuration
+
+
+client : Kinto.Client
+client =
+    Kinto.client
+        "https://kinto.dev.mozaws.net/v1/"
+        (Kinto.Basic "test" "test")
+
+
+recordResource : Kinto.Resource Record
+recordResource =
+    Kinto.recordResource "default" "test-items" decodeRecord
+
+
+decodeRecord : Decoder Record
+decodeRecord =
+    (map4 Record
+        (field "id" string)
+        (maybe (field "title" string))
+        (maybe (field "description" string))
+        (field "last_modified" int)
+    )
+
+
+
+-- Kinto API calls
+
+
+fetchRecord : RecordId -> Cmd Msg
+fetchRecord recordId =
+    client
+        |> Kinto.get recordResource recordId
+        |> Kinto.send FetchRecordResponse
+
+
+fetchRecords : Cmd Msg
+fetchRecords =
+    client
+        |> Kinto.getList recordResource
+        |> Kinto.send FetchRecordsResponse
+
+
+deleteRecord : RecordId -> Cmd Msg
+deleteRecord recordId =
+    client
+        |> Kinto.delete recordResource recordId
+        |> Kinto.send DeleteRecordResponse
+
+
+sendFormData : Model -> Form.Model -> Cmd Msg
+sendFormData model formData =
+    let
+        data =
+            encodeFormData formData
+    in
+        case formData.id of
+            Nothing ->
+                client
+                    |> Kinto.create recordResource data
+                    |> Kinto.send CreateRecordResponse
+
+            Just recordId ->
+                client
+                    |> Kinto.update recordResource recordId data
+                    |> Kinto.send EditRecordResponse

@@ -7,90 +7,56 @@ import Expect
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
-    exposing
-        ( configure
-        , endpointUrl
-        , withHeader
-        , headersFromConfig
-        , Auth(..)
-        , Endpoint(..)
-        , Config
-        )
 
 
-config =
-    configure "http://example.com" NoAuth
-
-
-authConfig =
-    configure "http://example.com" (Basic "user" "pass")
+baseUrl =
+    "http://example.com/"
 
 
 all : Test
 all =
-    describe "Kinto config module"
-        [ describe "addHeader helper"
-            [ test "returns the new header if previously empty" <|
+    describe "Kinto module"
+        [ describe "headersForAuth helper"
+            [ test "returns an empty header for NoAuth" <|
                 \() ->
                     Expect.equal
-                        [ (Http.header "foo" "bar") ]
-                        (config |> withHeader "foo" "bar").headers
-            , test "adds the headers to the previous list of headers" <|
+                        ( "", "" )
+                        (Kinto.headersForAuth Kinto.NoAuth)
+            , test "returns Basic Auth headers for Basic" <|
                 \() ->
                     Expect.equal
-                        [ (Http.header "baz" "crux")
-                        , (Http.header "foo" "bar")
-                        ]
-                        (config
-                            |> withHeader "foo" "bar"
-                            |> withHeader "baz" "crux"
-                        ).headers
-            ]
-        , describe "headersFromConfig helper"
-            [ test "adds the authentication headers to an empty config" <|
+                        ( "Authorization", "Basic Zm9vOmJhcg==" )
+                        (Kinto.headersForAuth (Kinto.Basic "foo" "bar"))
+            , test "returns Bearer Auth headers for Bearer" <|
                 \() ->
                     Expect.equal
-                        [ (Http.header "Authorization" "Basic dXNlcjpwYXNz") ]
-                        (headersFromConfig authConfig)
-            , test "adds the authentication headers to the existing ones" <|
-                \() ->
-                    Expect.equal
-                        [ (Http.header "Authorization" "Basic dXNlcjpwYXNz")
-                        , (Http.header "foo" "bar")
-                        ]
-                        (headersFromConfig (withHeader "foo" "bar" authConfig))
+                        ( "Authorization", "Bearer foobar" )
+                        (Kinto.headersForAuth (Kinto.Bearer "foobar"))
             ]
         , describe "endpointUrl helper"
             (List.map
                 endpointTest
-                [ ( "http://example.com/", RootEndpoint )
+                [ ( "http://example.com/", Kinto.RootEndpoint )
                 , ( "http://example.com/buckets"
-                  , BucketListEndpoint
+                  , Kinto.BucketListEndpoint
                   )
                 , ( "http://example.com/buckets/bucketName"
-                  , BucketEndpoint "bucketName"
+                  , Kinto.BucketEndpoint "bucketName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections"
-                  , CollectionListEndpoint "bucketName"
+                  , Kinto.CollectionListEndpoint "bucketName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName"
-                  , CollectionEndpoint "bucketName" "collectionName"
+                  , Kinto.CollectionEndpoint "bucketName" "collectionName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName/records"
-                  , RecordListEndpoint "bucketName" "collectionName"
+                  , Kinto.RecordListEndpoint "bucketName" "collectionName"
                   )
                 , ( "http://example.com/buckets/bucketName/collections/collectionName/records/record_id"
-                  , RecordEndpoint "bucketName" "collectionName" "record_id"
+                  , Kinto.RecordEndpoint "bucketName" "collectionName" "record_id"
                   )
                 ]
             )
-        , describe "bodyDataDecoder"
-            [ test "Properly decodes a Kinto response" <|
-                \() ->
-                    Expect.equal
-                        (Decode.decodeString Kinto.bodyDataDecoder """{"data": []}""")
-                        (Ok (Encode.list []))
-            ]
         , describe "errorDecoder"
             [ test "Properly decodes a Kinto error" <|
                 \() ->
@@ -218,7 +184,7 @@ Body received from server: Some bad payload"""
         ]
 
 
-endpointTest : ( String, Endpoint ) -> Test
+endpointTest : ( String, Kinto.Endpoint ) -> Test
 endpointTest ( expected, endpoint ) =
     test (toString endpoint) <|
-        \() -> Expect.equal expected (endpointUrl config.baseUrl endpoint)
+        \() -> Expect.equal expected (Kinto.endpointUrl baseUrl endpoint)
