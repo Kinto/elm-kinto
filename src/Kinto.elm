@@ -218,8 +218,8 @@ errorDecoder =
         (field "error" Decode.string)
 
 
-toKintoResponse : Result Http.Error a -> Result Error a
-toKintoResponse response =
+toResponse : Result Http.Error a -> Result Error a
+toResponse response =
     response
         |> Result.mapError extractError
 
@@ -344,7 +344,7 @@ sortBy keys builder =
 send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
 send tagger builder =
     builder
-        |> HttpBuilder.send (toKintoResponse >> tagger)
+        |> HttpBuilder.send (toResponse >> tagger)
 
 
 get : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a

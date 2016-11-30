@@ -76,16 +76,16 @@ all =
                                 "some error"
                         )
             ]
-        , describe "toKintoResponse"
+        , describe "toResponse"
             [ test "Returns the data from the server response" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse (Ok (Encode.list [])))
+                        (Kinto.toResponse (Ok (Encode.list [])))
                         (Ok (Encode.list []))
             , test "Returns a KintoError" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <|
                                 Http.BadStatus
                                     (Http.Response
@@ -113,7 +113,7 @@ all =
             , test "Returns ServerError when we can't decode a KintoError" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <|
                                 Http.BadStatus
                                     (Http.Response
@@ -133,7 +133,7 @@ all =
             , test "Returns a ServerError when we get a bad payload" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <|
                                 Http.BadPayload
                                     "Bad Payload"
@@ -156,7 +156,7 @@ Body received from server: Some bad payload"""
             , test "Returns a NetworkError in case of bad url" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <| Http.BadUrl "bad url")
                         )
                         (Err <|
@@ -165,7 +165,7 @@ Body received from server: Some bad payload"""
             , test "Returns a NetworkError in case of timeout" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <| Http.Timeout)
                         )
                         (Err <|
@@ -174,7 +174,7 @@ Body received from server: Some bad payload"""
             , test "Returns a NetworkError in case of NetworkError" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toKintoResponse
+                        (Kinto.toResponse
                             (Err <| Http.NetworkError)
                         )
                         (Err <|
