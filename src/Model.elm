@@ -274,7 +274,7 @@ fetchRecordList : Cmd Msg
 fetchRecordList =
     client
         |> Kinto.getList recordResource
-        |> Kinto.withFilter (Kinto.LIKE "description" "es")
+        |> Kinto.sortBy [ "title", "description" ]
         |> Kinto.send FetchRecordsResponse
 
 

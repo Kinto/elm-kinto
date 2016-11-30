@@ -325,6 +325,19 @@ withFilter filter builder =
 
 
 
+-- Sorting
+
+
+sortBy :
+    List String
+    -> HttpBuilder.RequestBuilder a
+    -> HttpBuilder.RequestBuilder a
+sortBy keys builder =
+    builder
+        |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
+
+
+
 -- High level API
 
 
