@@ -194,12 +194,8 @@ recordToFormData { id, title, description } =
 encodeFormData : Form.Model -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
-        [ ( "data"
-          , Encode.object
-                [ ( "title", Encode.string title )
-                , ( "description", Encode.string description )
-                ]
-          )
+        [ ( "title", Encode.string title )
+        , ( "description", Encode.string description )
         ]
 
 

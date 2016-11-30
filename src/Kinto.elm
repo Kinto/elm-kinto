@@ -128,6 +128,12 @@ decodeData decoder =
     field "data" decoder
 
 
+encodeData : Encode.Value -> Encode.Value
+encodeData encoder =
+    Encode.object
+        [ ( "data", encoder ) ]
+
+
 
 -- Kinto errors
 
@@ -376,7 +382,7 @@ create resource body client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.post
         |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withJsonBody body
+        |> HttpBuilder.withJsonBody (encodeData body)
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
@@ -385,5 +391,14 @@ update resource itemId body client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.patch
         |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withJsonBody body
+        |> HttpBuilder.withJsonBody (encodeData body)
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
+
+
+replace : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+replace resource itemId body client =
+    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+        |> HttpBuilder.put
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withJsonBody (encodeData body)
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
