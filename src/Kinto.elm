@@ -65,6 +65,19 @@ type Endpoint
     | RecordEndpoint BucketName CollectionName RecordId
 
 
+type Filter
+    = Equal String String
+    | Min String String
+    | Max String String
+    | LT String String
+    | GT String String
+    | IN String (List String)
+    | NOT String String
+    | LIKE String String
+    | SINCE String
+    | BEFORE String
+
+
 type alias Body =
     Encode.Value
 
@@ -75,24 +88,30 @@ type alias Client =
     }
 
 
-type alias ResourceConfig =
-    { baseUrl : String
-    , endpoint : Endpoint
-    , headers : List ( String, String )
-    }
-
-
 type alias Resource a =
-    { itemEndpoint : RecordId -> Endpoint
+    { itemEndpoint : String -> Endpoint
     , listEndpoint : Endpoint
     , itemDecoder : Decode.Decoder a
     , listDecoder : Decode.Decoder (List a)
     }
 
 
-decodeData : Decode.Decoder a -> Decode.Decoder a
-decodeData decoder =
-    field "data" decoder
+bucketResource : Decode.Decoder a -> Resource a
+bucketResource decoder =
+    Resource
+        (BucketEndpoint)
+        (BucketListEndpoint)
+        (decodeData decoder)
+        (decodeData (Decode.list decoder))
+
+
+collectionResource : BucketName -> Decode.Decoder a -> Resource a
+collectionResource bucket decoder =
+    Resource
+        (CollectionEndpoint bucket)
+        (CollectionListEndpoint bucket)
+        (decodeData decoder)
+        (decodeData (Decode.list decoder))
 
 
 recordResource : BucketName -> CollectionName -> Decode.Decoder a -> Resource a
@@ -102,6 +121,11 @@ recordResource bucket collection decoder =
         (RecordListEndpoint bucket collection)
         (decodeData decoder)
         (decodeData (Decode.list decoder))
+
+
+decodeData : Decode.Decoder a -> Decode.Decoder a
+decodeData decoder =
+    field "data" decoder
 
 
 
@@ -231,6 +255,76 @@ extractKintoError statusCode statusMsg body =
 
 
 
+-- Helpers
+
+
+headersForAuth : Auth -> ( String, String )
+headersForAuth auth =
+    case auth of
+        NoAuth ->
+            ( "", "" )
+
+        Basic username password ->
+            ( "Authorization"
+            , ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
+            )
+
+        Bearer token ->
+            ( "Authorization", ("Bearer " ++ token) )
+
+
+client : Url -> Auth -> Client
+client baseUrl auth =
+    Client baseUrl [ (headersForAuth auth) ]
+
+
+
+-- Filtering
+
+
+withFilter :
+    Filter
+    -> HttpBuilder.RequestBuilder a
+    -> HttpBuilder.RequestBuilder a
+withFilter filter builder =
+    let
+        header =
+            case filter of
+                Equal key val ->
+                    ( key, val )
+
+                Min key val ->
+                    ( "min_" ++ key, val )
+
+                Max key val ->
+                    ( "max_" ++ key, val )
+
+                LT key val ->
+                    ( "lt_" ++ key, val )
+
+                GT key val ->
+                    ( "gt_" ++ key, val )
+
+                IN key values ->
+                    ( "in_" ++ key, String.join "," values )
+
+                NOT key val ->
+                    ( "not_" ++ key, val )
+
+                LIKE key val ->
+                    ( "like_" ++ key, val )
+
+                SINCE val ->
+                    ( "_since", val )
+
+                BEFORE val ->
+                    ( "_before", val )
+    in
+        builder
+            |> HttpBuilder.withQueryParams [ header ]
+
+
+
 -- High level API
 
 
@@ -280,23 +374,3 @@ update resource itemId body client =
         |> HttpBuilder.withHeaders client.headers
         |> HttpBuilder.withJsonBody body
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
-
-
-headersForAuth : Auth -> ( String, String )
-headersForAuth auth =
-    case auth of
-        NoAuth ->
-            ( "", "" )
-
-        Basic username password ->
-            ( "Authorization"
-            , ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
-            )
-
-        Bearer token ->
-            ( "Authorization", ("Bearer " ++ token) )
-
-
-client : Url -> Auth -> Client
-client baseUrl auth =
-    Client baseUrl [ (headersForAuth auth) ]

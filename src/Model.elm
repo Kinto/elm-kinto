@@ -57,7 +57,7 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecords ]
+    , Cmd.batch [ fetchRecordList ]
     )
 
 
@@ -84,7 +84,7 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = Dict.empty, error = Nothing }, fetchRecords )
+            ( { model | records = Dict.empty, error = Nothing }, fetchRecordList )
 
         FetchRecordResponse response ->
             case response of
@@ -137,7 +137,7 @@ update msg model =
         CreateRecordResponse response ->
             case response of
                 Ok _ ->
-                    ( { model | formData = Form.init }, fetchRecords )
+                    ( { model | formData = Form.init }, fetchRecordList )
 
                 Err error ->
                     ( { model | error = Just <| toString error }, Cmd.none )
@@ -148,7 +148,7 @@ update msg model =
         EditRecordResponse response ->
             case response of
                 Ok _ ->
-                    ( model, fetchRecords )
+                    ( model, fetchRecordList )
 
                 Err err ->
                     ( { model | error = Just <| toString err }, Cmd.none )
@@ -163,7 +163,7 @@ update msg model =
                         | records = removeRecordFromList record model.records
                         , error = Nothing
                       }
-                    , fetchRecords
+                    , fetchRecordList
                     )
 
                 Err err ->
@@ -270,10 +270,11 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecords : Cmd Msg
-fetchRecords =
+fetchRecordList : Cmd Msg
+fetchRecordList =
     client
         |> Kinto.getList recordResource
+        |> Kinto.withFilter (Kinto.LIKE "description" "es")
         |> Kinto.send FetchRecordsResponse
 
 
