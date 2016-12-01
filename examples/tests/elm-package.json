@@ -1,5 +1,5 @@
 {
-    "version": "0.0.1",
+    "version": "1.0.0",
     "summary": "Kinto client tests",
     "repository": "https://github.com/Kinto/kinto-elm-experiments.git",
     "license": "MPL",

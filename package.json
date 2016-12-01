@@ -1,6 +1,6 @@
 {
   "name": "elm-kinto",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A client to help making requests to a Kinto storage server",
   "scripts": {
     "build": "node_modules/.bin/elm-make src/Kinto.elm",
