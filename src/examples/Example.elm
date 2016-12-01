@@ -1,67 +1,8 @@
-# Kinto Elm Experiments
+module Example exposing (..)
 
-Experimenting with [Elm](elm-lang.org) and [Kinto](http://www.kinto-storage.org/).
-
-## Setup
-
-Node and Elm v0.17 should be installed on your system. Then:
-
-```
-$ npm install
-```
-
-## Development server
-
-```
-$ npm start
-```
-
-Then open [localhost:8000/html/dev.html](http://localhost:8000/html/dev.html).
-
-## Live server
-
-This will recompile and reload your app in the browser evertyme you update a `.elm` file. App is available at [localhost:8000/](http://localhost:8000/).
-
-```
-$ npm run live
-```
-
-## Deploying to gh-pages
-
-```
-$ npm run publish-to-gh-pages
-```
-
-Then result is visible [here](https://Kinto.github.io/kinto-elm-experiments).
-
-## Tests
-
-```
-$ npm test
-```
-
-
-# elm-kinto
-
-[![Build Status](https://travis-ci.org/kinto/kinto-elm-experiments.svg?branch=master)](https://travis-ci.org/kinto/kinto-elm-experiments)
-
-[Kinto](http://www.kinto-storage.org/) client for [elm](http://elm-lang.org/).
-
-**Need help? Join the #kinto channel on the [freenode](https://freenode.net/)
-irc server, or in the
-[kinto-storage Slack](https://slack.kinto-storage.org/)!**
-
-
-> Thanks to @luke_dot_js and his
-> [elm-http-builder](http://package.elm-lang.org/packages/lukewestby/elm-http-builder/)
-> package which this library uses, and which was a huge inspiration for the
-> design (and even for the README ;)
-
-## Example
-
-You can find some full examples in `src/examples`.
-
-```elm
+import Html
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Kinto
 
 
@@ -150,11 +91,59 @@ getTodos =
         |> Kinto.getList recordResource
         |> Kinto.sortBy [ "title", "description" ]
         |> Kinto.send TodosFetched
-```
 
-## Contributing
 
-We're happy to receive any feedback and ideas for about additional features.
-Any input and pull requests are very welcome and encouraged. If you'd like to
-help or have ideas, get in touch with us on irc, slack, email, github or any
-other mean listed on the [kinto webpage](http://www.kinto-storage.org/)!
+
+-- Tie it all together
+
+
+type alias Model =
+    { todos : List Todo
+    , title : Maybe String
+    , description : Maybe String
+    , error : Maybe String
+    }
+
+
+init : ( Model, Cmd Msg )
+init =
+    Model [] Nothing Nothing Nothing
+        ! [ addTodo (Just "test") (Just "description")
+          , getTodos
+          ]
+
+
+type Msg
+    = TodoAdded (Result Kinto.Error Todo)
+    | TodosFetched (Result Kinto.Error (List Todo))
+
+
+view : Model -> Html.Html Msg
+view model =
+    Html.text <| toString model.todos
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update message model =
+    case message of
+        TodoAdded (Ok todo) ->
+            { model | error = Nothing } ! []
+
+        TodoAdded (Err error) ->
+            { model | error = Just <| toString error } ! []
+
+        TodosFetched (Ok todoList) ->
+            { model | error = Nothing, todos = todoList } ! []
+
+        TodosFetched (Err error) ->
+            { model | error = Just <| toString error } ! []
+
+
+main : Program Never Model Msg
+main =
+    Html.program
+        { init = init
+        , update = update
+        , subscriptions = always Sub.none
+        , view = view
+        }
