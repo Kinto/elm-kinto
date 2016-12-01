@@ -3,17 +3,11 @@ module Kinto exposing (..)
 import Base64
 import Http
 import HttpBuilder
-import Json.Decode as Decode exposing (field)
+import Json.Decode as Decode
 import Json.Encode as Encode
-import String
-import Task exposing (Task)
 
 
 type alias Url =
-    String
-
-
-type alias Method =
     String
 
 
@@ -125,7 +119,7 @@ recordResource bucket collection decoder =
 
 decodeData : Decode.Decoder a -> Decode.Decoder a
 decodeData decoder =
-    field "data" decoder
+    Decode.field "data" decoder
 
 
 encodeData : Encode.Value -> Encode.Value
@@ -218,10 +212,10 @@ alwaysEncode string =
 errorDecoder : Decode.Decoder ErrorRecord
 errorDecoder =
     Decode.map4 ErrorRecord
-        (field "errno" Decode.int)
-        (field "message" Decode.string)
-        (field "code" Decode.int)
-        (field "error" Decode.string)
+        (Decode.field "errno" Decode.int)
+        (Decode.field "message" Decode.string)
+        (Decode.field "code" Decode.int)
+        (Decode.field "error" Decode.string)
 
 
 toResponse : Result Http.Error a -> Result Error a
