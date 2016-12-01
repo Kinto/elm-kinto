@@ -69,7 +69,7 @@ all =
                                 "error": "some error"}"""
                         )
                         (Ok <|
-                            Kinto.ErrorRecord
+                            Kinto.ErrorDetail
                                 123
                                 "something failed"
                                 321
@@ -103,7 +103,7 @@ all =
                             Kinto.KintoError
                                 403
                                 "Forbidden"
-                                (Kinto.ErrorRecord
+                                (Kinto.ErrorDetail
                                     121
                                     "This user cannot access this resource."
                                     403
