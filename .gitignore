@@ -1,5 +1,6 @@
-/build
-/elm-stuff
-/html/live/app.js
-/node_modules
+build
+elm-stuff
+node_modules
 npm-debug.log
+documentation.json
+/index.html

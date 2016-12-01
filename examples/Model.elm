@@ -1,13 +1,10 @@
 module Model exposing (..)
 
-import Task
 import Time exposing (Time, second)
-import HttpBuilder exposing (withJsonBody, withHeader, withExpect)
 import Json.Decode as Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
 import Json.Encode as Encode
 import Form
 import Dict
-import Http
 import Kinto
 
 

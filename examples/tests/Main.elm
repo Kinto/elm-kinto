@@ -1,9 +1,19 @@
-module Tests exposing (..)
+port module Main exposing (..)
 
-import Test exposing (..)
 import Expect
+import Test exposing (..)
+import Test.Runner.Node exposing (run, TestProgram)
 import Utils exposing (timeAgo)
-import KintoTests
+import Json.Encode exposing (Value)
+
+
+
+main : TestProgram
+main =
+    run emit all
+
+
+port emit : ( String, Value ) -> Cmd msg
 
 
 timeAgoTest : String -> Float -> String -> Test
@@ -24,8 +34,7 @@ timeAgoTest description diff result =
 all : Test
 all =
     describe "all tests"
-        [ KintoTests.all
-        , describe "Date.TimeAgo"
+        [ describe "Date.TimeAgo"
             [ timeAgoTest "<10s diff" (seconds 4) "a few seconds ago"
             , timeAgoTest "<1mn diff" (seconds 12) "12 seconds ago"
             , timeAgoTest "=1mn- diff" (seconds 55) "about a minute ago"

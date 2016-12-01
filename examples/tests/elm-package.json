@@ -5,8 +5,8 @@
     "license": "MPL",
     "source-directories": [
         ".",
-        "../src",
-        "../src/examples"
+        "..",
+        "../../src"
     ],
     "exposed-modules": [],
     "dependencies": {
