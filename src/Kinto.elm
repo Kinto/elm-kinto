@@ -478,12 +478,12 @@ sortBy keys builder =
         |> send TodosFetched
 -}
 limit :
-    List Int
+    Int
     -> HttpBuilder.RequestBuilder a
     -> HttpBuilder.RequestBuilder a
 limit perPage builder =
     builder
-        |> HttpBuilder.withQueryParams [ ( "_limit", perPage ) ]
+        |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
 
 
 
