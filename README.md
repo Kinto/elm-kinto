@@ -39,12 +39,11 @@ type alias Todo =
 
 decodeTodo : Decode.Decoder Todo
 decodeTodo =
-    (Decode.map4 Todo
+    Decode.map4 Todo
         (Decode.field "id" Decode.string)
         (Decode.maybe (Decode.field "title" Decode.string))
         (Decode.maybe (Decode.field "description" Decode.string))
         (Decode.field "last_modified" Decode.int)
-    )
 
 
 
@@ -101,8 +100,8 @@ addTodo title description =
 -- Get all the Todos
 
 
-getTodos : Cmd Msg
-getTodos =
+getTodoList : Cmd Msg
+getTodoList =
     client
         |> Kinto.getList recordResource
         |> Kinto.sortBy [ "title", "description" ]
