@@ -8256,7 +8256,7 @@ var _elm_lang$html$Html_Events$Options = F2(
 		return {stopPropagation: a, preventDefault: b};
 	});
 
-var _Kinto$kinto_elm_experiments$Form$formVerb = function (_p0) {
+var _Kinto$elm_kinto$Form$formVerb = function (_p0) {
 	var _p1 = _p0;
 	var _p2 = _p1.id;
 	if (_p2.ctor === 'Nothing') {
@@ -8265,34 +8265,34 @@ var _Kinto$kinto_elm_experiments$Form$formVerb = function (_p0) {
 		return 'Update';
 	}
 };
-var _Kinto$kinto_elm_experiments$Form$formTitle = function (model) {
+var _Kinto$elm_kinto$Form$formTitle = function (model) {
 	return _elm_lang$core$String$trim(
 		A2(
 			_elm_lang$core$Basics_ops['++'],
-			_Kinto$kinto_elm_experiments$Form$formVerb(model),
+			_Kinto$elm_kinto$Form$formVerb(model),
 			A2(
 				_elm_lang$core$Basics_ops['++'],
 				' ',
 				A2(_elm_lang$core$Maybe$withDefault, '', model.id))));
 };
-var _Kinto$kinto_elm_experiments$Form$init = {id: _elm_lang$core$Maybe$Nothing, title: '', description: ''};
-var _Kinto$kinto_elm_experiments$Form$Model = F3(
+var _Kinto$elm_kinto$Form$init = {id: _elm_lang$core$Maybe$Nothing, title: '', description: ''};
+var _Kinto$elm_kinto$Form$Model = F3(
 	function (a, b, c) {
 		return {id: a, title: b, description: c};
 	});
-var _Kinto$kinto_elm_experiments$Form$Submit = {ctor: 'Submit'};
-var _Kinto$kinto_elm_experiments$Form$UpdateFormDescription = function (a) {
+var _Kinto$elm_kinto$Form$Submit = {ctor: 'Submit'};
+var _Kinto$elm_kinto$Form$UpdateFormDescription = function (a) {
 	return {ctor: 'UpdateFormDescription', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Form$UpdateFormTitle = function (a) {
+var _Kinto$elm_kinto$Form$UpdateFormTitle = function (a) {
 	return {ctor: 'UpdateFormTitle', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Form$view = function (model) {
+var _Kinto$elm_kinto$Form$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$form,
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$kinto_elm_experiments$Form$Submit),
+			_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$elm_kinto$Form$Submit),
 			_1: {ctor: '[]'}
 		},
 		{
@@ -8308,7 +8308,7 @@ var _Kinto$kinto_elm_experiments$Form$view = function (model) {
 						{
 							ctor: '::',
 							_0: _elm_lang$html$Html$text(
-								_Kinto$kinto_elm_experiments$Form$formTitle(model)),
+								_Kinto$elm_kinto$Form$formTitle(model)),
 							_1: {ctor: '[]'}
 						}),
 					_1: {
@@ -8352,7 +8352,7 @@ var _Kinto$kinto_elm_experiments$Form$view = function (model) {
 														_0: _elm_lang$html$Html_Attributes$value(model.title),
 														_1: {
 															ctor: '::',
-															_0: _elm_lang$html$Html_Events$onInput(_Kinto$kinto_elm_experiments$Form$UpdateFormTitle),
+															_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Form$UpdateFormTitle),
 															_1: {ctor: '[]'}
 														}
 													}
@@ -8401,7 +8401,7 @@ var _Kinto$kinto_elm_experiments$Form$view = function (model) {
 														_0: _elm_lang$html$Html_Attributes$value(model.description),
 														_1: {
 															ctor: '::',
-															_0: _elm_lang$html$Html_Events$onInput(_Kinto$kinto_elm_experiments$Form$UpdateFormDescription),
+															_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Form$UpdateFormDescription),
 															_1: {ctor: '[]'}
 														}
 													}
@@ -8432,7 +8432,7 @@ var _Kinto$kinto_elm_experiments$Form$view = function (model) {
 											{
 												ctor: '::',
 												_0: _elm_lang$html$Html$text(
-													_Kinto$kinto_elm_experiments$Form$formVerb(model)),
+													_Kinto$elm_kinto$Form$formVerb(model)),
 												_1: {ctor: '[]'}
 											}),
 										_1: {ctor: '[]'}
@@ -8445,10 +8445,10 @@ var _Kinto$kinto_elm_experiments$Form$view = function (model) {
 			_1: {ctor: '[]'}
 		});
 };
-var _Kinto$kinto_elm_experiments$Form$FormSubmitted = function (a) {
+var _Kinto$elm_kinto$Form$FormSubmitted = function (a) {
 	return {ctor: 'FormSubmitted', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Form$update = F2(
+var _Kinto$elm_kinto$Form$update = F2(
 	function (msg, model) {
 		var _p3 = msg;
 		switch (_p3.ctor) {
@@ -8471,9 +8471,9 @@ var _Kinto$kinto_elm_experiments$Form$update = F2(
 			default:
 				return {
 					ctor: '_Tuple2',
-					_0: _Kinto$kinto_elm_experiments$Form$init,
+					_0: _Kinto$elm_kinto$Form$init,
 					_1: _elm_lang$core$Maybe$Just(
-						_Kinto$kinto_elm_experiments$Form$FormSubmitted(model))
+						_Kinto$elm_kinto$Form$FormSubmitted(model))
 				};
 		}
 	});
@@ -9753,7 +9753,7 @@ var _lukewestby$elm_http_builder$HttpBuilder$withQueryParams = function (queryPa
 		});
 };
 
-var _Kinto$kinto_elm_experiments$Kinto$sortBy = F2(
+var _Kinto$elm_kinto$Kinto$sortBy = F2(
 	function (keys, builder) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withQueryParams,
@@ -9768,7 +9768,7 @@ var _Kinto$kinto_elm_experiments$Kinto$sortBy = F2(
 			},
 			builder);
 	});
-var _Kinto$kinto_elm_experiments$Kinto$withFilter = F2(
+var _Kinto$elm_kinto$Kinto$withFilter = F2(
 	function (filter, builder) {
 		var header = function () {
 			var _p0 = filter;
@@ -9832,7 +9832,7 @@ var _Kinto$kinto_elm_experiments$Kinto$withFilter = F2(
 			},
 			builder);
 	});
-var _Kinto$kinto_elm_experiments$Kinto$alwaysEncode = function (string) {
+var _Kinto$elm_kinto$Kinto$alwaysEncode = function (string) {
 	var _p1 = _truqu$elm_base64$Base64$encode(string);
 	if (_p1.ctor === 'Err') {
 		return A2(
@@ -9848,7 +9848,7 @@ var _Kinto$kinto_elm_experiments$Kinto$alwaysEncode = function (string) {
 		return _p1._0;
 	}
 };
-var _Kinto$kinto_elm_experiments$Kinto$headersForAuth = function (auth) {
+var _Kinto$elm_kinto$Kinto$headersForAuth = function (auth) {
 	var _p2 = auth;
 	switch (_p2.ctor) {
 		case 'NoAuth':
@@ -9860,7 +9860,7 @@ var _Kinto$kinto_elm_experiments$Kinto$headersForAuth = function (auth) {
 				_1: A2(
 					_elm_lang$core$Basics_ops['++'],
 					'Basic ',
-					_Kinto$kinto_elm_experiments$Kinto$alwaysEncode(
+					_Kinto$elm_kinto$Kinto$alwaysEncode(
 						A2(
 							_elm_lang$core$Basics_ops['++'],
 							_p2._0,
@@ -9874,7 +9874,7 @@ var _Kinto$kinto_elm_experiments$Kinto$headersForAuth = function (auth) {
 			};
 	}
 };
-var _Kinto$kinto_elm_experiments$Kinto$endpointUrl = F2(
+var _Kinto$elm_kinto$Kinto$endpointUrl = F2(
 	function (baseUrl, endpoint) {
 		var joinUrl = _elm_lang$core$String$join('/');
 		var url = A2(_elm_lang$core$String$endsWith, '/', baseUrl) ? A2(_elm_lang$core$String$dropRight, 1, baseUrl) : baseUrl;
@@ -10010,7 +10010,7 @@ var _Kinto$kinto_elm_experiments$Kinto$endpointUrl = F2(
 					});
 		}
 	});
-var _Kinto$kinto_elm_experiments$Kinto$get = F3(
+var _Kinto$elm_kinto$Kinto$get = F3(
 	function (resource, itemId, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
@@ -10020,11 +10020,11 @@ var _Kinto$kinto_elm_experiments$Kinto$get = F3(
 				client.headers,
 				_lukewestby$elm_http_builder$HttpBuilder$get(
 					A2(
-						_Kinto$kinto_elm_experiments$Kinto$endpointUrl,
+						_Kinto$elm_kinto$Kinto$endpointUrl,
 						client.baseUrl,
 						resource.itemEndpoint(itemId)))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$getList = F2(
+var _Kinto$elm_kinto$Kinto$getList = F2(
 	function (resource, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
@@ -10033,9 +10033,9 @@ var _Kinto$kinto_elm_experiments$Kinto$getList = F2(
 				_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
 				client.headers,
 				_lukewestby$elm_http_builder$HttpBuilder$get(
-					A2(_Kinto$kinto_elm_experiments$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint))));
+					A2(_Kinto$elm_kinto$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$delete = F3(
+var _Kinto$elm_kinto$Kinto$delete = F3(
 	function (resource, itemId, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
@@ -10045,11 +10045,11 @@ var _Kinto$kinto_elm_experiments$Kinto$delete = F3(
 				client.headers,
 				_lukewestby$elm_http_builder$HttpBuilder$delete(
 					A2(
-						_Kinto$kinto_elm_experiments$Kinto$endpointUrl,
+						_Kinto$elm_kinto$Kinto$endpointUrl,
 						client.baseUrl,
 						resource.itemEndpoint(itemId)))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$encodeData = function (encoder) {
+var _Kinto$elm_kinto$Kinto$encodeData = function (encoder) {
 	return _elm_lang$core$Json_Encode$object(
 		{
 			ctor: '::',
@@ -10057,212 +10057,212 @@ var _Kinto$kinto_elm_experiments$Kinto$encodeData = function (encoder) {
 			_1: {ctor: '[]'}
 		});
 };
-var _Kinto$kinto_elm_experiments$Kinto$create = F3(
+var _Kinto$elm_kinto$Kinto$create = F3(
 	function (resource, body, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
 			_elm_lang$http$Http$expectJson(resource.itemDecoder),
 			A2(
 				_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
-				_Kinto$kinto_elm_experiments$Kinto$encodeData(body),
+				_Kinto$elm_kinto$Kinto$encodeData(body),
 				A2(
 					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
 					client.headers,
 					_lukewestby$elm_http_builder$HttpBuilder$post(
-						A2(_Kinto$kinto_elm_experiments$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint)))));
+						A2(_Kinto$elm_kinto$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint)))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$update = F4(
+var _Kinto$elm_kinto$Kinto$update = F4(
 	function (resource, itemId, body, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
 			_elm_lang$http$Http$expectJson(resource.itemDecoder),
 			A2(
 				_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
-				_Kinto$kinto_elm_experiments$Kinto$encodeData(body),
+				_Kinto$elm_kinto$Kinto$encodeData(body),
 				A2(
 					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
 					client.headers,
 					_lukewestby$elm_http_builder$HttpBuilder$patch(
 						A2(
-							_Kinto$kinto_elm_experiments$Kinto$endpointUrl,
+							_Kinto$elm_kinto$Kinto$endpointUrl,
 							client.baseUrl,
 							resource.itemEndpoint(itemId))))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$replace = F4(
+var _Kinto$elm_kinto$Kinto$replace = F4(
 	function (resource, itemId, body, client) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
 			_elm_lang$http$Http$expectJson(resource.itemDecoder),
 			A2(
 				_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
-				_Kinto$kinto_elm_experiments$Kinto$encodeData(body),
+				_Kinto$elm_kinto$Kinto$encodeData(body),
 				A2(
 					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
 					client.headers,
 					_lukewestby$elm_http_builder$HttpBuilder$put(
 						A2(
-							_Kinto$kinto_elm_experiments$Kinto$endpointUrl,
+							_Kinto$elm_kinto$Kinto$endpointUrl,
 							client.baseUrl,
 							resource.itemEndpoint(itemId))))));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$decodeData = function (decoder) {
+var _Kinto$elm_kinto$Kinto$decodeData = function (decoder) {
 	return A2(_elm_lang$core$Json_Decode$field, 'data', decoder);
 };
-var _Kinto$kinto_elm_experiments$Kinto$Client = F2(
+var _Kinto$elm_kinto$Kinto$Client = F2(
 	function (a, b) {
 		return {baseUrl: a, headers: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$client = F2(
+var _Kinto$elm_kinto$Kinto$client = F2(
 	function (baseUrl, auth) {
 		return A2(
-			_Kinto$kinto_elm_experiments$Kinto$Client,
+			_Kinto$elm_kinto$Kinto$Client,
 			baseUrl,
 			{
 				ctor: '::',
-				_0: _Kinto$kinto_elm_experiments$Kinto$headersForAuth(auth),
+				_0: _Kinto$elm_kinto$Kinto$headersForAuth(auth),
 				_1: {ctor: '[]'}
 			});
 	});
-var _Kinto$kinto_elm_experiments$Kinto$Resource = F4(
+var _Kinto$elm_kinto$Kinto$Resource = F4(
 	function (a, b, c, d) {
 		return {itemEndpoint: a, listEndpoint: b, itemDecoder: c, listDecoder: d};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$ErrorDetail = F4(
+var _Kinto$elm_kinto$Kinto$ErrorDetail = F4(
 	function (a, b, c, d) {
 		return {errno: a, message: b, code: c, error: d};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$errorDecoder = A5(
+var _Kinto$elm_kinto$Kinto$errorDecoder = A5(
 	_elm_lang$core$Json_Decode$map4,
-	_Kinto$kinto_elm_experiments$Kinto$ErrorDetail,
+	_Kinto$elm_kinto$Kinto$ErrorDetail,
 	A2(_elm_lang$core$Json_Decode$field, 'errno', _elm_lang$core$Json_Decode$int),
 	A2(_elm_lang$core$Json_Decode$field, 'message', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'code', _elm_lang$core$Json_Decode$int),
 	A2(_elm_lang$core$Json_Decode$field, 'error', _elm_lang$core$Json_Decode$string));
-var _Kinto$kinto_elm_experiments$Kinto$Bearer = function (a) {
+var _Kinto$elm_kinto$Kinto$Bearer = function (a) {
 	return {ctor: 'Bearer', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$Basic = F2(
+var _Kinto$elm_kinto$Kinto$Basic = F2(
 	function (a, b) {
 		return {ctor: 'Basic', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$NoAuth = {ctor: 'NoAuth'};
-var _Kinto$kinto_elm_experiments$Kinto$RecordEndpoint = F3(
+var _Kinto$elm_kinto$Kinto$NoAuth = {ctor: 'NoAuth'};
+var _Kinto$elm_kinto$Kinto$RecordEndpoint = F3(
 	function (a, b, c) {
 		return {ctor: 'RecordEndpoint', _0: a, _1: b, _2: c};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$RecordListEndpoint = F2(
+var _Kinto$elm_kinto$Kinto$RecordListEndpoint = F2(
 	function (a, b) {
 		return {ctor: 'RecordListEndpoint', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$recordResource = F3(
+var _Kinto$elm_kinto$Kinto$recordResource = F3(
 	function (bucket, collection, decoder) {
 		return A4(
-			_Kinto$kinto_elm_experiments$Kinto$Resource,
-			A2(_Kinto$kinto_elm_experiments$Kinto$RecordEndpoint, bucket, collection),
-			A2(_Kinto$kinto_elm_experiments$Kinto$RecordListEndpoint, bucket, collection),
-			_Kinto$kinto_elm_experiments$Kinto$decodeData(decoder),
-			_Kinto$kinto_elm_experiments$Kinto$decodeData(
+			_Kinto$elm_kinto$Kinto$Resource,
+			A2(_Kinto$elm_kinto$Kinto$RecordEndpoint, bucket, collection),
+			A2(_Kinto$elm_kinto$Kinto$RecordListEndpoint, bucket, collection),
+			_Kinto$elm_kinto$Kinto$decodeData(decoder),
+			_Kinto$elm_kinto$Kinto$decodeData(
 				_elm_lang$core$Json_Decode$list(decoder)));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$CollectionEndpoint = F2(
+var _Kinto$elm_kinto$Kinto$CollectionEndpoint = F2(
 	function (a, b) {
 		return {ctor: 'CollectionEndpoint', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$CollectionListEndpoint = function (a) {
+var _Kinto$elm_kinto$Kinto$CollectionListEndpoint = function (a) {
 	return {ctor: 'CollectionListEndpoint', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$collectionResource = F2(
+var _Kinto$elm_kinto$Kinto$collectionResource = F2(
 	function (bucket, decoder) {
 		return A4(
-			_Kinto$kinto_elm_experiments$Kinto$Resource,
-			_Kinto$kinto_elm_experiments$Kinto$CollectionEndpoint(bucket),
-			_Kinto$kinto_elm_experiments$Kinto$CollectionListEndpoint(bucket),
-			_Kinto$kinto_elm_experiments$Kinto$decodeData(decoder),
-			_Kinto$kinto_elm_experiments$Kinto$decodeData(
+			_Kinto$elm_kinto$Kinto$Resource,
+			_Kinto$elm_kinto$Kinto$CollectionEndpoint(bucket),
+			_Kinto$elm_kinto$Kinto$CollectionListEndpoint(bucket),
+			_Kinto$elm_kinto$Kinto$decodeData(decoder),
+			_Kinto$elm_kinto$Kinto$decodeData(
 				_elm_lang$core$Json_Decode$list(decoder)));
 	});
-var _Kinto$kinto_elm_experiments$Kinto$BucketEndpoint = function (a) {
+var _Kinto$elm_kinto$Kinto$BucketEndpoint = function (a) {
 	return {ctor: 'BucketEndpoint', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$BucketListEndpoint = {ctor: 'BucketListEndpoint'};
-var _Kinto$kinto_elm_experiments$Kinto$bucketResource = function (decoder) {
+var _Kinto$elm_kinto$Kinto$BucketListEndpoint = {ctor: 'BucketListEndpoint'};
+var _Kinto$elm_kinto$Kinto$bucketResource = function (decoder) {
 	return A4(
-		_Kinto$kinto_elm_experiments$Kinto$Resource,
-		_Kinto$kinto_elm_experiments$Kinto$BucketEndpoint,
-		_Kinto$kinto_elm_experiments$Kinto$BucketListEndpoint,
-		_Kinto$kinto_elm_experiments$Kinto$decodeData(decoder),
-		_Kinto$kinto_elm_experiments$Kinto$decodeData(
+		_Kinto$elm_kinto$Kinto$Resource,
+		_Kinto$elm_kinto$Kinto$BucketEndpoint,
+		_Kinto$elm_kinto$Kinto$BucketListEndpoint,
+		_Kinto$elm_kinto$Kinto$decodeData(decoder),
+		_Kinto$elm_kinto$Kinto$decodeData(
 			_elm_lang$core$Json_Decode$list(decoder)));
 };
-var _Kinto$kinto_elm_experiments$Kinto$RootEndpoint = {ctor: 'RootEndpoint'};
-var _Kinto$kinto_elm_experiments$Kinto$BEFORE = function (a) {
+var _Kinto$elm_kinto$Kinto$RootEndpoint = {ctor: 'RootEndpoint'};
+var _Kinto$elm_kinto$Kinto$BEFORE = function (a) {
 	return {ctor: 'BEFORE', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$SINCE = function (a) {
+var _Kinto$elm_kinto$Kinto$SINCE = function (a) {
 	return {ctor: 'SINCE', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$LIKE = F2(
+var _Kinto$elm_kinto$Kinto$LIKE = F2(
 	function (a, b) {
 		return {ctor: 'LIKE', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$NOT = F2(
+var _Kinto$elm_kinto$Kinto$NOT = F2(
 	function (a, b) {
 		return {ctor: 'NOT', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$IN = F2(
+var _Kinto$elm_kinto$Kinto$IN = F2(
 	function (a, b) {
 		return {ctor: 'IN', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$GT = F2(
+var _Kinto$elm_kinto$Kinto$GT = F2(
 	function (a, b) {
 		return {ctor: 'GT', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$LT = F2(
+var _Kinto$elm_kinto$Kinto$LT = F2(
 	function (a, b) {
 		return {ctor: 'LT', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$Max = F2(
+var _Kinto$elm_kinto$Kinto$Max = F2(
 	function (a, b) {
 		return {ctor: 'Max', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$Min = F2(
+var _Kinto$elm_kinto$Kinto$Min = F2(
 	function (a, b) {
 		return {ctor: 'Min', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$Equal = F2(
+var _Kinto$elm_kinto$Kinto$Equal = F2(
 	function (a, b) {
 		return {ctor: 'Equal', _0: a, _1: b};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$NetworkError = function (a) {
+var _Kinto$elm_kinto$Kinto$NetworkError = function (a) {
 	return {ctor: 'NetworkError', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Kinto$KintoError = F3(
+var _Kinto$elm_kinto$Kinto$KintoError = F3(
 	function (a, b, c) {
 		return {ctor: 'KintoError', _0: a, _1: b, _2: c};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$ServerError = F3(
+var _Kinto$elm_kinto$Kinto$ServerError = F3(
 	function (a, b, c) {
 		return {ctor: 'ServerError', _0: a, _1: b, _2: c};
 	});
-var _Kinto$kinto_elm_experiments$Kinto$extractKintoError = F3(
+var _Kinto$elm_kinto$Kinto$extractKintoError = F3(
 	function (statusCode, statusMsg, body) {
-		var _p4 = A2(_elm_lang$core$Json_Decode$decodeString, _Kinto$kinto_elm_experiments$Kinto$errorDecoder, body);
+		var _p4 = A2(_elm_lang$core$Json_Decode$decodeString, _Kinto$elm_kinto$Kinto$errorDecoder, body);
 		if (_p4.ctor === 'Ok') {
-			return A3(_Kinto$kinto_elm_experiments$Kinto$KintoError, statusCode, statusMsg, _p4._0);
+			return A3(_Kinto$elm_kinto$Kinto$KintoError, statusCode, statusMsg, _p4._0);
 		} else {
-			return A3(_Kinto$kinto_elm_experiments$Kinto$ServerError, statusCode, statusMsg, _p4._0);
+			return A3(_Kinto$elm_kinto$Kinto$ServerError, statusCode, statusMsg, _p4._0);
 		}
 	});
-var _Kinto$kinto_elm_experiments$Kinto$extractError = function (error) {
+var _Kinto$elm_kinto$Kinto$extractError = function (error) {
 	var _p5 = error;
 	switch (_p5.ctor) {
 		case 'BadStatus':
 			var _p6 = _p5._0.status;
-			return A3(_Kinto$kinto_elm_experiments$Kinto$extractKintoError, _p6.code, _p6.message, _p5._0.body);
+			return A3(_Kinto$elm_kinto$Kinto$extractKintoError, _p6.code, _p6.message, _p5._0.body);
 		case 'BadPayload':
 			var _p7 = _p5._1.status;
 			return A3(
-				_Kinto$kinto_elm_experiments$Kinto$ServerError,
+				_Kinto$elm_kinto$Kinto$ServerError,
 				_p7.code,
 				_p7.message,
 				A2(
@@ -10273,28 +10273,28 @@ var _Kinto$kinto_elm_experiments$Kinto$extractError = function (error) {
 						_p5._0,
 						A2(_elm_lang$core$Basics_ops['++'], '\n\nBody received from server: ', _p5._1.body))));
 		default:
-			return _Kinto$kinto_elm_experiments$Kinto$NetworkError(_p5);
+			return _Kinto$elm_kinto$Kinto$NetworkError(_p5);
 	}
 };
-var _Kinto$kinto_elm_experiments$Kinto$toResponse = function (response) {
-	return A2(_elm_lang$core$Result$mapError, _Kinto$kinto_elm_experiments$Kinto$extractError, response);
+var _Kinto$elm_kinto$Kinto$toResponse = function (response) {
+	return A2(_elm_lang$core$Result$mapError, _Kinto$elm_kinto$Kinto$extractError, response);
 };
-var _Kinto$kinto_elm_experiments$Kinto$send = F2(
+var _Kinto$elm_kinto$Kinto$send = F2(
 	function (tagger, builder) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$send,
 			function (_p8) {
 				return tagger(
-					_Kinto$kinto_elm_experiments$Kinto$toResponse(_p8));
+					_Kinto$elm_kinto$Kinto$toResponse(_p8));
 			},
 			builder);
 	});
 
-var _Kinto$kinto_elm_experiments$Model$client = A2(
-	_Kinto$kinto_elm_experiments$Kinto$client,
+var _Kinto$elm_kinto$Model$client = A2(
+	_Kinto$elm_kinto$Kinto$client,
 	'https://kinto.dev.mozaws.net/v1/',
-	A2(_Kinto$kinto_elm_experiments$Kinto$Basic, 'test', 'test'));
-var _Kinto$kinto_elm_experiments$Model$updateRecord = F2(
+	A2(_Kinto$elm_kinto$Kinto$Basic, 'test', 'test'));
+var _Kinto$elm_kinto$Model$updateRecord = F2(
 	function (formData, record) {
 		var _p0 = record;
 		if (_p0.ctor === 'Nothing') {
@@ -10309,7 +10309,7 @@ var _Kinto$kinto_elm_experiments$Model$updateRecord = F2(
 					}));
 		}
 	});
-var _Kinto$kinto_elm_experiments$Model$updateRecordInList = F2(
+var _Kinto$elm_kinto$Model$updateRecordInList = F2(
 	function (formData, records) {
 		var _p1 = formData.id;
 		if (_p1.ctor === 'Nothing') {
@@ -10318,16 +10318,16 @@ var _Kinto$kinto_elm_experiments$Model$updateRecordInList = F2(
 			return A3(
 				_elm_lang$core$Dict$update,
 				_p1._0,
-				_Kinto$kinto_elm_experiments$Model$updateRecord(formData),
+				_Kinto$elm_kinto$Model$updateRecord(formData),
 				records);
 		}
 	});
-var _Kinto$kinto_elm_experiments$Model$removeRecordFromList = F2(
+var _Kinto$elm_kinto$Model$removeRecordFromList = F2(
 	function (_p2, records) {
 		var _p3 = _p2;
 		return A2(_elm_lang$core$Dict$remove, _p3.id, records);
 	});
-var _Kinto$kinto_elm_experiments$Model$encodeFormData = function (_p4) {
+var _Kinto$elm_kinto$Model$encodeFormData = function (_p4) {
 	var _p5 = _p4;
 	return _elm_lang$core$Json_Encode$object(
 		{
@@ -10348,81 +10348,81 @@ var _Kinto$kinto_elm_experiments$Model$encodeFormData = function (_p4) {
 			}
 		});
 };
-var _Kinto$kinto_elm_experiments$Model$recordToFormData = function (_p6) {
+var _Kinto$elm_kinto$Model$recordToFormData = function (_p6) {
 	var _p7 = _p6;
 	return A3(
-		_Kinto$kinto_elm_experiments$Form$Model,
+		_Kinto$elm_kinto$Form$Model,
 		_elm_lang$core$Maybe$Just(_p7.id),
 		A2(_elm_lang$core$Maybe$withDefault, '', _p7.title),
 		A2(_elm_lang$core$Maybe$withDefault, '', _p7.description));
 };
-var _Kinto$kinto_elm_experiments$Model$initialModel = {error: _elm_lang$core$Maybe$Nothing, records: _elm_lang$core$Dict$empty, formData: _Kinto$kinto_elm_experiments$Form$init, currentTime: 0};
-var _Kinto$kinto_elm_experiments$Model$Record = F4(
+var _Kinto$elm_kinto$Model$initialModel = {error: _elm_lang$core$Maybe$Nothing, records: _elm_lang$core$Dict$empty, formData: _Kinto$elm_kinto$Form$init, currentTime: 0};
+var _Kinto$elm_kinto$Model$Record = F4(
 	function (a, b, c, d) {
 		return {id: a, title: b, description: c, last_modified: d};
 	});
-var _Kinto$kinto_elm_experiments$Model$decodeRecord = A5(
+var _Kinto$elm_kinto$Model$decodeRecord = A5(
 	_elm_lang$core$Json_Decode$map4,
-	_Kinto$kinto_elm_experiments$Model$Record,
+	_Kinto$elm_kinto$Model$Record,
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
 	_elm_lang$core$Json_Decode$maybe(
 		A2(_elm_lang$core$Json_Decode$field, 'title', _elm_lang$core$Json_Decode$string)),
 	_elm_lang$core$Json_Decode$maybe(
 		A2(_elm_lang$core$Json_Decode$field, 'description', _elm_lang$core$Json_Decode$string)),
 	A2(_elm_lang$core$Json_Decode$field, 'last_modified', _elm_lang$core$Json_Decode$int));
-var _Kinto$kinto_elm_experiments$Model$recordResource = A3(_Kinto$kinto_elm_experiments$Kinto$recordResource, 'default', 'test-items', _Kinto$kinto_elm_experiments$Model$decodeRecord);
-var _Kinto$kinto_elm_experiments$Model$Model = F4(
+var _Kinto$elm_kinto$Model$recordResource = A3(_Kinto$elm_kinto$Kinto$recordResource, 'default', 'test-items', _Kinto$elm_kinto$Model$decodeRecord);
+var _Kinto$elm_kinto$Model$Model = F4(
 	function (a, b, c, d) {
 		return {error: a, records: b, formData: c, currentTime: d};
 	});
-var _Kinto$kinto_elm_experiments$Model$DeleteRecordResponse = function (a) {
+var _Kinto$elm_kinto$Model$DeleteRecordResponse = function (a) {
 	return {ctor: 'DeleteRecordResponse', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$deleteRecord = function (recordId) {
+var _Kinto$elm_kinto$Model$deleteRecord = function (recordId) {
 	return A2(
-		_Kinto$kinto_elm_experiments$Kinto$send,
-		_Kinto$kinto_elm_experiments$Model$DeleteRecordResponse,
-		A3(_Kinto$kinto_elm_experiments$Kinto$delete, _Kinto$kinto_elm_experiments$Model$recordResource, recordId, _Kinto$kinto_elm_experiments$Model$client));
+		_Kinto$elm_kinto$Kinto$send,
+		_Kinto$elm_kinto$Model$DeleteRecordResponse,
+		A3(_Kinto$elm_kinto$Kinto$delete, _Kinto$elm_kinto$Model$recordResource, recordId, _Kinto$elm_kinto$Model$client));
 };
-var _Kinto$kinto_elm_experiments$Model$DeleteRecord = function (a) {
+var _Kinto$elm_kinto$Model$DeleteRecord = function (a) {
 	return {ctor: 'DeleteRecord', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$EditRecordResponse = function (a) {
+var _Kinto$elm_kinto$Model$EditRecordResponse = function (a) {
 	return {ctor: 'EditRecordResponse', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$EditRecord = function (a) {
+var _Kinto$elm_kinto$Model$EditRecord = function (a) {
 	return {ctor: 'EditRecord', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$CreateRecordResponse = function (a) {
+var _Kinto$elm_kinto$Model$CreateRecordResponse = function (a) {
 	return {ctor: 'CreateRecordResponse', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$sendFormData = F2(
+var _Kinto$elm_kinto$Model$sendFormData = F2(
 	function (model, formData) {
-		var data = _Kinto$kinto_elm_experiments$Model$encodeFormData(formData);
+		var data = _Kinto$elm_kinto$Model$encodeFormData(formData);
 		var _p8 = formData.id;
 		if (_p8.ctor === 'Nothing') {
 			return A2(
-				_Kinto$kinto_elm_experiments$Kinto$send,
-				_Kinto$kinto_elm_experiments$Model$CreateRecordResponse,
-				A3(_Kinto$kinto_elm_experiments$Kinto$create, _Kinto$kinto_elm_experiments$Model$recordResource, data, _Kinto$kinto_elm_experiments$Model$client));
+				_Kinto$elm_kinto$Kinto$send,
+				_Kinto$elm_kinto$Model$CreateRecordResponse,
+				A3(_Kinto$elm_kinto$Kinto$create, _Kinto$elm_kinto$Model$recordResource, data, _Kinto$elm_kinto$Model$client));
 		} else {
 			return A2(
-				_Kinto$kinto_elm_experiments$Kinto$send,
-				_Kinto$kinto_elm_experiments$Model$EditRecordResponse,
-				A4(_Kinto$kinto_elm_experiments$Kinto$update, _Kinto$kinto_elm_experiments$Model$recordResource, _p8._0, data, _Kinto$kinto_elm_experiments$Model$client));
+				_Kinto$elm_kinto$Kinto$send,
+				_Kinto$elm_kinto$Model$EditRecordResponse,
+				A4(_Kinto$elm_kinto$Kinto$update, _Kinto$elm_kinto$Model$recordResource, _p8._0, data, _Kinto$elm_kinto$Model$client));
 		}
 	});
-var _Kinto$kinto_elm_experiments$Model$FormMsg = function (a) {
+var _Kinto$elm_kinto$Model$FormMsg = function (a) {
 	return {ctor: 'FormMsg', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$FetchRecordsResponse = function (a) {
+var _Kinto$elm_kinto$Model$FetchRecordsResponse = function (a) {
 	return {ctor: 'FetchRecordsResponse', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$fetchRecordList = A2(
-	_Kinto$kinto_elm_experiments$Kinto$send,
-	_Kinto$kinto_elm_experiments$Model$FetchRecordsResponse,
+var _Kinto$elm_kinto$Model$fetchRecordList = A2(
+	_Kinto$elm_kinto$Kinto$send,
+	_Kinto$elm_kinto$Model$FetchRecordsResponse,
 	A2(
-		_Kinto$kinto_elm_experiments$Kinto$sortBy,
+		_Kinto$elm_kinto$Kinto$sortBy,
 		{
 			ctor: '::',
 			_0: 'title',
@@ -10432,28 +10432,28 @@ var _Kinto$kinto_elm_experiments$Model$fetchRecordList = A2(
 				_1: {ctor: '[]'}
 			}
 		},
-		A2(_Kinto$kinto_elm_experiments$Kinto$getList, _Kinto$kinto_elm_experiments$Model$recordResource, _Kinto$kinto_elm_experiments$Model$client)));
-var _Kinto$kinto_elm_experiments$Model$init = {
+		A2(_Kinto$elm_kinto$Kinto$getList, _Kinto$elm_kinto$Model$recordResource, _Kinto$elm_kinto$Model$client)));
+var _Kinto$elm_kinto$Model$init = {
 	ctor: '_Tuple2',
-	_0: _Kinto$kinto_elm_experiments$Model$initialModel,
+	_0: _Kinto$elm_kinto$Model$initialModel,
 	_1: _elm_lang$core$Platform_Cmd$batch(
 		{
 			ctor: '::',
-			_0: _Kinto$kinto_elm_experiments$Model$fetchRecordList,
+			_0: _Kinto$elm_kinto$Model$fetchRecordList,
 			_1: {ctor: '[]'}
 		})
 };
-var _Kinto$kinto_elm_experiments$Model$FetchRecords = {ctor: 'FetchRecords'};
-var _Kinto$kinto_elm_experiments$Model$FetchRecordResponse = function (a) {
+var _Kinto$elm_kinto$Model$FetchRecords = {ctor: 'FetchRecords'};
+var _Kinto$elm_kinto$Model$FetchRecordResponse = function (a) {
 	return {ctor: 'FetchRecordResponse', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$fetchRecord = function (recordId) {
+var _Kinto$elm_kinto$Model$fetchRecord = function (recordId) {
 	return A2(
-		_Kinto$kinto_elm_experiments$Kinto$send,
-		_Kinto$kinto_elm_experiments$Model$FetchRecordResponse,
-		A3(_Kinto$kinto_elm_experiments$Kinto$get, _Kinto$kinto_elm_experiments$Model$recordResource, recordId, _Kinto$kinto_elm_experiments$Model$client));
+		_Kinto$elm_kinto$Kinto$send,
+		_Kinto$elm_kinto$Model$FetchRecordResponse,
+		A3(_Kinto$elm_kinto$Kinto$get, _Kinto$elm_kinto$Model$recordResource, recordId, _Kinto$elm_kinto$Model$client));
 };
-var _Kinto$kinto_elm_experiments$Model$update = F2(
+var _Kinto$elm_kinto$Model$update = F2(
 	function (msg, model) {
 		var _p9 = msg;
 		switch (_p9.ctor) {
@@ -10473,7 +10473,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{records: _elm_lang$core$Dict$empty, error: _elm_lang$core$Maybe$Nothing}),
-					_1: _Kinto$kinto_elm_experiments$Model$fetchRecordList
+					_1: _Kinto$elm_kinto$Model$fetchRecordList
 				};
 			case 'FetchRecordResponse':
 				var _p10 = _p9._0;
@@ -10483,7 +10483,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								formData: _Kinto$kinto_elm_experiments$Model$recordToFormData(_p10._0),
+								formData: _Kinto$elm_kinto$Model$recordToFormData(_p10._0),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
@@ -10535,7 +10535,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 					};
 				}
 			case 'FormMsg':
-				var _p12 = A2(_Kinto$kinto_elm_experiments$Form$update, _p9._0, model.formData);
+				var _p12 = A2(_Kinto$elm_kinto$Form$update, _p9._0, model.formData);
 				var updated = _p12._0;
 				var formMsg = _p12._1;
 				var _p13 = formMsg;
@@ -10546,7 +10546,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 							model,
 							{
 								formData: updated,
-								records: A2(_Kinto$kinto_elm_experiments$Model$updateRecordInList, updated, model.records)
+								records: A2(_Kinto$elm_kinto$Model$updateRecordInList, updated, model.records)
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
@@ -10556,7 +10556,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{formData: updated}),
-						_1: A2(_Kinto$kinto_elm_experiments$Model$sendFormData, model, _p13._0._0)
+						_1: A2(_Kinto$elm_kinto$Model$sendFormData, model, _p13._0._0)
 					};
 				}
 			case 'CreateRecordResponse':
@@ -10566,8 +10566,8 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{formData: _Kinto$kinto_elm_experiments$Form$init}),
-						_1: _Kinto$kinto_elm_experiments$Model$fetchRecordList
+							{formData: _Kinto$elm_kinto$Form$init}),
+						_1: _Kinto$elm_kinto$Model$fetchRecordList
 					};
 				} else {
 					return {
@@ -10585,12 +10585,12 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: _Kinto$kinto_elm_experiments$Model$fetchRecord(_p9._0)
+					_1: _Kinto$elm_kinto$Model$fetchRecord(_p9._0)
 				};
 			case 'EditRecordResponse':
 				var _p15 = _p9._0;
 				if (_p15.ctor === 'Ok') {
-					return {ctor: '_Tuple2', _0: model, _1: _Kinto$kinto_elm_experiments$Model$fetchRecordList};
+					return {ctor: '_Tuple2', _0: model, _1: _Kinto$elm_kinto$Model$fetchRecordList};
 				} else {
 					return {
 						ctor: '_Tuple2',
@@ -10607,7 +10607,7 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: _Kinto$kinto_elm_experiments$Model$deleteRecord(_p9._0)
+					_1: _Kinto$elm_kinto$Model$deleteRecord(_p9._0)
 				};
 			default:
 				var _p16 = _p9._0;
@@ -10617,10 +10617,10 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								records: A2(_Kinto$kinto_elm_experiments$Model$removeRecordFromList, _p16._0, model.records),
+								records: A2(_Kinto$elm_kinto$Model$removeRecordFromList, _p16._0, model.records),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
-						_1: _Kinto$kinto_elm_experiments$Model$fetchRecordList
+						_1: _Kinto$elm_kinto$Model$fetchRecordList
 					};
 				} else {
 					return {
@@ -10636,15 +10636,15 @@ var _Kinto$kinto_elm_experiments$Model$update = F2(
 				}
 		}
 	});
-var _Kinto$kinto_elm_experiments$Model$Tick = function (a) {
+var _Kinto$elm_kinto$Model$Tick = function (a) {
 	return {ctor: 'Tick', _0: a};
 };
-var _Kinto$kinto_elm_experiments$Model$subscriptions = function (model) {
-	return A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _Kinto$kinto_elm_experiments$Model$Tick);
+var _Kinto$elm_kinto$Model$subscriptions = function (model) {
+	return A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _Kinto$elm_kinto$Model$Tick);
 };
-var _Kinto$kinto_elm_experiments$Model$NoOp = {ctor: 'NoOp'};
+var _Kinto$elm_kinto$Model$NoOp = {ctor: 'NoOp'};
 
-var _Kinto$kinto_elm_experiments$Utils$plural = F2(
+var _Kinto$elm_kinto$Utils$plural = F2(
 	function (unit, amount) {
 		var roundAmount = _elm_lang$core$Basics$round(amount);
 		var unitPlural = (_elm_lang$core$Native_Utils.cmp(roundAmount, 1) > 0) ? A2(_elm_lang$core$Basics_ops['++'], unit, 's') : unit;
@@ -10656,11 +10656,11 @@ var _Kinto$kinto_elm_experiments$Utils$plural = F2(
 				' ',
 				A2(_elm_lang$core$Basics_ops['++'], unitPlural, ' ago')));
 	});
-var _Kinto$kinto_elm_experiments$Utils$within = F3(
+var _Kinto$elm_kinto$Utils$within = F3(
 	function (low, high, value) {
 		return (_elm_lang$core$Native_Utils.cmp(value, low) > -1) && (_elm_lang$core$Native_Utils.cmp(value, high) < 1);
 	});
-var _Kinto$kinto_elm_experiments$Utils$timeAgo = F2(
+var _Kinto$elm_kinto$Utils$timeAgo = F2(
 	function (time, now) {
 		var seconds = (now - time) / 1000;
 		var minutes = seconds / 60;
@@ -10668,10 +10668,10 @@ var _Kinto$kinto_elm_experiments$Utils$timeAgo = F2(
 		var days = hours / 24;
 		var months = days / (365.25 / 12);
 		var years = days / 365.25;
-		return (_elm_lang$core$Native_Utils.cmp(seconds, 10) < 0) ? 'a few seconds ago' : ((_elm_lang$core$Native_Utils.cmp(seconds, 55) < 0) ? A2(_Kinto$kinto_elm_experiments$Utils$plural, 'second', seconds) : (A3(_Kinto$kinto_elm_experiments$Utils$within, 55, 65, seconds) ? 'about a minute ago' : ((_elm_lang$core$Native_Utils.cmp(minutes, 55) < 0) ? A2(_Kinto$kinto_elm_experiments$Utils$plural, 'minute', minutes) : (A3(_Kinto$kinto_elm_experiments$Utils$within, 55, 65, minutes) ? 'about an hour ago' : ((_elm_lang$core$Native_Utils.cmp(hours, 22) < 0) ? A2(_Kinto$kinto_elm_experiments$Utils$plural, 'hour', hours) : (A3(_Kinto$kinto_elm_experiments$Utils$within, 22, 26, hours) ? 'about a day ago' : (A3(_Kinto$kinto_elm_experiments$Utils$within, 6, 8, days) ? 'about a week ago' : (A3(_Kinto$kinto_elm_experiments$Utils$within, 14, 16, days) ? 'about 2 weeks ago' : (A3(_Kinto$kinto_elm_experiments$Utils$within, 20, 22, days) ? 'about 3 weeks ago' : ((_elm_lang$core$Native_Utils.cmp(days, 27) < 0) ? A2(_Kinto$kinto_elm_experiments$Utils$plural, 'day', days) : (A3(_Kinto$kinto_elm_experiments$Utils$within, 27, 33, days) ? 'about a month ago' : ((_elm_lang$core$Native_Utils.cmp(months, 11) < 0) ? A2(_Kinto$kinto_elm_experiments$Utils$plural, 'month', months) : (A3(_Kinto$kinto_elm_experiments$Utils$within, 11, 13, months) ? 'about a year ago' : A2(_Kinto$kinto_elm_experiments$Utils$plural, 'year', years))))))))))))));
+		return (_elm_lang$core$Native_Utils.cmp(seconds, 10) < 0) ? 'a few seconds ago' : ((_elm_lang$core$Native_Utils.cmp(seconds, 55) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'second', seconds) : (A3(_Kinto$elm_kinto$Utils$within, 55, 65, seconds) ? 'about a minute ago' : ((_elm_lang$core$Native_Utils.cmp(minutes, 55) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'minute', minutes) : (A3(_Kinto$elm_kinto$Utils$within, 55, 65, minutes) ? 'about an hour ago' : ((_elm_lang$core$Native_Utils.cmp(hours, 22) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'hour', hours) : (A3(_Kinto$elm_kinto$Utils$within, 22, 26, hours) ? 'about a day ago' : (A3(_Kinto$elm_kinto$Utils$within, 6, 8, days) ? 'about a week ago' : (A3(_Kinto$elm_kinto$Utils$within, 14, 16, days) ? 'about 2 weeks ago' : (A3(_Kinto$elm_kinto$Utils$within, 20, 22, days) ? 'about 3 weeks ago' : ((_elm_lang$core$Native_Utils.cmp(days, 27) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'day', days) : (A3(_Kinto$elm_kinto$Utils$within, 27, 33, days) ? 'about a month ago' : ((_elm_lang$core$Native_Utils.cmp(months, 11) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'month', months) : (A3(_Kinto$elm_kinto$Utils$within, 11, 13, months) ? 'about a year ago' : A2(_Kinto$elm_kinto$Utils$plural, 'year', years))))))))))))));
 	});
 
-var _Kinto$kinto_elm_experiments$View$sortedRecords = function (records) {
+var _Kinto$elm_kinto$View$sortedRecords = function (records) {
 	return _elm_lang$core$List$reverse(
 		A2(
 			_elm_lang$core$List$sortBy,
@@ -10680,7 +10680,7 @@ var _Kinto$kinto_elm_experiments$View$sortedRecords = function (records) {
 			},
 			_elm_lang$core$Dict$values(records)));
 };
-var _Kinto$kinto_elm_experiments$View$errorNotif = function (error) {
+var _Kinto$elm_kinto$View$errorNotif = function (error) {
 	var _p0 = error;
 	if (_p0.ctor === 'Nothing') {
 		return _elm_lang$html$Html$text('');
@@ -10700,7 +10700,7 @@ var _Kinto$kinto_elm_experiments$View$errorNotif = function (error) {
 			});
 	}
 };
-var _Kinto$kinto_elm_experiments$View$iconBtn = F2(
+var _Kinto$elm_kinto$View$iconBtn = F2(
 	function (icon, action) {
 		return A2(
 			_elm_lang$html$Html$button,
@@ -10727,14 +10727,14 @@ var _Kinto$kinto_elm_experiments$View$iconBtn = F2(
 				_1: {ctor: '[]'}
 			});
 	});
-var _Kinto$kinto_elm_experiments$View$formatLastModified = F2(
+var _Kinto$elm_kinto$View$formatLastModified = F2(
 	function (timestamp, currentTime) {
 		return A2(
-			_Kinto$kinto_elm_experiments$Utils$timeAgo,
+			_Kinto$elm_kinto$Utils$timeAgo,
 			_elm_lang$core$Basics$toFloat(timestamp),
 			currentTime);
 	});
-var _Kinto$kinto_elm_experiments$View$recordRow = F2(
+var _Kinto$elm_kinto$View$recordRow = F2(
 	function (currentTime, _p1) {
 		var _p2 = _p1;
 		var _p3 = _p2.id;
@@ -10781,7 +10781,7 @@ var _Kinto$kinto_elm_experiments$View$recordRow = F2(
 								{
 									ctor: '::',
 									_0: _elm_lang$html$Html$text(
-										A2(_Kinto$kinto_elm_experiments$View$formatLastModified, _p2.last_modified, currentTime)),
+										A2(_Kinto$elm_kinto$View$formatLastModified, _p2.last_modified, currentTime)),
 									_1: {ctor: '[]'}
 								}),
 							_1: {
@@ -10792,18 +10792,18 @@ var _Kinto$kinto_elm_experiments$View$recordRow = F2(
 									{
 										ctor: '::',
 										_0: A2(
-											_Kinto$kinto_elm_experiments$View$iconBtn,
+											_Kinto$elm_kinto$View$iconBtn,
 											'edit',
-											_Kinto$kinto_elm_experiments$Model$EditRecord(_p3)),
+											_Kinto$elm_kinto$Model$EditRecord(_p3)),
 										_1: {
 											ctor: '::',
 											_0: _elm_lang$html$Html$text(' '),
 											_1: {
 												ctor: '::',
 												_0: A2(
-													_Kinto$kinto_elm_experiments$View$iconBtn,
+													_Kinto$elm_kinto$View$iconBtn,
 													'trash',
-													_Kinto$kinto_elm_experiments$Model$DeleteRecord(_p3)),
+													_Kinto$elm_kinto$Model$DeleteRecord(_p3)),
 												_1: {ctor: '[]'}
 											}
 										}
@@ -10815,7 +10815,7 @@ var _Kinto$kinto_elm_experiments$View$recordRow = F2(
 				}
 			});
 	});
-var _Kinto$kinto_elm_experiments$View$recordsList = F2(
+var _Kinto$elm_kinto$View$recordsList = F2(
 	function (records, currentTime) {
 		return A2(
 			_elm_lang$html$Html$table,
@@ -10895,13 +10895,13 @@ var _Kinto$kinto_elm_experiments$View$recordsList = F2(
 						{ctor: '[]'},
 						A2(
 							_elm_lang$core$List$map,
-							_Kinto$kinto_elm_experiments$View$recordRow(currentTime),
+							_Kinto$elm_kinto$View$recordRow(currentTime),
 							records)),
 					_1: {ctor: '[]'}
 				}
 			});
 	});
-var _Kinto$kinto_elm_experiments$View$view = function (_p4) {
+var _Kinto$elm_kinto$View$view = function (_p4) {
 	var _p5 = _p4;
 	return A2(
 		_elm_lang$html$Html$div,
@@ -10922,19 +10922,19 @@ var _Kinto$kinto_elm_experiments$View$view = function (_p4) {
 				}),
 			_1: {
 				ctor: '::',
-				_0: _Kinto$kinto_elm_experiments$View$errorNotif(_p5.error),
+				_0: _Kinto$elm_kinto$View$errorNotif(_p5.error),
 				_1: {
 					ctor: '::',
 					_0: A2(
-						_Kinto$kinto_elm_experiments$View$recordsList,
-						_Kinto$kinto_elm_experiments$View$sortedRecords(_p5.records),
+						_Kinto$elm_kinto$View$recordsList,
+						_Kinto$elm_kinto$View$sortedRecords(_p5.records),
 						_p5.currentTime),
 					_1: {
 						ctor: '::',
 						_0: A2(
 							_elm_lang$html$Html$map,
-							_Kinto$kinto_elm_experiments$Model$FormMsg,
-							_Kinto$kinto_elm_experiments$Form$view(_p5.formData)),
+							_Kinto$elm_kinto$Model$FormMsg,
+							_Kinto$elm_kinto$Form$view(_p5.formData)),
 						_1: {ctor: '[]'}
 					}
 				}
@@ -10942,13 +10942,13 @@ var _Kinto$kinto_elm_experiments$View$view = function (_p4) {
 		});
 };
 
-var _Kinto$kinto_elm_experiments$Main$main = _elm_lang$html$Html$program(
-	{init: _Kinto$kinto_elm_experiments$Model$init, view: _Kinto$kinto_elm_experiments$View$view, update: _Kinto$kinto_elm_experiments$Model$update, subscriptions: _Kinto$kinto_elm_experiments$Model$subscriptions})();
+var _Kinto$elm_kinto$Main$main = _elm_lang$html$Html$program(
+	{init: _Kinto$elm_kinto$Model$init, view: _Kinto$elm_kinto$View$view, update: _Kinto$elm_kinto$Model$update, subscriptions: _Kinto$elm_kinto$Model$subscriptions})();
 
 var Elm = {};
 Elm['Main'] = Elm['Main'] || {};
-if (typeof _Kinto$kinto_elm_experiments$Main$main !== 'undefined') {
-    _Kinto$kinto_elm_experiments$Main$main(Elm['Main'], 'Main', undefined);
+if (typeof _Kinto$elm_kinto$Main$main !== 'undefined') {
+    _Kinto$elm_kinto$Main$main(Elm['Main'], 'Main', undefined);
 }
 
 if (typeof define === "function" && define['amd'])
