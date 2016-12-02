@@ -2,7 +2,7 @@ module Kinto
     exposing
         ( Auth(..)
         , Endpoint(..)
-        , Filter
+        , Filter(..)
         , Client
         , Resource
         , bucketResource
