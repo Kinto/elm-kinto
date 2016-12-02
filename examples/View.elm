@@ -5,7 +5,7 @@ import Html
 import Html.Events
 import Html.Attributes
 import Utils
-import Model exposing (Model, Record, Msg(..))
+import Model exposing (Model, Record, Msg(..), Sort(..))
 
 
 formatLastModified : Int -> Time -> String
@@ -39,17 +39,44 @@ recordRow currentTime { id, title, description, last_modified } =
         ]
 
 
-recordsList : List Record -> Time -> Html.Html Msg
-recordsList records currentTime =
+recordHeaders : Sort -> List (Html.Html Msg)
+recordHeaders sort =
+    let
+        ( icon, sortColumn ) =
+            case sort of
+                Asc column ->
+                    ( "glyphicon glyphicon-sort-by-attributes", column )
+
+                Desc column ->
+                    ( "glyphicon glyphicon-sort-by-attributes-alt", column )
+
+        headings =
+            [ "id", "title", "description", "last_modified" ]
+
+        headingWithSortIcon : String -> String -> String -> Html.Html Msg
+        headingWithSortIcon icon sortColumn heading =
+            let
+                content =
+                    if heading == sortColumn then
+                        [ Html.i [ Html.Attributes.class icon ] []
+                        , Html.text <| " " ++ heading
+                        ]
+                    else
+                        [ Html.text heading ]
+            in
+                Html.th [ Html.Events.onClick (SortByColumn heading) ] content
+    in
+        List.map
+            (headingWithSortIcon icon sortColumn)
+            headings
+
+
+recordsList : List Record -> Time -> Sort -> Html.Html Msg
+recordsList records currentTime sort =
     Html.table [ Html.Attributes.class "table" ]
         [ Html.thead []
             [ Html.tr []
-                [ Html.th [] [ Html.text "id" ]
-                , Html.th [] [ Html.text "title" ]
-                , Html.th [] [ Html.text "description" ]
-                , Html.th [] [ Html.text "last_modified" ]
-                , Html.th [] []
-                ]
+                (recordHeaders sort)
             ]
         , Html.tbody [] (List.map (recordRow currentTime) records)
         ]
@@ -67,11 +94,14 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, formData, currentTime } =
+view { error, records, formData, currentTime, sort } =
     Html.div [ Html.Attributes.class "container" ]
         [ Html.h1 [] [ Html.text "Kinto Elm :-)" ]
+        , Html.small
+            []
+            [ Html.text "Will only display 30 records at most" ]
         , errorNotif error
-        , recordsList records currentTime
+        , recordsList records currentTime sort
         , formView formData
         ]
 

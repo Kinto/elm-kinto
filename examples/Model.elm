@@ -7,6 +7,7 @@ module Model
         , Model
         , Msg(..)
         , Record
+        , Sort(..)
         )
 
 import Time
@@ -39,7 +40,13 @@ type alias Model =
     , records : List Record
     , formData : FormData
     , currentTime : Time.Time
+    , sort : Sort
     }
+
+
+type Sort
+    = Asc String
+    | Desc String
 
 
 type Msg
@@ -59,12 +66,14 @@ type Msg
     | UpdateFormTitle String
     | UpdateFormDescription String
     | Submit
+      -- Sorting
+    | SortByColumn String
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecordList ]
+    , Cmd.batch [ fetchRecordList (Desc "last_modified") ]
     )
 
 
@@ -79,6 +88,7 @@ initialModel =
     , records = []
     , formData = initialFormData
     , currentTime = 0
+    , sort = Desc "last_modified"
     }
 
 
@@ -96,7 +106,7 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = [], error = Nothing }, fetchRecordList )
+            ( { model | records = [], error = Nothing }, fetchRecordList model.sort )
 
         FetchRecordResponse (Ok record) ->
             ( { model
@@ -121,7 +131,7 @@ update msg model =
             model |> updateError error
 
         CreateRecordResponse (Ok _) ->
-            ( { model | formData = initialFormData }, fetchRecordList )
+            ( { model | formData = initialFormData }, fetchRecordList model.sort )
 
         CreateRecordResponse (Err error) ->
             model |> updateError error
@@ -130,7 +140,7 @@ update msg model =
             ( model, fetchRecord recordId )
 
         EditRecordResponse (Ok _) ->
-            ( model, fetchRecordList )
+            ( model, fetchRecordList model.sort )
 
         EditRecordResponse (Err error) ->
             model |> updateError error
@@ -143,7 +153,7 @@ update msg model =
                 | records = removeRecordFromList record model.records
                 , error = Nothing
               }
-            , fetchRecordList
+            , fetchRecordList model.sort
             )
 
         DeleteRecordResponse (Err error) ->
@@ -181,6 +191,24 @@ update msg model =
 
         Submit ->
             ( { model | formData = initialFormData }, sendFormData model.formData )
+
+        SortByColumn column ->
+            let
+                sort =
+                    case model.sort of
+                        Asc sortedColumn ->
+                            if sortedColumn == column then
+                                (Desc sortedColumn)
+                            else
+                                (Asc column)
+
+                        Desc sortedColumn ->
+                            if sortedColumn == column then
+                                (Asc sortedColumn)
+                            else
+                                (Asc column)
+            in
+                ( { model | sort = sort }, fetchRecordList sort )
 
 
 updateError : error -> Model -> ( Model, Cmd Msg )
@@ -285,12 +313,22 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecordList : Cmd Msg
-fetchRecordList =
-    client
-        |> Kinto.getList recordResource
-        |> Kinto.sortBy [ "title", "description" ]
-        |> Kinto.send FetchRecordsResponse
+fetchRecordList : Sort -> Cmd Msg
+fetchRecordList sort =
+    let
+        sortColumn =
+            case sort of
+                Asc column ->
+                    column
+
+                Desc column ->
+                    "-" ++ column
+    in
+        client
+            |> Kinto.getList recordResource
+            |> Kinto.sortBy [ sortColumn ]
+            |> Kinto.limit 30
+            |> Kinto.send FetchRecordsResponse
 
 
 deleteRecord : RecordId -> Cmd Msg
