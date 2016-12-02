@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "Kinto client tests",
-    "repository": "https://github.com/Kinto/kinto-elm-experiments.git",
+    "repository": "https://github.com/Kinto/elm-kinto.git",
     "license": "MPL",
     "source-directories": [
         ".",

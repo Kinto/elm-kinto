@@ -1,6 +1,6 @@
 # elm-kinto client
 
-[![Build Status](https://travis-ci.org/kinto/kinto-elm-experiments.svg?branch=master)](https://travis-ci.org/kinto/kinto-elm-experiments)
+[![Build Status](https://travis-ci.org/Kinto/elm-kinto.svg?branch=master)](https://travis-ci.org/kinto/elm-kinto)
 
 [Kinto](http://www.kinto-storage.org/) client for [elm](http://elm-lang.org/).
 

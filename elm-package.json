@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "A client to help making requests to a Kinto storage server",
-    "repository": "https://github.com/Kinto/kinto-elm-experiments.git",
+    "repository": "https://github.com/Kinto/elm-kinto.git",
     "license": "MPL",
     "source-directories": [
         "src"
