@@ -1,70 +1,75 @@
 module View exposing (view)
 
 import Time exposing (Time)
-import Html exposing (..)
-import Html.Events exposing (onClick, onInput, onSubmit)
-import Html.Attributes exposing (id, for, attribute, class, type_, value)
-import Utils exposing (timeAgo)
+import Html
+import Html.Events
+import Html.Attributes
+import Utils
 import Model exposing (Model, Record, Msg(..))
-import Dict
 
 
 formatLastModified : Int -> Time -> String
 formatLastModified timestamp currentTime =
-    timeAgo (toFloat timestamp) currentTime
+    Utils.timeAgo (toFloat timestamp) currentTime
 
 
-iconBtn : String -> Msg -> Html Msg
+iconBtn : String -> Msg -> Html.Html Msg
 iconBtn icon action =
-    button [ class "btn btn-xs btn-default", onClick action ]
-        [ i [ class ("glyphicon glyphicon-" ++ icon) ] [] ]
+    Html.button
+        [ Html.Attributes.class "btn btn-xs btn-default"
+        , Html.Events.onClick action
+        ]
+        [ Html.i [ Html.Attributes.class ("glyphicon glyphicon-" ++ icon) ]
+            []
+        ]
 
 
-recordRow : Time -> Record -> Html Msg
+recordRow : Time -> Record -> Html.Html Msg
 recordRow currentTime { id, title, description, last_modified } =
-    tr []
-        [ td [] [ text id ]
-        , td [] [ text (Maybe.withDefault "[empty]" title) ]
-        , td [] [ text (Maybe.withDefault "[empty]" description) ]
-        , td [] [ text (formatLastModified last_modified currentTime) ]
-        , td []
+    Html.tr []
+        [ Html.td [] [ Html.text id ]
+        , Html.td [] [ Html.text (Maybe.withDefault "[empty]" title) ]
+        , Html.td [] [ Html.text (Maybe.withDefault "[empty]" description) ]
+        , Html.td [] [ Html.text (formatLastModified last_modified currentTime) ]
+        , Html.td []
             [ iconBtn "edit" (EditRecord id)
-            , text " "
+            , Html.text " "
             , iconBtn "trash" (DeleteRecord id)
             ]
         ]
 
 
-recordsList : List Record -> Time -> Html Msg
+recordsList : List Record -> Time -> Html.Html Msg
 recordsList records currentTime =
-    table [ class "table" ]
-        [ thead []
-            [ tr []
-                [ th [] [ text "id" ]
-                , th [] [ text "title" ]
-                , th [] [ text "description" ]
-                , th [] [ text "last_modified" ]
-                , th [] []
+    Html.table [ Html.Attributes.class "table" ]
+        [ Html.thead []
+            [ Html.tr []
+                [ Html.th [] [ Html.text "id" ]
+                , Html.th [] [ Html.text "title" ]
+                , Html.th [] [ Html.text "description" ]
+                , Html.th [] [ Html.text "last_modified" ]
+                , Html.th [] []
                 ]
             ]
-        , tbody [] (List.map (recordRow currentTime) records)
+        , Html.tbody [] (List.map (recordRow currentTime) records)
         ]
 
 
-errorNotif : Maybe String -> Html Msg
+errorNotif : Maybe String -> Html.Html Msg
 errorNotif error =
     case error of
         Nothing ->
-            text ""
+            Html.text ""
 
         Just message ->
-            div [ class "alert alert-danger" ] [ text ("Error: " ++ message) ]
+            Html.div [ Html.Attributes.class "alert alert-danger" ]
+                [ Html.text ("Error: " ++ message) ]
 
 
-view : Model -> Html Msg
+view : Model -> Html.Html Msg
 view { error, records, formData, currentTime } =
-    div [ class "container" ]
-        [ h1 [] [ text "Kinto Elm :-)" ]
+    Html.div [ Html.Attributes.class "container" ]
+        [ Html.h1 [] [ Html.text "Kinto Elm :-)" ]
         , errorNotif error
         , recordsList records currentTime
         , formView formData
@@ -89,35 +94,42 @@ formTitle model =
         |> String.trim
 
 
-formView : Model.FormData -> Html Msg
+formView : Model.FormData -> Html.Html Msg
 formView formData =
-    form [ onSubmit Submit ]
-        [ fieldset []
-            [ legend [] [ text (formTitle formData) ]
-            , div [ class "form-group" ]
-                [ label [ for "title" ] [ text "Title" ]
-                , input
-                    [ id "title"
-                    , type_ "text"
-                    , class "form-control"
-                    , value formData.title
-                    , onInput UpdateFormTitle
+    Html.form [ Html.Events.onSubmit Submit ]
+        [ Html.fieldset []
+            [ Html.legend [] [ Html.text (formTitle formData) ]
+            , Html.div [ Html.Attributes.class "form-group" ]
+                [ Html.label
+                    [ Html.Attributes.for "title" ]
+                    [ Html.text "Title" ]
+                , Html.input
+                    [ Html.Attributes.id "title"
+                    , Html.Attributes.type_ "text"
+                    , Html.Attributes.class "form-control"
+                    , Html.Attributes.value formData.title
+                    , Html.Events.onInput UpdateFormTitle
                     ]
                     []
                 ]
-            , div [ class "form-group" ]
-                [ label [ for "description" ] [ text "Description" ]
-                , textarea
-                    [ id "description"
-                    , class "form-control"
-                    , value formData.description
-                    , onInput UpdateFormDescription
+            , Html.div [ Html.Attributes.class "form-group" ]
+                [ Html.label
+                    [ Html.Attributes.for "description" ]
+                    [ Html.text "Description" ]
+                , Html.textarea
+                    [ Html.Attributes.id "description"
+                    , Html.Attributes.class "form-control"
+                    , Html.Attributes.value formData.description
+                    , Html.Events.onInput UpdateFormDescription
                     ]
                     []
                 ]
-            , div []
-                [ button [ type_ "submit", class "btn btn-default" ]
-                    [ text (formVerb formData) ]
+            , Html.div []
+                [ Html.button
+                    [ Html.Attributes.type_ "submit"
+                    , Html.Attributes.class "btn btn-default"
+                    ]
+                    [ Html.text (formVerb formData) ]
                 ]
             ]
         ]
