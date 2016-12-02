@@ -22,6 +22,7 @@ module Kinto
         , sortBy
         , limit
         , send
+        , toRequest
         , get
         , getList
         , create
@@ -65,7 +66,7 @@ Item endpoints are:
 @docs Endpoint, endpointUrl, ErrorDetail, Error, extractError, toResponse
 
 # Sending requests
-@docs send
+@docs send, toRequest
 
 -}
 
@@ -501,6 +502,20 @@ send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
 send tagger builder =
     builder
         |> HttpBuilder.send (toResponse >> tagger)
+
+
+{-| Extract the Http.Request component of the request, for introspection,
+testing, or converting to a `Task` using `Http.toTask`.
+
+    client
+        |> create resource data
+        |> toRequest
+
+-}
+toRequest : HttpBuilder.RequestBuilder a -> Http.Request a
+toRequest builder =
+    builder
+        |> HttpBuilder.toRequest
 
 
 {-| Create a GET request on an item endpoint
