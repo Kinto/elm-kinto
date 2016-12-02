@@ -3,8 +3,6 @@ module Model exposing (..)
 import Time exposing (Time, second)
 import Json.Decode as Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
 import Json.Encode as Encode
-import Form
-import Dict
 import Kinto
 
 
@@ -25,30 +23,38 @@ type alias Record =
     }
 
 
-type alias Records =
-    Dict.Dict RecordId Record
+type alias FormData =
+    { id : Maybe String
+    , title : String
+    , description : String
+    }
 
 
 type alias Model =
     { error : Maybe String
     , records : List Record
-    , formData : Form.Model
+    , formData : FormData
     , currentTime : Time
     }
 
 
 type Msg
     = NoOp
+      -- Use by TimeAgo to display human friendly timestamps
     | Tick Time
+      -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
     | FetchRecordsResponse (Result Kinto.Error (List Record))
-    | FormMsg Form.Msg
     | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Record)
     | DeleteRecord RecordId
     | DeleteRecordResponse (Result Kinto.Error Record)
+      -- Form
+    | UpdateFormTitle String
+    | UpdateFormDescription String
+    | Submit
 
 
 init : ( Model, Cmd Msg )
@@ -58,11 +64,16 @@ init =
     )
 
 
+initialFormData : FormData
+initialFormData =
+    FormData Nothing "" ""
+
+
 initialModel : Model
 initialModel =
     { error = Nothing
     , records = []
-    , formData = Form.init
+    , formData = initialFormData
     , currentTime = 0
     }
 
@@ -105,25 +116,8 @@ update msg model =
         FetchRecordsResponse (Err error) ->
             model |> updateError error
 
-        FormMsg subMsg ->
-            let
-                ( updated, formMsg ) =
-                    Form.update subMsg model.formData
-            in
-                case formMsg of
-                    Nothing ->
-                        ( { model
-                            | formData = updated
-                            , records = updateRecordInList updated model.records
-                          }
-                        , Cmd.none
-                        )
-
-                    Just (Form.FormSubmitted data) ->
-                        ( { model | formData = updated }, sendFormData model data )
-
         CreateRecordResponse (Ok _) ->
-            ( { model | formData = Form.init }, fetchRecordList )
+            ( { model | formData = initialFormData }, fetchRecordList )
 
         CreateRecordResponse (Err error) ->
             model |> updateError error
@@ -151,6 +145,23 @@ update msg model =
         DeleteRecordResponse (Err error) ->
             model |> updateError error
 
+        UpdateFormTitle title ->
+            let
+                data =
+                    model.formData
+            in
+                ( { model | formData = { data | title = title } }, Cmd.none )
+
+        UpdateFormDescription description ->
+            let
+                data =
+                    model.formData
+            in
+                ( { model | formData = { data | description = description } }, Cmd.none )
+
+        Submit ->
+            ( { model | formData = initialFormData }, sendFormData model.formData )
+
 
 updateError : error -> Model -> ( Model, Cmd Msg )
 updateError error model =
@@ -170,15 +181,15 @@ subscriptions model =
 -- Helpers
 
 
-recordToFormData : Record -> Form.Model
+recordToFormData : Record -> FormData
 recordToFormData { id, title, description } =
-    Form.Model
+    FormData
         (Just id)
         (Maybe.withDefault "" title)
         (Maybe.withDefault "" description)
 
 
-encodeFormData : Form.Model -> Encode.Value
+encodeFormData : FormData -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
         [ ( "title", Encode.string title )
@@ -191,7 +202,7 @@ removeRecordFromList { id } records =
     List.filter (\record -> record.id /= id) records
 
 
-updateRecordInList : Form.Model -> List Record -> List Record
+updateRecordInList : FormData -> List Record -> List Record
 updateRecordInList formData records =
     -- This enables live reflecting ongoing form updates in the records list
     case formData.id of
@@ -209,7 +220,7 @@ updateRecordInList formData records =
                 records
 
 
-updateRecord : Form.Model -> Record -> Record
+updateRecord : FormData -> Record -> Record
 updateRecord formData record =
     { record
         | title = Just formData.title
@@ -269,8 +280,8 @@ deleteRecord recordId =
         |> Kinto.send DeleteRecordResponse
 
 
-sendFormData : Model -> Form.Model -> Cmd Msg
-sendFormData model formData =
+sendFormData : FormData -> Cmd Msg
+sendFormData formData =
     let
         data =
             encodeFormData formData

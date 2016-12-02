@@ -2,11 +2,10 @@ module View exposing (view)
 
 import Time exposing (Time)
 import Html exposing (..)
-import Html.Events exposing (onClick)
-import Html.Attributes exposing (id, for, attribute, class, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Attributes exposing (id, for, attribute, class, type_, value)
 import Utils exposing (timeAgo)
-import Model exposing (Model, Record, Records, Msg(..))
-import Form
+import Model exposing (Model, Record, Msg(..))
 import Dict
 
 
@@ -68,5 +67,57 @@ view { error, records, formData, currentTime } =
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error
         , recordsList records currentTime
-        , Html.map FormMsg (Form.view formData)
+        , formView formData
+        ]
+
+
+formVerb : Model.FormData -> String
+formVerb { id } =
+    case id of
+        Nothing ->
+            "Create"
+
+        Just _ ->
+            "Update"
+
+
+formTitle : Model.FormData -> String
+formTitle model =
+    (formVerb model)
+        ++ " "
+        ++ (Maybe.withDefault "" model.id)
+        |> String.trim
+
+
+formView : Model.FormData -> Html Msg
+formView formData =
+    form [ onSubmit Submit ]
+        [ fieldset []
+            [ legend [] [ text (formTitle formData) ]
+            , div [ class "form-group" ]
+                [ label [ for "title" ] [ text "Title" ]
+                , input
+                    [ id "title"
+                    , type_ "text"
+                    , class "form-control"
+                    , value formData.title
+                    , onInput UpdateFormTitle
+                    ]
+                    []
+                ]
+            , div [ class "form-group" ]
+                [ label [ for "description" ] [ text "Description" ]
+                , textarea
+                    [ id "description"
+                    , class "form-control"
+                    , value formData.description
+                    , onInput UpdateFormDescription
+                    ]
+                    []
+                ]
+            , div []
+                [ button [ type_ "submit", class "btn btn-default" ]
+                    [ text (formVerb formData) ]
+                ]
+            ]
         ]
