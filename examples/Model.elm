@@ -83,31 +83,27 @@ update msg model =
         FetchRecords ->
             ( { model | records = [], error = Nothing }, fetchRecordList )
 
-        FetchRecordResponse response ->
-            case response of
-                Ok record ->
-                    ( { model
-                        | formData = recordToFormData record
-                        , error = Nothing
-                      }
-                    , Cmd.none
-                    )
+        FetchRecordResponse (Ok record) ->
+            ( { model
+                | formData = recordToFormData record
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        FetchRecordResponse (Err error) ->
+            model |> updateError error
 
-        FetchRecordsResponse response ->
-            case response of
-                Ok recordList ->
-                    ( { model
-                        | records = recordList
-                        , error = Nothing
-                      }
-                    , Cmd.none
-                    )
+        FetchRecordsResponse (Ok recordList) ->
+            ( { model
+                | records = recordList
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        FetchRecordsResponse (Err error) ->
+            model |> updateError error
 
         FormMsg subMsg ->
             let
@@ -126,40 +122,39 @@ update msg model =
                     Just (Form.FormSubmitted data) ->
                         ( { model | formData = updated }, sendFormData model data )
 
-        CreateRecordResponse response ->
-            case response of
-                Ok _ ->
-                    ( { model | formData = Form.init }, fetchRecordList )
+        CreateRecordResponse (Ok _) ->
+            ( { model | formData = Form.init }, fetchRecordList )
 
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        CreateRecordResponse (Err error) ->
+            model |> updateError error
 
         EditRecord recordId ->
             ( model, fetchRecord recordId )
 
-        EditRecordResponse response ->
-            case response of
-                Ok _ ->
-                    ( model, fetchRecordList )
+        EditRecordResponse (Ok _) ->
+            ( model, fetchRecordList )
 
-                Err err ->
-                    ( { model | error = Just <| toString err }, Cmd.none )
+        EditRecordResponse (Err error) ->
+            model |> updateError error
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
 
-        DeleteRecordResponse response ->
-            case response of
-                Ok record ->
-                    ( { model
-                        | records = removeRecordFromList record model.records
-                        , error = Nothing
-                      }
-                    , fetchRecordList
-                    )
+        DeleteRecordResponse (Ok record) ->
+            ( { model
+                | records = removeRecordFromList record model.records
+                , error = Nothing
+              }
+            , fetchRecordList
+            )
 
-                Err err ->
-                    ( { model | error = Just <| toString err }, Cmd.none )
+        DeleteRecordResponse (Err error) ->
+            model |> updateError error
+
+
+updateError : error -> Model -> ( Model, Cmd Msg )
+updateError error model =
+    ( { model | error = Just <| toString error }, Cmd.none )
 
 
 
