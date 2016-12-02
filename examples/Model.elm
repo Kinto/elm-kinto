@@ -1,14 +1,18 @@
-module Model exposing (..)
+module Model
+    exposing
+        ( init
+        , update
+        , subscriptions
+        , FormData
+        , Model
+        , Msg(..)
+        , Record
+        )
 
-import Time exposing (Time, second)
-import Json.Decode as Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
+import Time
+import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
-
-
--- TODO:
--- - Expose only what's necessary
--- MODEL and TYPES
 
 
 type alias RecordId =
@@ -34,14 +38,14 @@ type alias Model =
     { error : Maybe String
     , records : List Record
     , formData : FormData
-    , currentTime : Time
+    , currentTime : Time.Time
     }
 
 
 type Msg
     = NoOp
       -- Use by TimeAgo to display human friendly timestamps
-    | Tick Time
+    | Tick Time.Time
       -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
@@ -174,7 +178,7 @@ updateError error model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every second Tick
+    Time.every Time.second Tick
 
 
 
@@ -244,13 +248,13 @@ recordResource =
     Kinto.recordResource "default" "test-items" decodeRecord
 
 
-decodeRecord : Decoder Record
+decodeRecord : Decode.Decoder Record
 decodeRecord =
-    (map4 Record
-        (field "id" string)
-        (maybe (field "title" string))
-        (maybe (field "description" string))
-        (field "last_modified" int)
+    (Decode.map4 Record
+        (Decode.field "id" Decode.string)
+        (Decode.maybe (Decode.field "title" Decode.string))
+        (Decode.maybe (Decode.field "description" Decode.string))
+        (Decode.field "last_modified" Decode.int)
     )
 
 
