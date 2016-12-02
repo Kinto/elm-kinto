@@ -151,17 +151,33 @@ update msg model =
 
         UpdateFormTitle title ->
             let
-                data =
+                formData =
                     model.formData
+
+                updated =
+                    { formData | title = title }
             in
-                ( { model | formData = { data | title = title } }, Cmd.none )
+                ( { model
+                    | formData = updated
+                    , records = updateRecordInList updated model.records
+                  }
+                , Cmd.none
+                )
 
         UpdateFormDescription description ->
             let
-                data =
+                formData =
                     model.formData
+
+                updated =
+                    { formData | description = description }
             in
-                ( { model | formData = { data | description = description } }, Cmd.none )
+                ( { model
+                    | formData = updated
+                    , records = updateRecordInList updated model.records
+                  }
+                , Cmd.none
+                )
 
         Submit ->
             ( { model | formData = initialFormData }, sendFormData model.formData )
