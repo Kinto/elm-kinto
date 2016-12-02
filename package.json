@@ -1,31 +1,25 @@
 {
-  "name": "kinto-elm-experiments",
+  "name": "elm-kinto",
   "version": "1.0.0",
-  "description": "Experimenting with Elm and Kinto.",
-  "main": "index.js",
+  "description": "A client to help making requests to a Kinto storage server",
   "scripts": {
-    "build": "node_modules/.bin/elm-make src/Main.elm --output=build/app.js",
-    "start": "node_modules/.bin/elm-reactor",
-    "debug": "node_modules/.bin/elm-live src/Main.elm --output=html/live/app.js --dir=html/live -- --debug",
-    "live": "node_modules/.bin/elm-live src/Main.elm --output=html/live/app.js --dir=html/live",
-    "publish-to-gh-pages": "npm run build && cp html/index.html build/ && node_modules/.bin/gh-pages --dist build/",
+    "build": "node_modules/.bin/elm-make src/Kinto.elm",
     "test": "node_modules/.bin/elm-test",
-    "tdd": "node_modules/.bin/elm-test --watch"
+    "tdd": "node_modules/.bin/elm-test --watch",
+    "docs": "node_modules/.bin/elm-make --docs=documentation.json"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kinto/kinto-elm-experiments.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "The Kinto team",
+  "license": "MPL",
   "bugs": {
     "url": "https://github.com/Kinto/kinto-elm-experiments/issues"
   },
   "homepage": "https://github.com/Kinto/kinto-elm-experiments#readme",
   "devDependencies": {
     "elm": "^0.18.0",
-    "elm-live": "^2.6.0",
-    "elm-test": "^0.18.0",
-    "gh-pages": "^0.11.0"
+    "elm-test": "^0.18.0"
   }
 }

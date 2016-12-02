@@ -1,19 +1,21 @@
 {
     "version": "1.0.0",
-    "summary": "Kinto Elm Experiments tests",
+    "summary": "Kinto client tests",
     "repository": "https://github.com/Kinto/kinto-elm-experiments.git",
-    "license": "MIT",
+    "license": "MPL",
     "source-directories": [
         ".",
-        "../src"
+        "../src",
+        "../src/examples"
     ],
     "exposed-modules": [],
     "dependencies": {
-        "elm-community/elm-test": "3.1.0 <= v < 4.0.0",
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
         "elm-lang/http": "1.0.0 <= v < 2.0.0",
+        "lukewestby/elm-http-builder": "4.0.0 <= v < 5.0.0",
+        "truqu/elm-base64": "1.0.5 <= v < 2.0.0",
         "rtfeldman/node-test-runner": "3.0.0 <= v < 4.0.0",
-        "truqu/elm-base64": "1.0.5 <= v < 2.0.0"
+        "elm-community/elm-test": "3.1.0 <= v < 4.0.0"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }

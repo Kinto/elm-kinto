@@ -1,18 +1,81 @@
-module Kinto exposing (..)
+module Kinto
+    exposing
+        ( Auth(..)
+        , Endpoint(..)
+        , Filter
+        , Client
+        , Resource
+        , bucketResource
+        , collectionResource
+        , recordResource
+        , decodeData
+        , encodeData
+        , ErrorDetail
+        , Error(..)
+        , endpointUrl
+        , errorDecoder
+        , toResponse
+        , extractError
+        , headersForAuth
+        , client
+        , withFilter
+        , sortBy
+        , send
+        , get
+        , getList
+        , create
+        , update
+        , replace
+        , delete
+        )
+
+{-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
+the REST API.
+
+Kinto is the backend for your next application. It's a generic JSON document
+store with sharing and synchronisation capabilities. It's open source. It's
+easy to deploy. You can host it yourself, own your data and keep it out of
+silos.
+
+# Creating requests
+You create requests on either an item or a plural (list) endpoint.
+[Kinto concepts](http://kinto.readthedocs.io/en/stable/concepts.html) explain
+that in details.
+
+Plural (list) endpoints are:
+- buckets: `buckets/`
+- collections: `buckets/:bucketId/collections/`
+- records: `buckets/:bucketId/collections/:collectionId/records/`
+
+Item endpoints are:
+- bucket: `buckets/:bucketId`
+- collection: `buckets/:bucketId/collections/:collectionId`
+- record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
+
+@docs get, getList, create, update, replace, delete
+
+# Sorting, filtering
+@docs sortBy, withFilter, Filter
+
+# Configure a client and resources
+@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+
+# Types and Errors
+@docs Endpoint, endpointUrl, ErrorDetail, Error, extractError, toResponse
+
+# Sending requests
+@docs send
+
+-}
 
 import Base64
 import Http
-import Json.Decode as Decode exposing (field)
+import HttpBuilder
+import Json.Decode as Decode
 import Json.Encode as Encode
-import String
-import Task exposing (Task)
 
 
 type alias Url =
-    String
-
-
-type alias Method =
     String
 
 
@@ -20,22 +83,14 @@ type alias Method =
 -- Auth
 
 
-type alias Username =
-    String
+{-| A type for authentication
 
-
-type alias Password =
-    String
-
-
-type alias Token =
-    String
-
-
+    Basic "username" "password"
+-}
 type Auth
     = NoAuth
-    | Basic Username Password
-    | Bearer Token
+    | Basic String String
+    | Bearer String
 
 
 
@@ -54,6 +109,10 @@ type alias RecordId =
     String
 
 
+{-| A type for Kinto API endpoints.
+
+    RecordEndpoint "bucket-name" "collection-name" "item-id"
+-}
 type Endpoint
     = RootEndpoint
     | BucketListEndpoint
@@ -64,27 +123,103 @@ type Endpoint
     | RecordEndpoint BucketName CollectionName RecordId
 
 
+{-| A type for filtering, used with `withFilter`
+-}
+type Filter
+    = Equal String String
+    | Min String String
+    | Max String String
+    | LT String String
+    | GT String String
+    | IN String (List String)
+    | NOT String String
+    | LIKE String String
+    | SINCE String
+    | BEFORE String
+
+
 type alias Body =
     Encode.Value
 
 
-type Request
-    = KintoRequest Config Endpoint Method
-    | KintoRequestWithBody Config Endpoint Method Body
-
-
-type alias Config =
+{-| A Kinto Client. Constructed using the `client` helper.
+-}
+type alias Client =
     { baseUrl : String
-    , headers : List Http.Header
-    , auth : Auth
+    , headers : List ( String, String )
     }
+
+
+{-| A type for resources. Constructed using one of `bucketResource`,
+`collectionResource` or `recordResource`.
+-}
+type alias Resource a =
+    { itemEndpoint : String -> Endpoint
+    , listEndpoint : Endpoint
+    , itemDecoder : Decode.Decoder a
+    , listDecoder : Decode.Decoder (List a)
+    }
+
+
+{-| A constructor for a bucket resource.
+
+    bucketResource bucketDecoder
+-}
+bucketResource : Decode.Decoder a -> Resource a
+bucketResource decoder =
+    Resource
+        (BucketEndpoint)
+        (BucketListEndpoint)
+        (decodeData decoder)
+        (decodeData (Decode.list decoder))
+
+
+{-| A constructor for a collection resource.
+
+    collectionResource "bucket-name" collectionDecoder
+-}
+collectionResource : BucketName -> Decode.Decoder a -> Resource a
+collectionResource bucket decoder =
+    Resource
+        (CollectionEndpoint bucket)
+        (CollectionListEndpoint bucket)
+        (decodeData decoder)
+        (decodeData (Decode.list decoder))
+
+
+{-| A constructor for a record resource.
+-}
+recordResource : BucketName -> CollectionName -> Decode.Decoder a -> Resource a
+recordResource bucket collection decoder =
+    Resource
+        (RecordEndpoint bucket collection)
+        (RecordListEndpoint bucket collection)
+        (decodeData decoder)
+        (decodeData (Decode.list decoder))
+
+
+{-| A decoder for a basic Kinto response.
+-}
+decodeData : Decode.Decoder a -> Decode.Decoder a
+decodeData decoder =
+    Decode.field "data" decoder
+
+
+{-| An encoder for a basic Kinto query.
+-}
+encodeData : Encode.Value -> Encode.Value
+encodeData encoder =
+    Encode.object
+        [ ( "data", encoder ) ]
 
 
 
 -- Kinto errors
 
 
-type alias ErrorRecord =
+{-| A type for Kinto error details.
+-}
+type alias ErrorDetail =
     { errno : Int
     , message : String
     , code : Int
@@ -100,9 +235,11 @@ type alias StatusMsg =
     String
 
 
+{-| A type for all errors that the elm-client may return.
+-}
 type Error
     = ServerError StatusCode StatusMsg String
-    | KintoError StatusCode StatusMsg ErrorRecord
+    | KintoError StatusCode StatusMsg ErrorDetail
     | NetworkError Http.Error
 
 
@@ -110,14 +247,18 @@ type Error
 -- Making requests
 
 
-endpointUrl : Config -> Endpoint -> Url
-endpointUrl config endpoint =
+{-| Get the full url to an endpoint.
+
+    endpointUrl "https://kinto.dev.mozaws.net/v1/" (RecordListEndpoint "default" "test-items")
+-}
+endpointUrl : String -> Endpoint -> Url
+endpointUrl baseUrl endpoint =
     let
-        baseUrl =
-            if String.endsWith "/" config.baseUrl then
-                String.dropRight 1 config.baseUrl
+        url =
+            if String.endsWith "/" baseUrl then
+                String.dropRight 1 baseUrl
             else
-                config.baseUrl
+                baseUrl
 
         joinUrl =
             String.join "/"
@@ -126,57 +267,25 @@ endpointUrl config endpoint =
             RootEndpoint ->
                 -- Otherwise Kinto returns a 307
                 -- See https://github.com/Kinto/kinto/issues/852
-                baseUrl ++ "/"
+                url ++ "/"
 
             BucketListEndpoint ->
-                joinUrl [ baseUrl, "buckets" ]
+                joinUrl [ url, "buckets" ]
 
             BucketEndpoint bucketName ->
-                joinUrl [ baseUrl, "buckets", bucketName ]
+                joinUrl [ url, "buckets", bucketName ]
 
             CollectionListEndpoint bucketName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections" ]
+                joinUrl [ url, "buckets", bucketName, "collections" ]
 
             CollectionEndpoint bucketName collectionName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName ]
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName ]
 
             RecordListEndpoint bucketName collectionName ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records" ]
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records" ]
 
             RecordEndpoint bucketName collectionName recordId ->
-                joinUrl [ baseUrl, "buckets", bucketName, "collections", collectionName, "records", recordId ]
-
-
-fromRequest : Request -> Http.Request Encode.Value
-fromRequest request =
-    let
-        ( config, endpoint, method, body ) =
-            case request of
-                KintoRequest config endpoint method ->
-                    ( config, endpoint, method, Http.emptyBody )
-
-                KintoRequestWithBody config endpoint method body ->
-                    ( config, endpoint, method, Http.jsonBody body )
-    in
-        Http.request
-            { method = method
-            , headers = headersFromConfig config
-            , url = endpointUrl config endpoint
-            , body = body
-            , expect = Http.expectJson bodyDataDecoder
-            , timeout = Nothing
-            , withCredentials = False
-            }
-
-
-performQuery : Request -> (Result Error Decode.Value -> msg) -> Cmd msg
-performQuery request toMsg =
-    Http.send (toKintoResponse >> toMsg) (fromRequest request)
-
-
-withHeader : String -> String -> Config -> Config
-withHeader name value ({ headers } as config) =
-    { config | headers = (Http.header name value) :: headers }
+                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
 alwaysEncode : String -> String
@@ -189,54 +298,36 @@ alwaysEncode string =
             hash
 
 
-headersFromConfig : Config -> List Http.Header
-headersFromConfig ({ auth, headers } as config) =
-    case auth of
-        NoAuth ->
-            headers
-
-        Basic username password ->
-            config
-                |> withHeader
-                    "Authorization"
-                    ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
-                |> .headers
-
-        Bearer token ->
-            config
-                |> withHeader "Authorization" ("Bearer " ++ token)
-                |> .headers
-
-
-configure : Url -> Auth -> Config
-configure baseUrl auth =
-    Config baseUrl [] auth
-
-
 
 -- Dealing with answers from the Kinto server
 
 
-bodyDataDecoder : Decode.Decoder Decode.Value
-bodyDataDecoder =
-    (field "data" Decode.value)
+{-| A decoder for `ErrorDetail`. This is the kind of json message answered by Kinto when there's an error:
 
-
-errorDecoder : Decode.Decoder ErrorRecord
+    {"errno":104,
+     "message":"Please authenticate yourself to use this endpoint.",
+     "code":401,
+     "error":"Unauthorized"}
+-}
+errorDecoder : Decode.Decoder ErrorDetail
 errorDecoder =
-    Decode.map4 ErrorRecord
-        (field "errno" Decode.int)
-        (field "message" Decode.string)
-        (field "code" Decode.int)
-        (field "error" Decode.string)
+    Decode.map4 ErrorDetail
+        (Decode.field "errno" Decode.int)
+        (Decode.field "message" Decode.string)
+        (Decode.field "code" Decode.int)
+        (Decode.field "error" Decode.string)
 
 
-toKintoResponse : Result Http.Error Decode.Value -> Result Error Decode.Value
-toKintoResponse response =
+{-| Change the error from an `Http.Error` to an `Error`.
+-}
+toResponse : Result Http.Error a -> Result Error a
+toResponse response =
     response
         |> Result.mapError extractError
 
 
+{-| Extract an `Error` from an `Http.Error`.
+-}
 extractError : Http.Error -> Error
 extractError error =
     case error of
@@ -268,266 +359,199 @@ extractKintoError statusCode statusMsg body =
 
 
 
+-- Helpers
+
+
+{-| Return the header name and value for the given `Auth`.
+
+    headersForAuth (Basic "username" "password")
+-}
+headersForAuth : Auth -> ( String, String )
+headersForAuth auth =
+    case auth of
+        NoAuth ->
+            ( "", "" )
+
+        Basic username password ->
+            ( "Authorization"
+            , ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
+            )
+
+        Bearer token ->
+            ( "Authorization", ("Bearer " ++ token) )
+
+
+{-| A constructor for a `Client`.
+
+    client
+        "https://kinto.dev.mozaws.net/v1/"
+        (Basic "username" "password")
+-}
+client : Url -> Auth -> Client
+client baseUrl auth =
+    Client baseUrl [ (headersForAuth auth) ]
+
+
+
+-- Filtering
+
+
+{-| Add [filtering query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/filtering.html) to the request sent to the Kinto server.
+
+    client
+        |> getList recordResource
+        |> withFilter (NOT "title" "test")
+        |> send TodosFetched
+-}
+withFilter :
+    Filter
+    -> HttpBuilder.RequestBuilder a
+    -> HttpBuilder.RequestBuilder a
+withFilter filter builder =
+    let
+        header =
+            case filter of
+                Equal key val ->
+                    ( key, val )
+
+                Min key val ->
+                    ( "min_" ++ key, val )
+
+                Max key val ->
+                    ( "max_" ++ key, val )
+
+                LT key val ->
+                    ( "lt_" ++ key, val )
+
+                GT key val ->
+                    ( "gt_" ++ key, val )
+
+                IN key values ->
+                    ( "in_" ++ key, String.join "," values )
+
+                NOT key val ->
+                    ( "not_" ++ key, val )
+
+                LIKE key val ->
+                    ( "like_" ++ key, val )
+
+                SINCE val ->
+                    ( "_since", val )
+
+                BEFORE val ->
+                    ( "_before", val )
+    in
+        builder
+            |> HttpBuilder.withQueryParams [ header ]
+
+
+
+-- Sorting
+
+
+{-| Add [sorting query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/sorting.html) to the request sent to the Kinto server.
+
+    client
+        |> getList recordResource
+        |> sortBy ["title", "description"]
+        |> send TodosFetched
+-}
+sortBy :
+    List String
+    -> HttpBuilder.RequestBuilder a
+    -> HttpBuilder.RequestBuilder a
+sortBy keys builder =
+    builder
+        |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
+
+
+
 -- High level API
--- GET
 
 
-getBucketList : Config -> (Result Error Decode.Value -> msg) -> Cmd msg
-getBucketList config toMsg =
-    performQuery (KintoRequest config BucketListEndpoint "GET") toMsg
+{-| Send a request to the Kinto server.
+
+    client
+        |> create resource data
+        |> send TodosCreated
+
+-}
+send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
+send tagger builder =
+    builder
+        |> HttpBuilder.send (toResponse >> tagger)
 
 
-getBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
-getBucket config bucket toMsg =
-    performQuery (KintoRequest config (BucketEndpoint bucket) "GET") toMsg
+{-| Create a GET request on an item endpoint
+
+    get resource itemId
+-}
+get : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+get resource itemId client =
+    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-getCollectionList :
-    Config
-    -> BucketName
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-getCollectionList config bucket toMsg =
-    performQuery (KintoRequest config (CollectionListEndpoint bucket) "GET") toMsg
+{-| Create a GET request on one of the plural endpoints
+
+    getList resource
+-}
+getList : Resource a -> Client -> HttpBuilder.RequestBuilder (List a)
+getList resource client =
+    endpointUrl client.baseUrl resource.listEndpoint
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectJson resource.listDecoder)
 
 
-getCollection :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-getCollection config bucket collection toMsg =
-    performQuery (KintoRequest config (CollectionEndpoint bucket collection) "GET") toMsg
+{-| Create a DELETE request on an item endpoint:
+
+    delete resource itemId
+-}
+delete : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+delete resource itemId client =
+    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+        |> HttpBuilder.delete
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-getRecordList :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-getRecordList config bucket collection toMsg =
-    performQuery (KintoRequest config (RecordListEndpoint bucket collection) "GET") toMsg
+{-| Create a POST request on a plural endpoint:
+
+    create resource data
+-}
+create : Resource a -> Body -> Client -> HttpBuilder.RequestBuilder a
+create resource body client =
+    endpointUrl client.baseUrl resource.listEndpoint
+        |> HttpBuilder.post
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withJsonBody (encodeData body)
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-getRecord :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> RecordId
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-getRecord config bucket collection recordId toMsg =
-    performQuery
-        (KintoRequest
-            config
-            (RecordEndpoint bucket collection recordId)
-            "GET"
-        )
-        toMsg
+{-| Create a PATCH request on an item endpoint:
+
+    update resource itemId
+-}
+update : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+update resource itemId body client =
+    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+        |> HttpBuilder.patch
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withJsonBody (encodeData body)
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
+{-| Create a PUT request on an item endpoint:
 
--- CREATE
-
-
-createBucket : Config -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-createBucket config body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            BucketListEndpoint
-            "POST"
-            body
-        )
-        toMsg
-
-
-createCollection :
-    Config
-    -> BucketName
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-createCollection config bucket body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (CollectionListEndpoint bucket)
-            "POST"
-            body
-        )
-        toMsg
-
-
-createRecord :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-createRecord config bucket collection body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (RecordListEndpoint bucket collection)
-            "POST"
-            body
-        )
-        toMsg
-
-
-
--- UPDATE
-
-
-updateBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-updateBucket config bucket body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (BucketEndpoint bucket)
-            "PATCH"
-            body
-        )
-        toMsg
-
-
-updateCollection :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-updateCollection config bucket collection body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (CollectionEndpoint bucket collection)
-            "PATCH"
-            body
-        )
-        toMsg
-
-
-updateRecord :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> RecordId
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-updateRecord config bucket collection recordId body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (RecordEndpoint bucket collection recordId)
-            "PATCH"
-            body
-        )
-        toMsg
-
-
-
--- REPLACE
-
-
-replaceBucket : Config -> BucketName -> Body -> (Result Error Decode.Value -> msg) -> Cmd msg
-replaceBucket config bucket body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (BucketEndpoint bucket)
-            "PUT"
-            body
-        )
-        toMsg
-
-
-replaceCollection :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-replaceCollection config bucket collection body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (CollectionEndpoint bucket collection)
-            "PUT"
-            body
-        )
-        toMsg
-
-
-replaceRecord :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> RecordId
-    -> Body
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-replaceRecord config bucket collection recordId body toMsg =
-    performQuery
-        (KintoRequestWithBody
-            config
-            (RecordEndpoint bucket collection recordId)
-            "PUT"
-            body
-        )
-        toMsg
-
-
-
--- DELETE
-
-
-deleteBucket : Config -> BucketName -> (Result Error Decode.Value -> msg) -> Cmd msg
-deleteBucket config bucket toMsg =
-    performQuery
-        (KintoRequest
-            config
-            (BucketEndpoint bucket)
-            "DELETE"
-        )
-        toMsg
-
-
-deleteCollection :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-deleteCollection config bucket collection toMsg =
-    performQuery
-        (KintoRequest
-            config
-            (CollectionEndpoint bucket collection)
-            "DELETE"
-        )
-        toMsg
-
-
-deleteRecord :
-    Config
-    -> BucketName
-    -> CollectionName
-    -> RecordId
-    -> (Result Error Decode.Value -> msg)
-    -> Cmd msg
-deleteRecord config bucket collection recordId toMsg =
-    performQuery
-        (KintoRequest
-            config
-            (RecordEndpoint bucket collection recordId)
-            "DELETE"
-        )
-        toMsg
+    put resource itemId
+-}
+replace : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+replace resource itemId body client =
+    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+        |> HttpBuilder.put
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withJsonBody (encodeData body)
+        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)

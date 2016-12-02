@@ -1,0 +1,29 @@
+{
+  "name": "elm-kinto-examples",
+  "version": "1.0.0",
+  "description": "Examples using the elm-kinto client",
+  "scripts": {
+    "build": "node_modules/.bin/elm-make Main.elm --output=build/app.js",
+    "debug": "cp index.html build/ && node_modules/.bin/elm-live Main.elm --output=build/app.js --dir=build -- --debug",
+    "live": "cp index.html build/ && node_modules/.bin/elm-live Main.elm --output=build/app.js --dir=build",
+    "publish-to-gh-pages": "npm run build && cp index.html build/ && node_modules/.bin/gh-pages --dist build/ && echo 'deployed to https://kinto.github.io/kinto-elm-experiments/'",
+    "test": "node_modules/.bin/elm-test",
+    "tdd": "node_modules/.bin/elm-test --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kinto/kinto-elm-experiments.git"
+  },
+  "author": "The Kinto team",
+  "license": "MPL",
+  "bugs": {
+    "url": "https://github.com/Kinto/kinto-elm-experiments/issues"
+  },
+  "homepage": "https://github.com/Kinto/kinto-elm-experiments#readme",
+  "devDependencies": {
+    "elm": "^0.18.0",
+    "elm-live": "^2.6.0",
+    "elm-test": "^0.18.0",
+    "gh-pages": "^0.11.0"
+  }
+}
