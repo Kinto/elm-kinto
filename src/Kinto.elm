@@ -20,6 +20,7 @@ module Kinto
         , client
         , withFilter
         , sortBy
+        , limit
         , send
         , get
         , getList
@@ -54,8 +55,8 @@ Item endpoints are:
 
 @docs get, getList, create, update, replace, delete
 
-# Sorting, filtering
-@docs sortBy, withFilter, Filter
+# Sorting, limiting, filtering
+@docs sortBy, limit, withFilter, Filter
 
 # Configure a client and resources
 @docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
@@ -463,6 +464,26 @@ sortBy :
 sortBy keys builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
+
+
+
+-- Limiting
+
+
+{-| Add [limit query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/pagination.html) to the request sent to the Kinto server.
+
+    client
+        |> getList recordResource
+        |> limit 10
+        |> send TodosFetched
+-}
+limit :
+    Int
+    -> HttpBuilder.RequestBuilder a
+    -> HttpBuilder.RequestBuilder a
+limit perPage builder =
+    builder
+        |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
 
 
 
