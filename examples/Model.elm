@@ -31,7 +31,7 @@ type alias Records =
 
 type alias Model =
     { error : Maybe String
-    , records : Records
+    , records : List Record
     , formData : Form.Model
     , currentTime : Time
     }
@@ -61,7 +61,7 @@ init =
 initialModel : Model
 initialModel =
     { error = Nothing
-    , records = Dict.empty
+    , records = []
     , formData = Form.init
     , currentTime = 0
     }
@@ -81,7 +81,7 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = Dict.empty, error = Nothing }, fetchRecordList )
+            ( { model | records = [], error = Nothing }, fetchRecordList )
 
         FetchRecordResponse response ->
             case response of
@@ -99,17 +99,12 @@ update msg model =
         FetchRecordsResponse response ->
             case response of
                 Ok recordList ->
-                    let
-                        recordsToDict records =
-                            List.map (\r -> ( r.id, r )) records
-                                |> Dict.fromList
-                    in
-                        ( { model
-                            | records = recordsToDict recordList
-                            , error = Nothing
-                          }
-                        , Cmd.none
-                        )
+                    ( { model
+                        | records = recordList
+                        , error = Nothing
+                      }
+                    , Cmd.none
+                    )
 
                 Err error ->
                     ( { model | error = Just <| toString error }, Cmd.none )
@@ -196,12 +191,12 @@ encodeFormData { title, description } =
         ]
 
 
-removeRecordFromList : Record -> Records -> Records
+removeRecordFromList : Record -> List Record -> List Record
 removeRecordFromList { id } records =
-    Dict.remove id records
+    List.filter (\record -> record.id /= id) records
 
 
-updateRecordInList : Form.Model -> Records -> Records
+updateRecordInList : Form.Model -> List Record -> List Record
 updateRecordInList formData records =
     -- This enables live reflecting ongoing form updates in the records list
     case formData.id of
@@ -209,21 +204,22 @@ updateRecordInList formData records =
             records
 
         Just id ->
-            Dict.update id (updateRecord formData) records
+            List.map
+                (\record ->
+                    if record.id == id then
+                        updateRecord formData record
+                    else
+                        record
+                )
+                records
 
 
-updateRecord : Form.Model -> Maybe Record -> Maybe Record
+updateRecord : Form.Model -> Record -> Record
 updateRecord formData record =
-    case record of
-        Nothing ->
-            record
-
-        Just record ->
-            Just
-                { record
-                    | title = Just formData.title
-                    , description = Just formData.description
-                }
+    { record
+        | title = Just formData.title
+        , description = Just formData.description
+    }
 
 
 

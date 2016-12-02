@@ -62,18 +62,11 @@ errorNotif error =
             div [ class "alert alert-danger" ] [ text ("Error: " ++ message) ]
 
 
-sortedRecords : Records -> List Record
-sortedRecords records =
-    Dict.values records
-        |> List.sortBy .last_modified
-        |> List.reverse
-
-
 view : Model -> Html Msg
 view { error, records, formData, currentTime } =
     div [ class "container" ]
         [ h1 [] [ text "Kinto Elm :-)" ]
         , errorNotif error
-        , recordsList (sortedRecords records) currentTime
+        , recordsList records currentTime
         , Html.map FormMsg (Form.view formData)
         ]
