@@ -41,6 +41,7 @@ type alias Model =
     , formData : FormData
     , currentTime : Time.Time
     , sort : Sort
+    , limit : Maybe Int
     }
 
 
@@ -68,12 +69,14 @@ type Msg
     | Submit
       -- Sorting
     | SortByColumn String
+      -- Limiting
+    | NewLimit String
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecordList (Desc "last_modified") ]
+    , Cmd.batch [ fetchRecordList (Desc "last_modified") (Just 30) ]
     )
 
 
@@ -89,6 +92,7 @@ initialModel =
     , formData = initialFormData
     , currentTime = 0
     , sort = Desc "last_modified"
+    , limit = Just 30
     }
 
 
@@ -106,7 +110,9 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = [], error = Nothing }, fetchRecordList model.sort )
+            ( { model | records = [], error = Nothing }
+            , fetchRecordList model.sort model.limit
+            )
 
         FetchRecordResponse (Ok record) ->
             ( { model
@@ -131,7 +137,9 @@ update msg model =
             model |> updateError error
 
         CreateRecordResponse (Ok _) ->
-            ( { model | formData = initialFormData }, fetchRecordList model.sort )
+            ( { model | formData = initialFormData }
+            , fetchRecordList model.sort model.limit
+            )
 
         CreateRecordResponse (Err error) ->
             model |> updateError error
@@ -140,7 +148,7 @@ update msg model =
             ( model, fetchRecord recordId )
 
         EditRecordResponse (Ok _) ->
-            ( model, fetchRecordList model.sort )
+            ( model, fetchRecordList model.sort model.limit )
 
         EditRecordResponse (Err error) ->
             model |> updateError error
@@ -153,7 +161,7 @@ update msg model =
                 | records = removeRecordFromList record model.records
                 , error = Nothing
               }
-            , fetchRecordList model.sort
+            , fetchRecordList model.sort model.limit
             )
 
         DeleteRecordResponse (Err error) ->
@@ -208,7 +216,19 @@ update msg model =
                             else
                                 (Asc column)
             in
-                ( { model | sort = sort }, fetchRecordList sort )
+                ( { model | sort = sort }, fetchRecordList sort model.limit )
+
+        NewLimit newLimit ->
+            case String.toInt newLimit of
+                Ok limit ->
+                    ( { model | limit = Just limit }
+                    , fetchRecordList model.sort (Just limit)
+                    )
+
+                Err _ ->
+                    ( { model | limit = Nothing }
+                    , fetchRecordList model.sort Nothing
+                    )
 
 
 updateError : error -> Model -> ( Model, Cmd Msg )
@@ -313,8 +333,8 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecordList : Sort -> Cmd Msg
-fetchRecordList sort =
+fetchRecordList : Sort -> Maybe Int -> Cmd Msg
+fetchRecordList sort limit =
     let
         sortColumn =
             case sort of
@@ -323,11 +343,20 @@ fetchRecordList sort =
 
                 Desc column ->
                     "-" ++ column
+
+        limiter builder =
+            case limit of
+                Just limit ->
+                    builder
+                        |> Kinto.limit limit
+
+                Nothing ->
+                    builder
     in
         client
             |> Kinto.getList recordResource
             |> Kinto.sortBy [ sortColumn ]
-            |> Kinto.limit 30
+            |> limiter
             |> Kinto.send FetchRecordsResponse
 
 

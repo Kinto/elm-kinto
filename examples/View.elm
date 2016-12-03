@@ -95,16 +95,33 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, formData, currentTime, sort } =
-    Html.div [ Html.Attributes.class "container" ]
-        [ Html.h1 [] [ Html.text "elm-kinto demo" ]
-        , Html.small
-            []
-            [ Html.text "Will only display 30 records at most" ]
-        , errorNotif error
-        , recordsList records currentTime sort
-        , formView formData
-        ]
+view { error, records, formData, currentTime, sort, limit } =
+    let
+        lim =
+            case limit of
+                Just limit ->
+                    toString limit
+
+                Nothing ->
+                    ""
+    in
+        Html.div [ Html.Attributes.class "container" ]
+            [ Html.h1 [] [ Html.text "elm-kinto demo" ]
+            , Html.small
+                []
+                [ Html.text "Only display "
+                , Html.input
+                    [ Html.Attributes.value lim
+                    , Html.Events.onInput NewLimit
+                    , Html.Attributes.style [ ( "width", "30px" ) ]
+                    ]
+                    []
+                , Html.text " records at most"
+                ]
+            , errorNotif error
+            , recordsList records currentTime sort
+            , formView formData
+            ]
 
 
 formVerb : Model.FormData -> String
