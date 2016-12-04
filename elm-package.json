@@ -1,12 +1,14 @@
 {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "summary": "A client to help making requests to a Kinto storage server",
     "repository": "https://github.com/Kinto/elm-kinto.git",
     "license": "MPL",
     "source-directories": [
         "src"
     ],
-    "exposed-modules": ["Kinto"],
+    "exposed-modules": [
+        "Kinto"
+    ],
     "dependencies": {
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
         "elm-lang/http": "1.0.0 <= v < 2.0.0",
