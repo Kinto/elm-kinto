@@ -71,12 +71,13 @@ type Msg
     | SortByColumn String
       -- Limiting
     | NewLimit String
+    | Limit
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecordList (Desc "last_modified") (Just 30) ]
+    , Cmd.batch [ fetchRecordList initialModel ]
     )
 
 
@@ -111,7 +112,7 @@ update msg model =
 
         FetchRecords ->
             ( { model | records = [], error = Nothing }
-            , fetchRecordList model.sort model.limit
+            , fetchRecordList model
             )
 
         FetchRecordResponse (Ok record) ->
@@ -138,7 +139,7 @@ update msg model =
 
         CreateRecordResponse (Ok _) ->
             ( { model | formData = initialFormData }
-            , fetchRecordList model.sort model.limit
+            , fetchRecordList model
             )
 
         CreateRecordResponse (Err error) ->
@@ -148,7 +149,7 @@ update msg model =
             ( model, fetchRecord recordId )
 
         EditRecordResponse (Ok _) ->
-            ( model, fetchRecordList model.sort model.limit )
+            ( model, fetchRecordList model )
 
         EditRecordResponse (Err error) ->
             model |> updateError error
@@ -161,7 +162,7 @@ update msg model =
                 | records = removeRecordFromList record model.records
                 , error = Nothing
               }
-            , fetchRecordList model.sort model.limit
+            , fetchRecordList model
             )
 
         DeleteRecordResponse (Err error) ->
@@ -215,20 +216,26 @@ update msg model =
                                 (Asc sortedColumn)
                             else
                                 (Asc column)
+
+                updated =
+                    { model | sort = sort }
             in
-                ( { model | sort = sort }, fetchRecordList sort model.limit )
+                ( updated, fetchRecordList updated )
 
         NewLimit newLimit ->
-            case String.toInt newLimit of
-                Ok limit ->
-                    ( { model | limit = Just limit }
-                    , fetchRecordList model.sort (Just limit)
-                    )
+            let
+                updated =
+                    case String.toInt newLimit of
+                        Ok limit ->
+                            { model | limit = Just limit }
 
-                Err _ ->
-                    ( { model | limit = Nothing }
-                    , fetchRecordList model.sort Nothing
-                    )
+                        Err _ ->
+                            { model | limit = Nothing }
+            in
+                ( updated, Cmd.none )
+
+        Limit ->
+            ( model, fetchRecordList model )
 
 
 updateError : error -> Model -> ( Model, Cmd Msg )
@@ -333,11 +340,11 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecordList : Sort -> Maybe Int -> Cmd Msg
-fetchRecordList sort limit =
+fetchRecordList : Model -> Cmd Msg
+fetchRecordList model =
     let
         sortColumn =
-            case sort of
+            case model.sort of
                 Asc column ->
                     column
 
@@ -345,7 +352,7 @@ fetchRecordList sort limit =
                     "-" ++ column
 
         limiter builder =
-            case limit of
+            case model.limit of
                 Just limit ->
                     builder
                         |> Kinto.limit limit

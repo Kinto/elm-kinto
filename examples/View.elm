@@ -98,25 +98,31 @@ view : Model -> Html.Html Msg
 view { error, records, formData, currentTime, sort, limit } =
     let
         lim =
-            case limit of
-                Just limit ->
-                    toString limit
-
-                Nothing ->
-                    ""
+            limit
+                |> Maybe.map toString
+                |> Maybe.withDefault ""
     in
         Html.div [ Html.Attributes.class "container" ]
             [ Html.h1 [] [ Html.text "elm-kinto demo" ]
             , Html.small
                 []
-                [ Html.text "Only display "
-                , Html.input
-                    [ Html.Attributes.value lim
-                    , Html.Events.onInput NewLimit
-                    , Html.Attributes.style [ ( "width", "30px" ) ]
+                [ Html.text "Limit records to display: "
+                , Html.form
+                    [ Html.Events.onSubmit Limit
+                    , Html.Attributes.style [ ( "display", "inline" ) ]
                     ]
-                    []
-                , Html.text " records at most"
+                    [ Html.input
+                        [ Html.Attributes.type_ "number"
+                        , Html.Attributes.min "1"
+                        , Html.Attributes.value lim
+                        , Html.Events.onInput NewLimit
+                        , Html.Attributes.style [ ( "width", "40px" ) ]
+                        ]
+                        []
+                    , Html.button
+                        [ Html.Attributes.type_ "submit" ]
+                        [ Html.text "limit" ]
+                    ]
                 ]
             , errorNotif error
             , recordsList records currentTime sort
