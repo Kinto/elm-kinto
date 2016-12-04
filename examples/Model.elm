@@ -1,16 +1,19 @@
-module Model exposing (..)
+module Model
+    exposing
+        ( init
+        , update
+        , subscriptions
+        , FormData
+        , Model
+        , Msg(..)
+        , Record
+        , Sort(..)
+        )
 
-import Time exposing (Time, second)
-import Json.Decode as Decode exposing (Decoder, string, at, list, map4, field, maybe, int, Value, decodeValue)
+import Time
+import Json.Decode as Decode
 import Json.Encode as Encode
-import Form
-import Dict
 import Kinto
-
-
--- TODO:
--- - Expose only what's necessary
--- MODEL and TYPES
 
 
 type alias RecordId =
@@ -25,45 +28,72 @@ type alias Record =
     }
 
 
-type alias Records =
-    Dict.Dict RecordId Record
+type alias FormData =
+    { id : Maybe String
+    , title : String
+    , description : String
+    }
 
 
 type alias Model =
     { error : Maybe String
-    , records : Records
-    , formData : Form.Model
-    , currentTime : Time
+    , records : List Record
+    , formData : FormData
+    , currentTime : Time.Time
+    , sort : Sort
+    , limit : Maybe Int
     }
+
+
+type Sort
+    = Asc String
+    | Desc String
 
 
 type Msg
     = NoOp
-    | Tick Time
+      -- Use by TimeAgo to display human friendly timestamps
+    | Tick Time.Time
+      -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
     | FetchRecordsResponse (Result Kinto.Error (List Record))
-    | FormMsg Form.Msg
     | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Record)
     | DeleteRecord RecordId
     | DeleteRecordResponse (Result Kinto.Error Record)
+      -- Form
+    | UpdateFormTitle String
+    | UpdateFormDescription String
+    | Submit
+      -- Sorting
+    | SortByColumn String
+      -- Limiting
+    | NewLimit String
+    | Limit
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel
-    , Cmd.batch [ fetchRecordList ]
+    , Cmd.batch [ fetchRecordList initialModel ]
     )
+
+
+initialFormData : FormData
+initialFormData =
+    FormData Nothing "" ""
 
 
 initialModel : Model
 initialModel =
     { error = Nothing
-    , records = Dict.empty
-    , formData = Form.init
+    , records = []
+    , formData = initialFormData
     , currentTime = 0
+    , sort = Desc "last_modified"
+    , limit = Just 30
     }
 
 
@@ -81,90 +111,136 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = Dict.empty, error = Nothing }, fetchRecordList )
+            ( { model | records = [], error = Nothing }
+            , fetchRecordList model
+            )
 
-        FetchRecordResponse response ->
-            case response of
-                Ok record ->
-                    ( { model
-                        | formData = recordToFormData record
-                        , error = Nothing
-                      }
-                    , Cmd.none
-                    )
+        FetchRecordResponse (Ok record) ->
+            ( { model
+                | formData = recordToFormData record
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        FetchRecordResponse (Err error) ->
+            model |> updateError error
 
-        FetchRecordsResponse response ->
-            case response of
-                Ok recordList ->
-                    let
-                        recordsToDict records =
-                            List.map (\r -> ( r.id, r )) records
-                                |> Dict.fromList
-                    in
-                        ( { model
-                            | records = recordsToDict recordList
-                            , error = Nothing
-                          }
-                        , Cmd.none
-                        )
+        FetchRecordsResponse (Ok recordList) ->
+            ( { model
+                | records = recordList
+                , error = Nothing
+              }
+            , Cmd.none
+            )
 
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        FetchRecordsResponse (Err error) ->
+            model |> updateError error
 
-        FormMsg subMsg ->
-            let
-                ( updated, formMsg ) =
-                    Form.update subMsg model.formData
-            in
-                case formMsg of
-                    Nothing ->
-                        ( { model
-                            | formData = updated
-                            , records = updateRecordInList updated model.records
-                          }
-                        , Cmd.none
-                        )
+        CreateRecordResponse (Ok _) ->
+            ( { model | formData = initialFormData }
+            , fetchRecordList model
+            )
 
-                    Just (Form.FormSubmitted data) ->
-                        ( { model | formData = updated }, sendFormData model data )
-
-        CreateRecordResponse response ->
-            case response of
-                Ok _ ->
-                    ( { model | formData = Form.init }, fetchRecordList )
-
-                Err error ->
-                    ( { model | error = Just <| toString error }, Cmd.none )
+        CreateRecordResponse (Err error) ->
+            model |> updateError error
 
         EditRecord recordId ->
             ( model, fetchRecord recordId )
 
-        EditRecordResponse response ->
-            case response of
-                Ok _ ->
-                    ( model, fetchRecordList )
+        EditRecordResponse (Ok _) ->
+            ( model, fetchRecordList model )
 
-                Err err ->
-                    ( { model | error = Just <| toString err }, Cmd.none )
+        EditRecordResponse (Err error) ->
+            model |> updateError error
 
         DeleteRecord recordId ->
             ( model, deleteRecord recordId )
 
-        DeleteRecordResponse response ->
-            case response of
-                Ok record ->
-                    ( { model
-                        | records = removeRecordFromList record model.records
-                        , error = Nothing
-                      }
-                    , fetchRecordList
-                    )
+        DeleteRecordResponse (Ok record) ->
+            ( { model
+                | records = removeRecordFromList record model.records
+                , error = Nothing
+              }
+            , fetchRecordList model
+            )
 
-                Err err ->
-                    ( { model | error = Just <| toString err }, Cmd.none )
+        DeleteRecordResponse (Err error) ->
+            model |> updateError error
+
+        UpdateFormTitle title ->
+            let
+                formData =
+                    model.formData
+
+                updated =
+                    { formData | title = title }
+            in
+                ( { model
+                    | formData = updated
+                    , records = updateRecordInList updated model.records
+                  }
+                , Cmd.none
+                )
+
+        UpdateFormDescription description ->
+            let
+                formData =
+                    model.formData
+
+                updated =
+                    { formData | description = description }
+            in
+                ( { model
+                    | formData = updated
+                    , records = updateRecordInList updated model.records
+                  }
+                , Cmd.none
+                )
+
+        Submit ->
+            ( { model | formData = initialFormData }, sendFormData model.formData )
+
+        SortByColumn column ->
+            let
+                sort =
+                    case model.sort of
+                        Asc sortedColumn ->
+                            if sortedColumn == column then
+                                (Desc sortedColumn)
+                            else
+                                (Asc column)
+
+                        Desc sortedColumn ->
+                            if sortedColumn == column then
+                                (Asc sortedColumn)
+                            else
+                                (Asc column)
+
+                updated =
+                    { model | sort = sort }
+            in
+                ( updated, fetchRecordList updated )
+
+        NewLimit newLimit ->
+            let
+                updated =
+                    case String.toInt newLimit of
+                        Ok limit ->
+                            { model | limit = Just limit }
+
+                        Err _ ->
+                            { model | limit = Nothing }
+            in
+                ( updated, Cmd.none )
+
+        Limit ->
+            ( model, fetchRecordList model )
+
+
+updateError : error -> Model -> ( Model, Cmd Msg )
+updateError error model =
+    ( { model | error = Just <| toString error }, Cmd.none )
 
 
 
@@ -173,22 +249,22 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every second Tick
+    Time.every Time.second Tick
 
 
 
 -- Helpers
 
 
-recordToFormData : Record -> Form.Model
+recordToFormData : Record -> FormData
 recordToFormData { id, title, description } =
-    Form.Model
+    FormData
         (Just id)
         (Maybe.withDefault "" title)
         (Maybe.withDefault "" description)
 
 
-encodeFormData : Form.Model -> Encode.Value
+encodeFormData : FormData -> Encode.Value
 encodeFormData { title, description } =
     Encode.object
         [ ( "title", Encode.string title )
@@ -196,12 +272,12 @@ encodeFormData { title, description } =
         ]
 
 
-removeRecordFromList : Record -> Records -> Records
+removeRecordFromList : Record -> List Record -> List Record
 removeRecordFromList { id } records =
-    Dict.remove id records
+    List.filter (\record -> record.id /= id) records
 
 
-updateRecordInList : Form.Model -> Records -> Records
+updateRecordInList : FormData -> List Record -> List Record
 updateRecordInList formData records =
     -- This enables live reflecting ongoing form updates in the records list
     case formData.id of
@@ -209,21 +285,22 @@ updateRecordInList formData records =
             records
 
         Just id ->
-            Dict.update id (updateRecord formData) records
+            List.map
+                (\record ->
+                    if record.id == id then
+                        updateRecord formData record
+                    else
+                        record
+                )
+                records
 
 
-updateRecord : Form.Model -> Maybe Record -> Maybe Record
+updateRecord : FormData -> Record -> Record
 updateRecord formData record =
-    case record of
-        Nothing ->
-            record
-
-        Just record ->
-            Just
-                { record
-                    | title = Just formData.title
-                    , description = Just formData.description
-                }
+    { record
+        | title = Just formData.title
+        , description = Just formData.description
+    }
 
 
 
@@ -242,13 +319,13 @@ recordResource =
     Kinto.recordResource "default" "test-items" decodeRecord
 
 
-decodeRecord : Decoder Record
+decodeRecord : Decode.Decoder Record
 decodeRecord =
-    (map4 Record
-        (field "id" string)
-        (maybe (field "title" string))
-        (maybe (field "description" string))
-        (field "last_modified" int)
+    (Decode.map4 Record
+        (Decode.field "id" Decode.string)
+        (Decode.maybe (Decode.field "title" Decode.string))
+        (Decode.maybe (Decode.field "description" Decode.string))
+        (Decode.field "last_modified" Decode.int)
     )
 
 
@@ -263,12 +340,31 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchRecordList : Cmd Msg
-fetchRecordList =
-    client
-        |> Kinto.getList recordResource
-        |> Kinto.sortBy [ "title", "description" ]
-        |> Kinto.send FetchRecordsResponse
+fetchRecordList : Model -> Cmd Msg
+fetchRecordList model =
+    let
+        sortColumn =
+            case model.sort of
+                Asc column ->
+                    column
+
+                Desc column ->
+                    "-" ++ column
+
+        limiter builder =
+            case model.limit of
+                Just limit ->
+                    builder
+                        |> Kinto.limit limit
+
+                Nothing ->
+                    builder
+    in
+        client
+            |> Kinto.getList recordResource
+            |> Kinto.sortBy [ sortColumn ]
+            |> limiter
+            |> Kinto.send FetchRecordsResponse
 
 
 deleteRecord : RecordId -> Cmd Msg
@@ -278,8 +374,8 @@ deleteRecord recordId =
         |> Kinto.send DeleteRecordResponse
 
 
-sendFormData : Model -> Form.Model -> Cmd Msg
-sendFormData model formData =
+sendFormData : FormData -> Cmd Msg
+sendFormData formData =
     let
         data =
             encodeFormData formData
