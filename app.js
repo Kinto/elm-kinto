@@ -9737,6 +9737,7 @@ var _Kinto$elm_kinto$Model$initialModel = {
 var _Kinto$elm_kinto$Model$Asc = function (a) {
 	return {ctor: 'Asc', _0: a};
 };
+var _Kinto$elm_kinto$Model$Limit = {ctor: 'Limit'};
 var _Kinto$elm_kinto$Model$NewLimit = function (a) {
 	return {ctor: 'NewLimit', _0: a};
 };
@@ -9789,47 +9790,43 @@ var _Kinto$elm_kinto$Model$sendFormData = function (formData) {
 var _Kinto$elm_kinto$Model$FetchRecordsResponse = function (a) {
 	return {ctor: 'FetchRecordsResponse', _0: a};
 };
-var _Kinto$elm_kinto$Model$fetchRecordList = F2(
-	function (sort, limit) {
-		var limiter = function (builder) {
-			var _p8 = limit;
-			if (_p8.ctor === 'Just') {
-				return A2(_Kinto$elm_kinto$Kinto$limit, _p8._0, builder);
-			} else {
-				return builder;
-			}
-		};
-		var sortColumn = function () {
-			var _p9 = sort;
-			if (_p9.ctor === 'Asc') {
-				return _p9._0;
-			} else {
-				return A2(_elm_lang$core$Basics_ops['++'], '-', _p9._0);
-			}
-		}();
-		return A2(
-			_Kinto$elm_kinto$Kinto$send,
-			_Kinto$elm_kinto$Model$FetchRecordsResponse,
-			limiter(
-				A2(
-					_Kinto$elm_kinto$Kinto$sortBy,
-					{
-						ctor: '::',
-						_0: sortColumn,
-						_1: {ctor: '[]'}
-					},
-					A2(_Kinto$elm_kinto$Kinto$getList, _Kinto$elm_kinto$Model$recordResource, _Kinto$elm_kinto$Model$client))));
-	});
+var _Kinto$elm_kinto$Model$fetchRecordList = function (model) {
+	var limiter = function (builder) {
+		var _p8 = model.limit;
+		if (_p8.ctor === 'Just') {
+			return A2(_Kinto$elm_kinto$Kinto$limit, _p8._0, builder);
+		} else {
+			return builder;
+		}
+	};
+	var sortColumn = function () {
+		var _p9 = model.sort;
+		if (_p9.ctor === 'Asc') {
+			return _p9._0;
+		} else {
+			return A2(_elm_lang$core$Basics_ops['++'], '-', _p9._0);
+		}
+	}();
+	return A2(
+		_Kinto$elm_kinto$Kinto$send,
+		_Kinto$elm_kinto$Model$FetchRecordsResponse,
+		limiter(
+			A2(
+				_Kinto$elm_kinto$Kinto$sortBy,
+				{
+					ctor: '::',
+					_0: sortColumn,
+					_1: {ctor: '[]'}
+				},
+				A2(_Kinto$elm_kinto$Kinto$getList, _Kinto$elm_kinto$Model$recordResource, _Kinto$elm_kinto$Model$client))));
+};
 var _Kinto$elm_kinto$Model$init = {
 	ctor: '_Tuple2',
 	_0: _Kinto$elm_kinto$Model$initialModel,
 	_1: _elm_lang$core$Platform_Cmd$batch(
 		{
 			ctor: '::',
-			_0: A2(
-				_Kinto$elm_kinto$Model$fetchRecordList,
-				_Kinto$elm_kinto$Model$Desc('last_modified'),
-				_elm_lang$core$Maybe$Just(30)),
+			_0: _Kinto$elm_kinto$Model$fetchRecordList(_Kinto$elm_kinto$Model$initialModel),
 			_1: {ctor: '[]'}
 		})
 };
@@ -9866,7 +9863,7 @@ var _Kinto$elm_kinto$Model$update = F2(
 							records: {ctor: '[]'},
 							error: _elm_lang$core$Maybe$Nothing
 						}),
-					_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, model.sort, model.limit)
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
 				};
 			case 'FetchRecordResponse':
 				if (_p10._0.ctor === 'Ok') {
@@ -9902,7 +9899,7 @@ var _Kinto$elm_kinto$Model$update = F2(
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{formData: _Kinto$elm_kinto$Model$initialFormData}),
-						_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, model.sort, model.limit)
+						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
 					};
 				} else {
 					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
@@ -9918,7 +9915,7 @@ var _Kinto$elm_kinto$Model$update = F2(
 					return {
 						ctor: '_Tuple2',
 						_0: model,
-						_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, model.sort, model.limit)
+						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
 					};
 				} else {
 					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
@@ -9939,7 +9936,7 @@ var _Kinto$elm_kinto$Model$update = F2(
 								records: A2(_Kinto$elm_kinto$Model$removeRecordFromList, _p10._0._0, model.records),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
-						_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, model.sort, model.limit)
+						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
 					};
 				} else {
 					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
@@ -9994,38 +9991,36 @@ var _Kinto$elm_kinto$Model$update = F2(
 						return _elm_lang$core$Native_Utils.eq(_p13, _p14) ? _Kinto$elm_kinto$Model$Asc(_p13) : _Kinto$elm_kinto$Model$Asc(_p14);
 					}
 				}();
+				var updated = _elm_lang$core$Native_Utils.update(
+					model,
+					{sort: sort});
 				return {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{sort: sort}),
-					_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, sort, model.limit)
+					_0: updated,
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(updated)
 				};
-			default:
-				var _p15 = _elm_lang$core$String$toInt(_p10._0);
-				if (_p15.ctor === 'Ok') {
-					var _p16 = _p15._0;
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
+			case 'NewLimit':
+				var updated = function () {
+					var _p15 = _elm_lang$core$String$toInt(_p10._0);
+					if (_p15.ctor === 'Ok') {
+						return _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								limit: _elm_lang$core$Maybe$Just(_p16)
-							}),
-						_1: A2(
-							_Kinto$elm_kinto$Model$fetchRecordList,
-							model.sort,
-							_elm_lang$core$Maybe$Just(_p16))
-					};
-				} else {
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
+								limit: _elm_lang$core$Maybe$Just(_p15._0)
+							});
+					} else {
+						return _elm_lang$core$Native_Utils.update(
 							model,
-							{limit: _elm_lang$core$Maybe$Nothing}),
-						_1: A2(_Kinto$elm_kinto$Model$fetchRecordList, model.sort, _elm_lang$core$Maybe$Nothing)
-					};
-				}
+							{limit: _elm_lang$core$Maybe$Nothing});
+					}
+				}();
+				return {ctor: '_Tuple2', _0: updated, _1: _elm_lang$core$Platform_Cmd$none};
+			default:
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+				};
 		}
 	});
 var _Kinto$elm_kinto$Model$Tick = function (a) {
@@ -10943,14 +10938,10 @@ var _Kinto$elm_kinto$View$recordsList = F3(
 	});
 var _Kinto$elm_kinto$View$view = function (_p9) {
 	var _p10 = _p9;
-	var lim = function () {
-		var _p11 = _p10.limit;
-		if (_p11.ctor === 'Just') {
-			return _elm_lang$core$Basics$toString(_p11._0);
-		} else {
-			return '';
-		}
-	}();
+	var lim = A2(
+		_elm_lang$core$Maybe$withDefault,
+		'',
+		A2(_elm_lang$core$Maybe$map, _elm_lang$core$Basics$toString, _p10.limit));
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -10975,35 +10966,74 @@ var _Kinto$elm_kinto$View$view = function (_p9) {
 					{ctor: '[]'},
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html$text('Only display '),
+						_0: _elm_lang$html$Html$text('Limit records to display: '),
 						_1: {
 							ctor: '::',
 							_0: A2(
-								_elm_lang$html$Html$input,
+								_elm_lang$html$Html$form,
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$value(lim),
+									_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$elm_kinto$Model$Limit),
 									_1: {
 										ctor: '::',
-										_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$NewLimit),
-										_1: {
-											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$style(
-												{
-													ctor: '::',
-													_0: {ctor: '_Tuple2', _0: 'width', _1: '30px'},
-													_1: {ctor: '[]'}
-												}),
-											_1: {ctor: '[]'}
-										}
+										_0: _elm_lang$html$Html_Attributes$style(
+											{
+												ctor: '::',
+												_0: {ctor: '_Tuple2', _0: 'display', _1: 'inline'},
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
 									}
 								},
-								{ctor: '[]'}),
-							_1: {
-								ctor: '::',
-								_0: _elm_lang$html$Html$text(' records at most'),
-								_1: {ctor: '[]'}
-							}
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$input,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$type_('number'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$min('1'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$value(lim),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$NewLimit),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$style(
+																{
+																	ctor: '::',
+																	_0: {ctor: '_Tuple2', _0: 'width', _1: '40px'},
+																	_1: {ctor: '[]'}
+																}),
+															_1: {ctor: '[]'}
+														}
+													}
+												}
+											}
+										},
+										{ctor: '[]'}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$button,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$type_('submit'),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('limit'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
 						}
 					}),
 				_1: {
