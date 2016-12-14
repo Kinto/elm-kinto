@@ -1,3 +1,17 @@
+# 3.0.0
+
+Added:
+- Add support for custom HTTP authentication realms:
+```elm
+  - type Auth
+        = Basic String String | Bearer String | NoAuth
+  + type Auth
+        = Basic String String
+        | Bearer String
+        | Custom String String
+        | NoAuth
+```
+
 # 2.0.0
 
 Added:
