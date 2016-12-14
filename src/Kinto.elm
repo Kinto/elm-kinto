@@ -88,6 +88,8 @@ type alias Url =
 {-| A type for authentication
 
     Basic "username" "password"
+    Bearer "<token>"
+    Custom "customType" "customString"
 -}
 type Auth
     = NoAuth
