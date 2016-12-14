@@ -18,7 +18,6 @@ main =
 port emit : ( String, Encode.Value ) -> Cmd msg
 
 
-
 baseUrl =
     "http://example.com/"
 
@@ -42,6 +41,11 @@ all =
                     Expect.equal
                         ( "Authorization", "Bearer foobar" )
                         (Kinto.headersForAuth (Kinto.Bearer "foobar"))
+            , test "returns Custom Portier Auth headers for Portier" <|
+                \() ->
+                    Expect.equal
+                        ( "Authorization", "Portier foobar" )
+                        (Kinto.headersForAuth (Kinto.Custom "Portier" "foobar"))
             ]
         , describe "endpointUrl helper"
             (List.map

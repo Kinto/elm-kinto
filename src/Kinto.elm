@@ -91,6 +91,7 @@ type Auth
     = NoAuth
     | Basic String String
     | Bearer String
+    | Custom String String
 
 
 
@@ -379,6 +380,9 @@ headersForAuth auth =
 
         Bearer token ->
             ( "Authorization", ("Bearer " ++ token) )
+
+        Custom realm token ->
+            ( "Authorization", (realm ++ " " ++ token) )
 
 
 {-| A constructor for a `Client`.
