@@ -114,7 +114,7 @@ init =
 
 type Msg
     = TodoAdded (Result Kinto.Error Todo)
-    | TodosFetched (Result Kinto.Error (List Todo))
+    | TodosFetched (Result Kinto.Error (Kinto.Pager Todo))
 
 
 view : Model -> Html.Html Msg
@@ -131,8 +131,8 @@ update message model =
         TodoAdded (Err error) ->
             { model | error = Just <| toString error } ! []
 
-        TodosFetched (Ok todoList) ->
-            { model | error = Nothing, todos = todoList } ! []
+        TodosFetched (Ok pager) ->
+            { model | error = Nothing, todos = pager.results } ! []
 
         TodosFetched (Err error) ->
             { model | error = Just <| toString error } ! []
