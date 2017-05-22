@@ -18,6 +18,7 @@ main =
 port emit : ( String, Encode.Value ) -> Cmd msg
 
 
+baseUrl : String
 baseUrl =
     "http://example.com/"
 

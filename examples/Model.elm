@@ -57,7 +57,7 @@ type Msg
       -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
-    | FetchRecordsResponse (Result Kinto.Error (List Record))
+    | FetchRecordsResponse (Result Kinto.Error (Kinto.Pager Record))
     | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Record)
@@ -126,9 +126,9 @@ update msg model =
         FetchRecordResponse (Err error) ->
             model |> updateError error
 
-        FetchRecordsResponse (Ok recordList) ->
+        FetchRecordsResponse (Ok pager) ->
             ( { model
-                | records = recordList
+                | records = pager.results
                 , error = Nothing
               }
             , Cmd.none
