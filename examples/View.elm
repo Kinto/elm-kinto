@@ -72,14 +72,27 @@ recordHeaders sort =
             headings
 
 
-recordsList : List Record -> Time -> Sort -> Html.Html Msg
-recordsList records currentTime sort =
-    Html.table [ Html.Attributes.class "table" ]
-        [ Html.thead []
-            [ Html.tr []
-                (recordHeaders sort)
+recordsList : List Record -> Maybe String -> Time -> Sort -> Html.Html Msg
+recordsList records nextPage currentTime sort =
+    Html.div []
+        [ Html.table [ Html.Attributes.class "table" ]
+            [ Html.thead []
+                [ Html.tr []
+                    (recordHeaders sort)
+                ]
+            , Html.tbody [] (List.map (recordRow currentTime) records)
             ]
-        , Html.tbody [] (List.map (recordRow currentTime) records)
+        , case nextPage of
+            Just nextPage ->
+                Html.button
+                    [ Html.Attributes.style [ ( "display", "block" ), ( "width", "100%" ) ]
+                    , Html.Events.onClick FetchNextRecords
+                    ]
+                    [ Html.text "Load more" ]
+
+            Nothing ->
+                Html.text ""
+        , Html.br [] []
         ]
 
 
@@ -95,7 +108,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, formData, currentTime, sort, limit } =
+view { error, records, nextPage, formData, currentTime, sort, limit } =
     let
         lim =
             limit
@@ -125,7 +138,7 @@ view { error, records, formData, currentTime, sort, limit } =
                     ]
                 ]
             , errorNotif error
-            , recordsList records currentTime sort
+            , recordsList records nextPage currentTime sort
             , formView formData
             ]
 

@@ -38,6 +38,7 @@ type alias FormData =
 type alias Model =
     { error : Maybe String
     , records : List Record
+    , nextPage : Maybe String
     , formData : FormData
     , currentTime : Time.Time
     , sort : Sort
@@ -57,7 +58,8 @@ type Msg
       -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
-    | FetchRecordsResponse (Result Kinto.Error (Kinto.Pager Record))
+    | FetchNextRecords
+    | FetchRecordsResponse Bool (Result Kinto.Error (Kinto.Pager Record))
     | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Record)
@@ -90,6 +92,7 @@ initialModel : Model
 initialModel =
     { error = Nothing
     , records = []
+    , nextPage = Nothing
     , formData = initialFormData
     , currentTime = 0
     , sort = Desc "last_modified"
@@ -115,6 +118,16 @@ update msg model =
             , fetchRecordList model
             )
 
+        FetchNextRecords ->
+            ( { model | error = Nothing }
+            , case model.nextPage of
+                Nothing ->
+                    Cmd.none
+
+                Just nextPage ->
+                    fetchNextRecordList nextPage
+            )
+
         FetchRecordResponse (Ok record) ->
             ( { model
                 | formData = recordToFormData record
@@ -126,15 +139,20 @@ update msg model =
         FetchRecordResponse (Err error) ->
             model |> updateError error
 
-        FetchRecordsResponse (Ok pager) ->
+        FetchRecordsResponse append (Ok pager) ->
             ( { model
-                | records = pager.results
+                | records =
+                    if append then
+                        List.concat [ model.records, pager.results ]
+                    else
+                        pager.results
+                , nextPage = pager.nextPage
                 , error = Nothing
               }
             , Cmd.none
             )
 
-        FetchRecordsResponse (Err error) ->
+        FetchRecordsResponse append (Err error) ->
             model |> updateError error
 
         CreateRecordResponse (Ok _) ->
@@ -340,11 +358,18 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
+fetchNextRecordList : String -> Cmd Msg
+fetchNextRecordList nextPage =
+    client
+        |> Kinto.getNextList nextPage recordResource
+        |> Kinto.send (FetchRecordsResponse True)
+
+
 fetchRecordList : Model -> Cmd Msg
-fetchRecordList model =
+fetchRecordList { sort, limit, nextPage } =
     let
         sortColumn =
-            case model.sort of
+            case sort of
                 Asc column ->
                     column
 
@@ -352,7 +377,7 @@ fetchRecordList model =
                     "-" ++ column
 
         limiter builder =
-            case model.limit of
+            case limit of
                 Just limit ->
                     builder
                         |> Kinto.limit limit
@@ -364,7 +389,7 @@ fetchRecordList model =
             |> Kinto.getList recordResource
             |> Kinto.sortBy [ sortColumn ]
             |> limiter
-            |> Kinto.send FetchRecordsResponse
+            |> Kinto.send (FetchRecordsResponse False)
 
 
 deleteRecord : RecordId -> Cmd Msg

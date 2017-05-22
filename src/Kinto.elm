@@ -26,6 +26,7 @@ module Kinto
         , toRequest
         , get
         , getList
+        , getNextList
         , create
         , update
         , replace
@@ -59,7 +60,7 @@ Item endpoints are:
   - collection: `buckets/:bucketId/collections/:collectionId`
   - record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
 
-@docs get, getList, create, update, replace, delete
+@docs get, getList, getNextList, create, update, replace, delete
 
 
 # Sorting, limiting, filtering
@@ -601,6 +602,19 @@ when the response is parsed.
 getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
 getList resource client =
     endpointUrl client.baseUrl resource.listEndpoint
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder))
+
+
+{-| Create a GET request to retrieve the next page of results.
+
+    getNextList pager.nextPage resource
+
+-}
+getNextList : Url -> Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
+getNextList url resource client =
+    url
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders client.headers
         |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder))
