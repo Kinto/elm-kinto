@@ -253,18 +253,11 @@ type alias Pager a =
 decodePager : Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
 decodePager decoder response =
     let
-        decoded =
-            Decode.decodeString decoder response.body
-
         nextPage =
             Dict.get "Next-Page" response.headers
     in
-        case decoded of
-            Ok decoded ->
-                Ok <| Pager decoded nextPage
-
-            Err error ->
-                Err error
+        Decode.decodeString decoder response.body
+            |> Result.map (\decoded -> Pager decoded nextPage)
 
 
 
@@ -549,6 +542,14 @@ limit perPage builder =
         |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
 
 
+requestList : Resource a -> Client -> Url -> HttpBuilder.RequestBuilder (Pager a)
+requestList resource client url =
+    url
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder))
+
+
 
 -- High level API
 
@@ -602,9 +603,7 @@ when the response is parsed.
 getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
 getList resource client =
     endpointUrl client.baseUrl resource.listEndpoint
-        |> HttpBuilder.get
-        |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder))
+        |> requestList resource client
 
 
 {-| Create a GET request to retrieve the next page of results.
@@ -614,10 +613,7 @@ getList resource client =
 -}
 getNextList : Url -> Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
 getNextList url resource client =
-    url
-        |> HttpBuilder.get
-        |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder))
+    requestList resource client url
 
 
 {-| Create a DELETE request on an item endpoint:
