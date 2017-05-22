@@ -60,7 +60,7 @@ Item endpoints are:
   - collection: `buckets/:bucketId/collections/:collectionId`
   - record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
 
-@docs get, getList, getNextList, create, update, replace, delete
+@docs get, Pager, getList, getNextList, create, update, replace, delete
 
 
 # Sorting, limiting, filtering
@@ -75,7 +75,7 @@ Item endpoints are:
 
 # Types and Errors
 
-@docs Endpoint, endpointUrl, ErrorDetail, Error, extractError, Pager, toResponse
+@docs Endpoint, endpointUrl, ErrorDetail, Error, extractError, toResponse
 
 
 # Sending requests
@@ -241,8 +241,8 @@ encodeData encoder =
 -- Pagination
 
 
-{-| A type for paginated results. The `nextPage` field may contain the URL to request
-to retrieve the next page of results.
+{-| A type for paginated results. The `nextPage` field may contain the Next-Page
+URL to request to retrieve the next page of results, usually using `getNextList`.
 -}
 type alias Pager a =
     { results : List a
@@ -594,8 +594,8 @@ get resource itemId client =
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-{-| Create a GET request on one of the plural endpoints, allowing to retrieve a `Pager`
-when the response is parsed.
+{-| Create a GET request on one of the plural endpoints. As lists are paginated,
+A `Pager` response will be received.
 
     getList resource
 
@@ -612,8 +612,8 @@ getList resource client =
 
 -}
 getNextList : Url -> Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
-getNextList url resource client =
-    requestList resource client url
+getNextList nextPage resource client =
+    requestList resource client nextPage
 
 
 {-| Create a DELETE request on an item endpoint:
