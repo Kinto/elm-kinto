@@ -246,6 +246,7 @@ URL to request to retrieve the next page of results, usually using `getNextList`
 -}
 type alias Pager a =
     { results : List a
+    , totalRecords : Int
     , nextPage : Maybe String
     }
 
@@ -255,9 +256,14 @@ decodePager decoder response =
     let
         nextPage =
             Dict.get "Next-Page" response.headers
+
+        totalRecords =
+            Dict.get "Total-Records" response.headers
+                |> Maybe.map (Result.withDefault 0 << String.toInt)
+                |> Maybe.withDefault 0
     in
         Decode.decodeString decoder response.body
-            |> Result.map (\decoded -> Pager decoded nextPage)
+            |> Result.map (\decoded -> Pager decoded totalRecords nextPage)
 
 
 

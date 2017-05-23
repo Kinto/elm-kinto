@@ -38,6 +38,7 @@ type alias FormData =
 type alias Model =
     { error : Maybe String
     , records : List Record
+    , totalRecords : Int
     , nextPage : Maybe String
     , formData : FormData
     , currentTime : Time.Time
@@ -92,6 +93,7 @@ initialModel : Model
 initialModel =
     { error = Nothing
     , records = []
+    , totalRecords = 0
     , nextPage = Nothing
     , formData = initialFormData
     , currentTime = 0
@@ -146,6 +148,7 @@ update msg model =
                         List.concat [ model.records, pager.results ]
                     else
                         pager.results
+                , totalRecords = pager.totalRecords
                 , nextPage = pager.nextPage
                 , error = Nothing
               }

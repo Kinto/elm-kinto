@@ -108,7 +108,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, nextPage, formData, currentTime, sort, limit } =
+view { error, records, totalRecords, nextPage, formData, currentTime, sort, limit } =
     let
         lim =
             limit
@@ -117,7 +117,7 @@ view { error, records, nextPage, formData, currentTime, sort, limit } =
     in
         Html.div [ Html.Attributes.class "container" ]
             [ Html.h1 [] [ Html.text "elm-kinto demo" ]
-            , Html.small
+            , Html.p
                 []
                 [ Html.text "Limit records to display: "
                 , Html.form
@@ -138,6 +138,8 @@ view { error, records, nextPage, formData, currentTime, sort, limit } =
                     ]
                 ]
             , errorNotif error
+            , Html.p []
+                [ Html.text <| (toString totalRecords) ++ " records in this collection." ]
             , recordsList records nextPage currentTime sort
             , formView formData
             ]
