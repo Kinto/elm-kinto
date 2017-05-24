@@ -285,14 +285,14 @@ decodePager decoder pager response =
 
         total =
             Dict.get "Total-Records" response.headers
-                |> Maybe.map (Result.withDefault 0 << String.toInt)
+                |> Maybe.map (String.toInt >> Result.withDefault 0)
                 |> Maybe.withDefault 0
 
         createPager newObjects =
             { objects =
                 case previousObjects of
                     Just previousObjects ->
-                        List.concat [ previousObjects, newObjects ]
+                        previousObjects ++ newObjects
 
                     Nothing ->
                         newObjects
