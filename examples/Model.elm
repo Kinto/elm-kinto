@@ -145,9 +145,9 @@ update msg model =
             ( { model
                 | records =
                     if append then
-                        List.concat [ model.records, pager.results ]
+                        List.concat [ model.records, pager.objects ]
                     else
-                        pager.results
+                        pager.objects
                 , total = pager.total
                 , nextPage = pager.nextPage
                 , error = Nothing

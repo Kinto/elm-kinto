@@ -132,7 +132,7 @@ update message model =
             { model | error = Just <| toString error } ! []
 
         TodosFetched (Ok pager) ->
-            { model | error = Nothing, todos = pager.results } ! []
+            { model | error = Nothing, todos = pager.objects } ! []
 
         TodosFetched (Err error) ->
             { model | error = Just <| toString error } ! []

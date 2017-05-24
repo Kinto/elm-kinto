@@ -241,11 +241,11 @@ encodeData encoder =
 -- Pagination
 
 
-{-| A type for paginated results. The `nextPage` field may contain the Next-Page
-URL to request to retrieve the next page of results, usually using `getNextList`.
+{-| A type for a paginated list of objects. The `nextPage` field may contain the
+URL to request to retrieve the next page of objects, usually using `getNextList`.
 -}
 type alias Pager a =
-    { results : List a
+    { objects : List a
     , total : Int
     , nextPage : Maybe String
     }
@@ -612,7 +612,7 @@ getList resource client =
         |> requestList resource client
 
 
-{-| Create a GET request to retrieve the next page of results.
+{-| Create a GET request to retrieve the next page of objects.
 
     getNextList pager.nextPage resource
 
