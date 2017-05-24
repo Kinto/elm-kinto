@@ -4,6 +4,7 @@ import Time exposing (Time)
 import Html
 import Html.Events
 import Html.Attributes
+import Kinto
 import Utils
 import Model exposing (Model, Record, Msg(..), Sort(..))
 
@@ -72,17 +73,17 @@ recordHeaders sort =
             headings
 
 
-recordsList : List Record -> Maybe String -> Time -> Sort -> Html.Html Msg
-recordsList records nextPage currentTime sort =
+recordsList : Kinto.Pager Record -> Time -> Sort -> Html.Html Msg
+recordsList pager currentTime sort =
     Html.div []
         [ Html.table [ Html.Attributes.class "table" ]
             [ Html.thead []
                 [ Html.tr []
                     (recordHeaders sort)
                 ]
-            , Html.tbody [] (List.map (recordRow currentTime) records)
+            , Html.tbody [] (List.map (recordRow currentTime) pager.objects)
             ]
-        , case nextPage of
+        , case pager.nextPage of
             Just nextPage ->
                 Html.button
                     [ Html.Attributes.style [ ( "display", "block" ), ( "width", "100%" ) ]
@@ -108,7 +109,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, total, nextPage, formData, currentTime, sort, limit } =
+view { error, pager, formData, currentTime, sort, limit } =
     let
         lim =
             limit
@@ -139,8 +140,8 @@ view { error, records, total, nextPage, formData, currentTime, sort, limit } =
                 ]
             , errorNotif error
             , Html.p []
-                [ Html.text <| (toString total) ++ " records in this collection." ]
-            , recordsList records nextPage currentTime sort
+                [ Html.text <| (toString pager.total) ++ " records in this collection." ]
+            , recordsList pager currentTime sort
             , formView formData
             ]
 

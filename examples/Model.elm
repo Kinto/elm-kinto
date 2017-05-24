@@ -37,9 +37,7 @@ type alias FormData =
 
 type alias Model =
     { error : Maybe String
-    , records : List Record
-    , total : Int
-    , nextPage : Maybe String
+    , pager : Kinto.Pager Record
     , formData : FormData
     , currentTime : Time.Time
     , sort : Sort
@@ -60,7 +58,7 @@ type Msg
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
     | FetchNextRecords
-    | FetchRecordsResponse Bool (Result Kinto.Error (Kinto.Pager Record))
+    | FetchRecordsResponse (Result Kinto.Error (Kinto.Pager Record))
     | CreateRecordResponse (Result Kinto.Error Record)
     | EditRecord RecordId
     | EditRecordResponse (Result Kinto.Error Record)
@@ -92,9 +90,7 @@ initialFormData =
 initialModel : Model
 initialModel =
     { error = Nothing
-    , records = []
-    , total = 0
-    , nextPage = Nothing
+    , pager = Kinto.emptyPager recordResource
     , formData = initialFormData
     , currentTime = 0
     , sort = Desc "last_modified"
@@ -116,18 +112,13 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | records = [], error = Nothing }
+            ( { model | pager = Kinto.emptyPager recordResource, error = Nothing }
             , fetchRecordList model
             )
 
         FetchNextRecords ->
             ( { model | error = Nothing }
-            , case model.nextPage of
-                Nothing ->
-                    Cmd.none
-
-                Just nextPage ->
-                    fetchNextRecordList nextPage
+            , fetchNextRecordList model.pager
             )
 
         FetchRecordResponse (Ok record) ->
@@ -141,21 +132,15 @@ update msg model =
         FetchRecordResponse (Err error) ->
             model |> updateError error
 
-        FetchRecordsResponse append (Ok pager) ->
+        FetchRecordsResponse (Ok pager) ->
             ( { model
-                | records =
-                    if append then
-                        List.concat [ model.records, pager.objects ]
-                    else
-                        pager.objects
-                , total = pager.total
-                , nextPage = pager.nextPage
+                | pager = pager
                 , error = Nothing
               }
             , Cmd.none
             )
 
-        FetchRecordsResponse append (Err error) ->
+        FetchRecordsResponse (Err error) ->
             model |> updateError error
 
         CreateRecordResponse (Ok _) ->
@@ -180,7 +165,7 @@ update msg model =
 
         DeleteRecordResponse (Ok record) ->
             ( { model
-                | records = removeRecordFromList record model.records
+                | pager = removeRecordFromPager record model.pager
                 , error = Nothing
               }
             , fetchRecordList model
@@ -199,7 +184,7 @@ update msg model =
             in
                 ( { model
                     | formData = updated
-                    , records = updateRecordInList updated model.records
+                    , pager = updateRecordInPager updated model.pager
                   }
                 , Cmd.none
                 )
@@ -214,7 +199,7 @@ update msg model =
             in
                 ( { model
                     | formData = updated
-                    , records = updateRecordInList updated model.records
+                    , pager = updateRecordInPager updated model.pager
                   }
                 , Cmd.none
                 )
@@ -293,27 +278,30 @@ encodeFormData { title, description } =
         ]
 
 
-removeRecordFromList : Record -> List Record -> List Record
-removeRecordFromList { id } records =
-    List.filter (\record -> record.id /= id) records
+removeRecordFromPager : Record -> Kinto.Pager Record -> Kinto.Pager Record
+removeRecordFromPager { id } pager =
+    { pager | objects = List.filter (\record -> record.id /= id) pager.objects }
 
 
-updateRecordInList : FormData -> List Record -> List Record
-updateRecordInList formData records =
+updateRecordInPager : FormData -> Kinto.Pager Record -> Kinto.Pager Record
+updateRecordInPager formData pager =
     -- This enables live reflecting ongoing form updates in the records list
     case formData.id of
         Nothing ->
-            records
+            pager
 
         Just id ->
-            List.map
-                (\record ->
-                    if record.id == id then
-                        updateRecord formData record
-                    else
-                        record
-                )
-                records
+            { pager
+                | objects =
+                    List.map
+                        (\record ->
+                            if record.id == id then
+                                updateRecord formData record
+                            else
+                                record
+                        )
+                        pager.objects
+            }
 
 
 updateRecord : FormData -> Record -> Record
@@ -361,15 +349,18 @@ fetchRecord recordId =
         |> Kinto.send FetchRecordResponse
 
 
-fetchNextRecordList : String -> Cmd Msg
-fetchNextRecordList nextPage =
-    client
-        |> Kinto.getNextList nextPage recordResource
-        |> Kinto.send (FetchRecordsResponse True)
+fetchNextRecordList : Kinto.Pager Record -> Cmd Msg
+fetchNextRecordList pager =
+    case Kinto.loadNextPage pager client of
+        Just request ->
+            Kinto.send FetchRecordsResponse request
+
+        Nothing ->
+            Cmd.none
 
 
 fetchRecordList : Model -> Cmd Msg
-fetchRecordList { sort, limit, nextPage } =
+fetchRecordList { sort, limit } =
     let
         sortColumn =
             case sort of
@@ -392,7 +383,7 @@ fetchRecordList { sort, limit, nextPage } =
             |> Kinto.getList recordResource
             |> Kinto.sortBy [ sortColumn ]
             |> limiter
-            |> Kinto.send (FetchRecordsResponse False)
+            |> Kinto.send FetchRecordsResponse
 
 
 deleteRecord : RecordId -> Cmd Msg
