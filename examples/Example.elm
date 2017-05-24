@@ -87,7 +87,7 @@ addTodo title description =
 getTodoList : Cmd Msg
 getTodoList =
     client
-        |> Kinto.getPaginatedList recordResource
+        |> Kinto.getList recordResource
         |> Kinto.sortBy [ "title", "description" ]
         |> Kinto.send TodosFetched
 
