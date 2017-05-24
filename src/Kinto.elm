@@ -45,6 +45,11 @@ easy to deploy. You can host it yourself, own your data and keep it out of
 silos.
 
 
+# Configure a client and resources
+
+@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+
+
 # Creating requests
 
 You create requests on either an item or a plural (list) endpoint.
@@ -66,11 +71,6 @@ Item endpoints are:
 @docs Request
 
 
-## Kinto resource
-
-@docs Resource
-
-
 ## Single item requests
 
 @docs get, create, update, replace, delete
@@ -89,11 +89,6 @@ Item endpoints are:
 # Sorting, limiting, filtering
 
 @docs sortBy, limit, withFilter, Filter
-
-
-# Configure a client and resources
-
-@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
 
 
 # Types and Errors
