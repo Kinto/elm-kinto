@@ -108,7 +108,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, totalRecords, nextPage, formData, currentTime, sort, limit } =
+view { error, records, total, nextPage, formData, currentTime, sort, limit } =
     let
         lim =
             limit
@@ -139,7 +139,7 @@ view { error, records, totalRecords, nextPage, formData, currentTime, sort, limi
                 ]
             , errorNotif error
             , Html.p []
-                [ Html.text <| (toString totalRecords) ++ " records in this collection." ]
+                [ Html.text <| (toString total) ++ " records in this collection." ]
             , recordsList records nextPage currentTime sort
             , formView formData
             ]

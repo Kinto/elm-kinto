@@ -246,7 +246,7 @@ URL to request to retrieve the next page of results, usually using `getNextList`
 -}
 type alias Pager a =
     { results : List a
-    , totalRecords : Int
+    , total : Int
     , nextPage : Maybe String
     }
 
@@ -257,13 +257,13 @@ decodePager decoder response =
         nextPage =
             Dict.get "Next-Page" response.headers
 
-        totalRecords =
+        total =
             Dict.get "Total-Records" response.headers
                 |> Maybe.map (Result.withDefault 0 << String.toInt)
                 |> Maybe.withDefault 0
     in
         Decode.decodeString decoder response.body
-            |> Result.map (\decoded -> Pager decoded totalRecords nextPage)
+            |> Result.map (\decoded -> Pager decoded total nextPage)
 
 
 
