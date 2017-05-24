@@ -27,6 +27,7 @@ module Kinto
         , toRequest
         , get
         , getList
+        , getPaginatedList
         , loadNextPage
         , create
         , update
@@ -69,7 +70,12 @@ Item endpoints are:
 
 ## Resource list requests
 
-@docs Pager, emptyPager, getList, loadNextPage
+@docs getList
+
+
+### Paginated list
+
+@docs Pager, emptyPager, getPaginatedList, loadNextPage
 
 
 # Sorting, limiting, filtering
@@ -255,7 +261,7 @@ URL to request to retrieve the next page of objects, usually using `loadNextPage
 -}
 type alias Pager a =
     { objects : List a
-    , listDecoder : Decode.Decoder (List a)
+    , decoder : Decode.Decoder (List a)
     , total : Int
     , nextPage : Maybe String
     }
@@ -266,7 +272,7 @@ type alias Pager a =
 emptyPager : Resource a -> Pager a
 emptyPager resource =
     { objects = []
-    , listDecoder = resource.listDecoder
+    , decoder = resource.listDecoder
     , total = 0
     , nextPage = Nothing
     }
@@ -296,7 +302,7 @@ decodePager decoder pager response =
 
                     Nothing ->
                         newObjects
-            , listDecoder = decoder
+            , decoder = decoder
             , total = total
             , nextPage = nextPage
             }
@@ -631,14 +637,27 @@ get resource itemId client =
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-{-| Create a GET request on one of the plural endpoints. As lists are paginated,
-When the request is succesful, a `Pager` is attached to the reponse message.
+{-| Create a GET request on one of the plural endpoints
 
     getList resource
 
 -}
-getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
+getList : Resource a -> Client -> HttpBuilder.RequestBuilder (List a)
 getList resource client =
+    endpointUrl client.baseUrl resource.listEndpoint
+        |> HttpBuilder.get
+        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withExpect (Http.expectJson resource.listDecoder)
+
+
+{-| Create a GET request on one of the plural endpoints. As lists are paginated,
+When the request is succesful, a `Pager` is attached to the reponse message.
+
+    getPaginatedList resource
+
+-}
+getPaginatedList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
+getPaginatedList resource client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders client.headers
@@ -659,7 +678,7 @@ loadNextPage pager client =
             nextPage
                 |> HttpBuilder.get
                 |> HttpBuilder.withHeaders client.headers
-                |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager pager.listDecoder (Just pager)))
+                |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager pager.decoder (Just pager)))
                 |> Just
 
         Nothing ->

@@ -94,7 +94,7 @@ initialModel =
     , formData = initialFormData
     , currentTime = 0
     , sort = Desc "last_modified"
-    , limit = Just 30
+    , limit = Just 5
     }
 
 
@@ -380,7 +380,7 @@ fetchRecordList { sort, limit } =
                     builder
     in
         client
-            |> Kinto.getList recordResource
+            |> Kinto.getPaginatedList recordResource
             |> Kinto.sortBy [ sortColumn ]
             |> limiter
             |> Kinto.send FetchRecordsResponse
