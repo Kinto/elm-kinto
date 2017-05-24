@@ -90,7 +90,7 @@ initialFormData =
 initialModel : Model
 initialModel =
     { error = Nothing
-    , pager = Kinto.emptyPager recordResource
+    , pager = Kinto.emptyPager client recordResource
     , formData = initialFormData
     , currentTime = 0
     , sort = Desc "last_modified"
@@ -112,7 +112,7 @@ update msg model =
             ( { model | currentTime = newTime }, Cmd.none )
 
         FetchRecords ->
-            ( { model | pager = Kinto.emptyPager recordResource, error = Nothing }
+            ( { model | pager = Kinto.emptyPager client recordResource, error = Nothing }
             , fetchRecordList model
             )
 
@@ -134,7 +134,7 @@ update msg model =
 
         FetchRecordsResponse (Ok pager) ->
             ( { model
-                | pager = pager
+                | pager = Kinto.updatePager pager model.pager
                 , error = Nothing
               }
             , Cmd.none
@@ -351,7 +351,7 @@ fetchRecord recordId =
 
 fetchNextRecordList : Kinto.Pager Record -> Cmd Msg
 fetchNextRecordList pager =
-    case Kinto.loadNextPage pager client of
+    case Kinto.loadNextPage pager of
         Just request ->
             Kinto.send FetchRecordsResponse request
 
@@ -380,7 +380,7 @@ fetchRecordList { sort, limit } =
                     builder
     in
         client
-            |> Kinto.getPaginatedList recordResource
+            |> Kinto.getList recordResource
             |> Kinto.sortBy [ sortColumn ]
             |> limiter
             |> Kinto.send FetchRecordsResponse

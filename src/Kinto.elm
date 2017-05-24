@@ -28,8 +28,8 @@ module Kinto
         , toRequest
         , get
         , getList
-        , getPaginatedList
         , loadNextPage
+        , updatePager
         , create
         , update
         , replace
@@ -83,7 +83,7 @@ Item endpoints are:
 
 ### Paginated list
 
-@docs Pager, emptyPager, getPaginatedList, loadNextPage
+@docs Pager, emptyPager, updatePager, loadNextPage
 
 
 # Sorting, limiting, filtering
@@ -270,7 +270,8 @@ encodeData encoder =
 {-| A stateful accumulator for a paginated list of objects.
 -}
 type alias Pager a =
-    { objects : List a
+    { client : Client
+    , objects : List a
     , decoder : Decode.Decoder (List a)
     , total : Int
     , nextPage : Maybe Url
@@ -282,23 +283,33 @@ type alias Pager a =
     emptyPager resource
 
 -}
-emptyPager : Resource a -> Pager a
-emptyPager resource =
-    { objects = []
+emptyPager : Client -> Resource a -> Pager a
+emptyPager client resource =
+    { client = client
+    , objects = []
     , decoder = resource.listDecoder
     , total = 0
     , nextPage = Nothing
     }
 
 
+{-| Update a previous pager with data from a new one, appending new page objects
+to the previous list.
+-}
+updatePager : Pager a -> Pager a -> Pager a
+updatePager newPager previousPager =
+    { previousPager
+        | total = newPager.total
+        , nextPage = newPager.nextPage
+        , objects = previousPager.objects ++ newPager.objects
+    }
+
+
 {-| Decode a `Pager`.
 -}
-decodePager : Decode.Decoder (List a) -> Maybe (Pager a) -> Http.Response String -> Result.Result String (Pager a)
-decodePager decoder pager response =
+decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
+decodePager client decoder response =
     let
-        previousObjects =
-            Maybe.map .objects pager
-
         nextPage =
             Dict.get "Next-Page" response.headers
 
@@ -307,14 +318,9 @@ decodePager decoder pager response =
                 |> Maybe.map (String.toInt >> Result.withDefault 0)
                 |> Maybe.withDefault 0
 
-        createPager newObjects =
-            { objects =
-                case previousObjects of
-                    Just previousObjects ->
-                        previousObjects ++ newObjects
-
-                    Nothing ->
-                        newObjects
+        createPager objects =
+            { client = client
+            , objects = objects
             , decoder = decoder
             , total = total
             , nextPage = nextPage
@@ -651,51 +657,40 @@ get resource itemId client =
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-{-| Create a GET request on one of the plural endpoints
+{-| Create a GET request on one of the plural endpoints. As lists are always
+possibly paginated, When the request is succesful, a `Pager` is attached to the
+reponse message.
 
     client
         |> getList resource
 
 -}
-getList : Resource a -> Client -> HttpBuilder.RequestBuilder (List a)
+getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
 getList resource client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withExpect (Http.expectJson resource.listDecoder)
-
-
-{-| Create a GET request on one of the plural endpoints. As lists are paginated,
-When the request is succesful, a `Pager` is attached to the reponse message.
-
-    client
-        |> getPaginatedList resource
-
--}
-getPaginatedList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
-getPaginatedList resource client =
-    endpointUrl client.baseUrl resource.listEndpoint
-        |> HttpBuilder.get
-        |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager resource.listDecoder Nothing))
+        |> HttpBuilder.withExpect
+            (Http.expectStringResponse (decodePager client resource.listDecoder))
 
 
 {-| If a pager has a `nextPage`, creates a GET request to retrieve the next page of objects.
-When the request is succesful, a `Pager` with new new objects appended is attached to the
+When the request is succesful, a `Pager` with new objects appended is attached to the
 reponse message.
 
     client
         |> loadNextPage pager
 
 -}
-loadNextPage : Pager a -> Client -> Maybe (HttpBuilder.RequestBuilder (Pager a))
-loadNextPage pager client =
+loadNextPage : Pager a -> Maybe (HttpBuilder.RequestBuilder (Pager a))
+loadNextPage pager =
     case pager.nextPage of
         Just nextPage ->
             nextPage
                 |> HttpBuilder.get
-                |> HttpBuilder.withHeaders client.headers
-                |> HttpBuilder.withExpect (Http.expectStringResponse (decodePager pager.decoder (Just pager)))
+                |> HttpBuilder.withHeaders pager.client.headers
+                |> HttpBuilder.withExpect
+                    (Http.expectStringResponse (decodePager pager.client pager.decoder))
                 |> Just
 
         Nothing ->
