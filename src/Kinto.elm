@@ -293,15 +293,18 @@ emptyPager client resource =
     }
 
 
-{-| Update a previous pager with data from a new one, appending new page objects
+{-| Update a previous pager with data from a new one, appending new objects
 to the previous list.
+
+    updatePager nextPager previousPager
+
 -}
 updatePager : Pager a -> Pager a -> Pager a
-updatePager newPager previousPager =
+updatePager nextPager previousPager =
     { previousPager
-        | total = newPager.total
-        , nextPage = newPager.nextPage
-        , objects = previousPager.objects ++ newPager.objects
+        | total = nextPager.total
+        , nextPage = nextPager.nextPage
+        , objects = previousPager.objects ++ nextPager.objects
     }
 
 
