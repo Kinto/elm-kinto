@@ -168,7 +168,7 @@ update msg model =
                 | pager = removeRecordFromPager record model.pager
                 , error = Nothing
               }
-            , fetchRecordList model
+            , Cmd.none
             )
 
         DeleteRecordResponse (Err error) ->
