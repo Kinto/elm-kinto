@@ -644,7 +644,8 @@ toRequest builder =
 
 {-| Create a GET request on an item endpoint
 
-    get resource itemId
+    client
+        |> get resource itemId
 
 -}
 get : Resource a -> String -> Client -> Request a
@@ -657,7 +658,8 @@ get resource itemId client =
 
 {-| Create a GET request on one of the plural endpoints
 
-    getList resource
+    client
+        |> getList resource
 
 -}
 getList : Resource a -> Client -> HttpBuilder.RequestBuilder (List a)
@@ -671,7 +673,8 @@ getList resource client =
 {-| Create a GET request on one of the plural endpoints. As lists are paginated,
 When the request is succesful, a `Pager` is attached to the reponse message.
 
-    getPaginatedList resource
+    client
+        |> getPaginatedList resource
 
 -}
 getPaginatedList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
@@ -686,7 +689,8 @@ getPaginatedList resource client =
 When the request is succesful, a `Pager` with new new objects appended is attached to the
 reponse message.
 
-    loadNextPage pager client
+    client
+        |> loadNextPage pager
 
 -}
 loadNextPage : Pager a -> Client -> Maybe (HttpBuilder.RequestBuilder (Pager a))
@@ -705,7 +709,8 @@ loadNextPage pager client =
 
 {-| Create a DELETE request on an item endpoint:
 
-    delete resource itemId
+    client
+        |> delete resource itemId
 
 -}
 delete : Resource a -> String -> Client -> Request a
@@ -718,7 +723,8 @@ delete resource itemId client =
 
 {-| Create a POST request on a plural endpoint:
 
-    create resource data
+    client
+        |> create resource itemId data
 
 -}
 create : Resource a -> Body -> Client -> Request a
@@ -732,7 +738,8 @@ create resource body client =
 
 {-| Create a PATCH request on an item endpoint:
 
-    update resource itemId
+    client
+        |> update resource itemId data
 
 -}
 update : Resource a -> String -> Body -> Client -> Request a
@@ -746,7 +753,8 @@ update resource itemId body client =
 
 {-| Create a PUT request on an item endpoint:
 
-    put resource itemId
+    client
+        |> replace resource itemId data
 
 -}
 replace : Resource a -> String -> Body -> Client -> Request a
