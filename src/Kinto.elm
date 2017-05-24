@@ -4,6 +4,7 @@ module Kinto
         , Endpoint(..)
         , Filter(..)
         , Client
+        , Request
         , Resource
         , Pager
         , emptyPager
@@ -62,6 +63,13 @@ Item endpoints are:
   - collection: `buckets/:bucketId/collections/:collectionId`
   - record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
 
+@docs Request
+
+
+## Kinto resource
+
+@docs Resource
+
 
 ## Single item requests
 
@@ -109,6 +117,14 @@ import Json.Encode as Encode
 
 type alias Url =
     String
+
+
+{-| A type describing a Kinto request. Basically an alias for an
+[elm-http-builder](https://package.elm-lang.org/packages/lukewestby/elm-http-builder/latest)
+request builder.
+-}
+type alias Request a =
+    HttpBuilder.RequestBuilder a
 
 
 
@@ -187,7 +203,7 @@ type alias Client =
     }
 
 
-{-| A type for resources. Constructed using one of `bucketResource`,
+{-| A type for a Kinto resource. Usually constructed using one of `bucketResource`,
 `collectionResource` or `recordResource`.
 -}
 type alias Resource a =
@@ -256,18 +272,20 @@ encodeData encoder =
 -- Pagination
 
 
-{-| A type for a paginated list of objects. The `nextPage` field may contain the
-URL to request to retrieve the next page of objects, usually using `loadNextPage`.
+{-| A stateful accumulator for a paginated list of objects.
 -}
 type alias Pager a =
     { objects : List a
     , decoder : Decode.Decoder (List a)
     , total : Int
-    , nextPage : Maybe String
+    , nextPage : Maybe Url
     }
 
 
 {-| Initialize a `Pager`.
+
+    emptyPager resource
+
 -}
 emptyPager : Resource a -> Pager a
 emptyPager resource =
@@ -511,8 +529,8 @@ client baseUrl auth =
 -}
 withFilter :
     Filter
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 withFilter filter builder =
     let
         header =
@@ -565,8 +583,8 @@ withFilter filter builder =
 -}
 sortBy :
     List String
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 sortBy keys builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
@@ -586,8 +604,8 @@ sortBy keys builder =
 -}
 limit :
     Int
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 limit perPage builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
@@ -604,7 +622,7 @@ limit perPage builder =
         |> send TodosCreated
 
 -}
-send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
+send : (Result Error a -> msg) -> Request a -> Cmd msg
 send tagger builder =
     builder
         |> HttpBuilder.send (toResponse >> tagger)
@@ -618,7 +636,7 @@ testing, or converting to a `Task` using `Http.toTask`.
         |> toRequest
 
 -}
-toRequest : HttpBuilder.RequestBuilder a -> Http.Request a
+toRequest : Request a -> Http.Request a
 toRequest builder =
     builder
         |> HttpBuilder.toRequest
@@ -629,7 +647,7 @@ toRequest builder =
     get resource itemId
 
 -}
-get : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+get : Resource a -> String -> Client -> Request a
 get resource itemId client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.get
@@ -690,7 +708,7 @@ loadNextPage pager client =
     delete resource itemId
 
 -}
-delete : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+delete : Resource a -> String -> Client -> Request a
 delete resource itemId client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.delete
@@ -703,7 +721,7 @@ delete resource itemId client =
     create resource data
 
 -}
-create : Resource a -> Body -> Client -> HttpBuilder.RequestBuilder a
+create : Resource a -> Body -> Client -> Request a
 create resource body client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.post
@@ -717,7 +735,7 @@ create resource body client =
     update resource itemId
 
 -}
-update : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+update : Resource a -> String -> Body -> Client -> Request a
 update resource itemId body client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.patch
@@ -731,7 +749,7 @@ update resource itemId body client =
     put resource itemId
 
 -}
-replace : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+replace : Resource a -> String -> Body -> Client -> Request a
 replace resource itemId body client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.put
