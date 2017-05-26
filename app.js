@@ -597,8 +597,7 @@ function toString(v)
 	var type = typeof v;
 	if (type === 'function')
 	{
-		var name = v.func ? v.func.name : v.name;
-		return '<function' + (name === '' ? '' : ':') + name + '>';
+		return '<function>';
 	}
 
 	if (type === 'boolean')
@@ -1105,6 +1104,13 @@ var _elm_lang$core$List$sortWith = _elm_lang$core$Native_List.sortWith;
 var _elm_lang$core$List$sortBy = _elm_lang$core$Native_List.sortBy;
 var _elm_lang$core$List$sort = function (xs) {
 	return A2(_elm_lang$core$List$sortBy, _elm_lang$core$Basics$identity, xs);
+};
+var _elm_lang$core$List$singleton = function (value) {
+	return {
+		ctor: '::',
+		_0: value,
+		_1: {ctor: '[]'}
+	};
 };
 var _elm_lang$core$List$drop = F2(
 	function (n, list) {
@@ -2014,7 +2020,7 @@ function endsWith(sub, str)
 function indexes(sub, str)
 {
 	var subLen = sub.length;
-	
+
 	if (subLen < 1)
 	{
 		return _elm_lang$core$Native_List.Nil;
@@ -2027,74 +2033,78 @@ function indexes(sub, str)
 	{
 		is.push(i);
 		i = i + subLen;
-	}	
-	
+	}
+
 	return _elm_lang$core$Native_List.fromArray(is);
 }
+
 
 function toInt(s)
 {
 	var len = s.length;
+
+	// if empty
 	if (len === 0)
 	{
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+		return intErr(s);
 	}
-	var start = 0;
-	if (s[0] === '-')
+
+	// if hex
+	var c = s[0];
+	if (c === '0' && s[1] === 'x')
 	{
-		if (len === 1)
+		for (var i = 2; i < len; ++i)
 		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+			var c = s[i];
+			if (('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'))
+			{
+				continue;
+			}
+			return intErr(s);
 		}
-		start = 1;
+		return _elm_lang$core$Result$Ok(parseInt(s, 16));
 	}
-	for (var i = start; i < len; ++i)
+
+	// is decimal
+	if (c > '9' || (c < '0' && c !== '-' && c !== '+'))
+	{
+		return intErr(s);
+	}
+	for (var i = 1; i < len; ++i)
 	{
 		var c = s[i];
 		if (c < '0' || '9' < c)
 		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+			return intErr(s);
 		}
 	}
+
 	return _elm_lang$core$Result$Ok(parseInt(s, 10));
 }
 
+function intErr(s)
+{
+	return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int");
+}
+
+
 function toFloat(s)
 {
-	var len = s.length;
-	if (len === 0)
+	// check if it is a hex, octal, or binary number
+	if (s.length === 0 || /[\sxbo]/.test(s))
 	{
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
+		return floatErr(s);
 	}
-	var start = 0;
-	if (s[0] === '-')
-	{
-		if (len === 1)
-		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
-		}
-		start = 1;
-	}
-	var dotCount = 0;
-	for (var i = start; i < len; ++i)
-	{
-		var c = s[i];
-		if ('0' <= c && c <= '9')
-		{
-			continue;
-		}
-		if (c === '.')
-		{
-			dotCount += 1;
-			if (dotCount <= 1)
-			{
-				continue;
-			}
-		}
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
-	}
-	return _elm_lang$core$Result$Ok(parseFloat(s));
+	var n = +s;
+	// faster isNaN check
+	return n === n ? _elm_lang$core$Result$Ok(n) : floatErr(s);
 }
+
+function floatErr(s)
+{
+	return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float");
+}
+
 
 function toList(str)
 {
@@ -2799,15 +2809,8 @@ function setupIncomingPort(name, callback)
 		sentBeforeInit.push(value);
 	}
 
-	function postInitSend(incomingValue)
+	function postInitSend(value)
 	{
-		var result = A2(_elm_lang$core$Json_Decode$decodeValue, converter, incomingValue);
-		if (result.ctor === 'Err')
-		{
-			throw new Error('Trying to send an unexpected type of value through port `' + name + '`:\n' + result._0);
-		}
-
-		var value = result._0;
 		var temp = subs;
 		while (temp.ctor !== '[]')
 		{
@@ -2818,7 +2821,13 @@ function setupIncomingPort(name, callback)
 
 	function send(incomingValue)
 	{
-		currentSend(incomingValue);
+		var result = A2(_elm_lang$core$Json_Decode$decodeValue, converter, incomingValue);
+		if (result.ctor === 'Err')
+		{
+			throw new Error('Trying to send an unexpected type of value through port `' + name + '`:\n' + result._0);
+		}
+
+		currentSend(result._0);
 	}
 
 	return { send: send };
@@ -6298,11 +6307,6 @@ function badToString(problem)
 				problem = problem.rest;
 				break;
 
-			case 'index':
-				context += '[' + problem.index + ']';
-				problem = problem.rest;
-				break;
-
 			case 'oneOf':
 				var problems = problem.problems;
 				for (var i = 0; i < problems.length; i++)
@@ -7132,8 +7136,8 @@ var _Kinto$elm_kinto$Kinto$alwaysEncode = function (string) {
 			_elm_lang$core$Native_Utils.crash(
 				'Kinto',
 				{
-					start: {line: 297, column: 13},
-					end: {line: 297, column: 24}
+					start: {line: 416, column: 13},
+					end: {line: 416, column: 24}
 				}),
 			'b64encoding failed',
 			_p1._0);
@@ -7159,11 +7163,20 @@ var _Kinto$elm_kinto$Kinto$headersForAuth = function (auth) {
 							_p2._0,
 							A2(_elm_lang$core$Basics_ops['++'], ':', _p2._1))))
 			};
-		default:
+		case 'Bearer':
 			return {
 				ctor: '_Tuple2',
 				_0: 'Authorization',
 				_1: A2(_elm_lang$core$Basics_ops['++'], 'Bearer ', _p2._0)
+			};
+		default:
+			return {
+				ctor: '_Tuple2',
+				_0: 'Authorization',
+				_1: A2(
+					_elm_lang$core$Basics_ops['++'],
+					_p2._0,
+					A2(_elm_lang$core$Basics_ops['++'], ' ', _p2._1))
 			};
 	}
 };
@@ -7317,17 +7330,6 @@ var _Kinto$elm_kinto$Kinto$get = F3(
 						client.baseUrl,
 						resource.itemEndpoint(itemId)))));
 	});
-var _Kinto$elm_kinto$Kinto$getList = F2(
-	function (resource, client) {
-		return A2(
-			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
-			_elm_lang$http$Http$expectJson(resource.listDecoder),
-			A2(
-				_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
-				client.headers,
-				_lukewestby$elm_http_builder$HttpBuilder$get(
-					A2(_Kinto$elm_kinto$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint))));
-	});
 var _Kinto$elm_kinto$Kinto$delete = F3(
 	function (resource, itemId, client) {
 		return A2(
@@ -7341,6 +7343,77 @@ var _Kinto$elm_kinto$Kinto$delete = F3(
 						_Kinto$elm_kinto$Kinto$endpointUrl,
 						client.baseUrl,
 						resource.itemEndpoint(itemId)))));
+	});
+var _Kinto$elm_kinto$Kinto$decodePager = F3(
+	function (client, decoder, response) {
+		var total = A2(
+			_elm_lang$core$Maybe$withDefault,
+			0,
+			A2(
+				_elm_lang$core$Maybe$map,
+				function (_p4) {
+					return A2(
+						_elm_lang$core$Result$withDefault,
+						0,
+						_elm_lang$core$String$toInt(_p4));
+				},
+				A2(_elm_lang$core$Dict$get, 'Total-Records', response.headers)));
+		var nextPage = A2(_elm_lang$core$Dict$get, 'Next-Page', response.headers);
+		var createPager = function (objects) {
+			return {client: client, objects: objects, decoder: decoder, total: total, nextPage: nextPage};
+		};
+		return A2(
+			_elm_lang$core$Result$map,
+			createPager,
+			A2(_elm_lang$core$Json_Decode$decodeString, decoder, response.body));
+	});
+var _Kinto$elm_kinto$Kinto$getList = F2(
+	function (resource, client) {
+		return A2(
+			_lukewestby$elm_http_builder$HttpBuilder$withExpect,
+			_elm_lang$http$Http$expectStringResponse(
+				A2(_Kinto$elm_kinto$Kinto$decodePager, client, resource.listDecoder)),
+			A2(
+				_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
+				client.headers,
+				_lukewestby$elm_http_builder$HttpBuilder$get(
+					A2(_Kinto$elm_kinto$Kinto$endpointUrl, client.baseUrl, resource.listEndpoint))));
+	});
+var _Kinto$elm_kinto$Kinto$loadNextPage = function (pager) {
+	var _p5 = pager.nextPage;
+	if (_p5.ctor === 'Just') {
+		return _elm_lang$core$Maybe$Just(
+			A2(
+				_lukewestby$elm_http_builder$HttpBuilder$withExpect,
+				_elm_lang$http$Http$expectStringResponse(
+					A2(_Kinto$elm_kinto$Kinto$decodePager, pager.client, pager.decoder)),
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
+					pager.client.headers,
+					_lukewestby$elm_http_builder$HttpBuilder$get(_p5._0))));
+	} else {
+		return _elm_lang$core$Maybe$Nothing;
+	}
+};
+var _Kinto$elm_kinto$Kinto$updatePager = F2(
+	function (nextPager, previousPager) {
+		return _elm_lang$core$Native_Utils.update(
+			previousPager,
+			{
+				total: nextPager.total,
+				nextPage: nextPager.nextPage,
+				objects: A2(_elm_lang$core$Basics_ops['++'], previousPager.objects, nextPager.objects)
+			});
+	});
+var _Kinto$elm_kinto$Kinto$emptyPager = F2(
+	function (client, resource) {
+		return {
+			client: client,
+			objects: {ctor: '[]'},
+			decoder: resource.listDecoder,
+			total: 0,
+			nextPage: _elm_lang$core$Maybe$Nothing
+		};
 	});
 var _Kinto$elm_kinto$Kinto$encodeData = function (encoder) {
 	return _elm_lang$core$Json_Encode$object(
@@ -7420,6 +7493,10 @@ var _Kinto$elm_kinto$Kinto$Resource = F4(
 	function (a, b, c, d) {
 		return {itemEndpoint: a, listEndpoint: b, itemDecoder: c, listDecoder: d};
 	});
+var _Kinto$elm_kinto$Kinto$Pager = F5(
+	function (a, b, c, d, e) {
+		return {client: a, objects: b, decoder: c, total: d, nextPage: e};
+	});
 var _Kinto$elm_kinto$Kinto$ErrorDetail = F4(
 	function (a, b, c, d) {
 		return {errno: a, message: b, code: c, error: d};
@@ -7431,6 +7508,10 @@ var _Kinto$elm_kinto$Kinto$errorDecoder = A5(
 	A2(_elm_lang$core$Json_Decode$field, 'message', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'code', _elm_lang$core$Json_Decode$int),
 	A2(_elm_lang$core$Json_Decode$field, 'error', _elm_lang$core$Json_Decode$string));
+var _Kinto$elm_kinto$Kinto$Custom = F2(
+	function (a, b) {
+		return {ctor: 'Custom', _0: a, _1: b};
+	});
 var _Kinto$elm_kinto$Kinto$Bearer = function (a) {
 	return {ctor: 'Bearer', _0: a};
 };
@@ -7539,34 +7620,34 @@ var _Kinto$elm_kinto$Kinto$ServerError = F3(
 	});
 var _Kinto$elm_kinto$Kinto$extractKintoError = F3(
 	function (statusCode, statusMsg, body) {
-		var _p4 = A2(_elm_lang$core$Json_Decode$decodeString, _Kinto$elm_kinto$Kinto$errorDecoder, body);
-		if (_p4.ctor === 'Ok') {
-			return A3(_Kinto$elm_kinto$Kinto$KintoError, statusCode, statusMsg, _p4._0);
+		var _p6 = A2(_elm_lang$core$Json_Decode$decodeString, _Kinto$elm_kinto$Kinto$errorDecoder, body);
+		if (_p6.ctor === 'Ok') {
+			return A3(_Kinto$elm_kinto$Kinto$KintoError, statusCode, statusMsg, _p6._0);
 		} else {
-			return A3(_Kinto$elm_kinto$Kinto$ServerError, statusCode, statusMsg, _p4._0);
+			return A3(_Kinto$elm_kinto$Kinto$ServerError, statusCode, statusMsg, _p6._0);
 		}
 	});
 var _Kinto$elm_kinto$Kinto$extractError = function (error) {
-	var _p5 = error;
-	switch (_p5.ctor) {
+	var _p7 = error;
+	switch (_p7.ctor) {
 		case 'BadStatus':
-			var _p6 = _p5._0.status;
-			return A3(_Kinto$elm_kinto$Kinto$extractKintoError, _p6.code, _p6.message, _p5._0.body);
+			var _p8 = _p7._0.status;
+			return A3(_Kinto$elm_kinto$Kinto$extractKintoError, _p8.code, _p8.message, _p7._0.body);
 		case 'BadPayload':
-			var _p7 = _p5._1.status;
+			var _p9 = _p7._1.status;
 			return A3(
 				_Kinto$elm_kinto$Kinto$ServerError,
-				_p7.code,
-				_p7.message,
+				_p9.code,
+				_p9.message,
 				A2(
 					_elm_lang$core$Basics_ops['++'],
 					'failed decoding json: ',
 					A2(
 						_elm_lang$core$Basics_ops['++'],
-						_p5._0,
-						A2(_elm_lang$core$Basics_ops['++'], '\n\nBody received from server: ', _p5._1.body))));
+						_p7._0,
+						A2(_elm_lang$core$Basics_ops['++'], '\n\nBody received from server: ', _p7._1.body))));
 		default:
-			return _Kinto$elm_kinto$Kinto$NetworkError(_p5);
+			return _Kinto$elm_kinto$Kinto$NetworkError(_p7);
 	}
 };
 var _Kinto$elm_kinto$Kinto$toResponse = function (response) {
@@ -7576,9 +7657,9 @@ var _Kinto$elm_kinto$Kinto$send = F2(
 	function (tagger, builder) {
 		return A2(
 			_lukewestby$elm_http_builder$HttpBuilder$send,
-			function (_p8) {
+			function (_p10) {
 				return tagger(
-					_Kinto$elm_kinto$Kinto$toResponse(_p8));
+					_Kinto$elm_kinto$Kinto$toResponse(_p10));
 			},
 			builder);
 	});
@@ -7845,9 +7926,9 @@ function on(name, options, decoder)
 
 function equalEvents(a, b)
 {
-	if (!a.options === b.options)
+	if (a.options !== b.options)
 	{
-		if (a.stopPropagation !== b.stopPropagation || a.preventDefault !== b.preventDefault)
+		if (a.options.stopPropagation !== b.options.stopPropagation || a.options.preventDefault !== b.options.preventDefault)
 		{
 			return false;
 		}
@@ -9123,7 +9204,7 @@ function normalRenderer(parentNode, view)
 var rAF =
 	typeof requestAnimationFrame !== 'undefined'
 		? requestAnimationFrame
-		: function(callback) { callback(); };
+		: function(callback) { setTimeout(callback, 1000 / 60); };
 
 function makeStepper(domNode, view, initialVirtualNode, eventNode)
 {
@@ -9621,10 +9702,6 @@ var _elm_lang$html$Html$summary = _elm_lang$html$Html$node('summary');
 var _elm_lang$html$Html$menuitem = _elm_lang$html$Html$node('menuitem');
 var _elm_lang$html$Html$menu = _elm_lang$html$Html$node('menu');
 
-var _Kinto$elm_kinto$Model$client = A2(
-	_Kinto$elm_kinto$Kinto$client,
-	'https://kinto.dev.mozaws.net/v1/',
-	A2(_Kinto$elm_kinto$Kinto$Basic, 'test', 'test'));
 var _Kinto$elm_kinto$Model$updateRecord = F2(
 	function (formData, record) {
 		return _elm_lang$core$Native_Utils.update(
@@ -9634,29 +9711,37 @@ var _Kinto$elm_kinto$Model$updateRecord = F2(
 				description: _elm_lang$core$Maybe$Just(formData.description)
 			});
 	});
-var _Kinto$elm_kinto$Model$updateRecordInList = F2(
-	function (formData, records) {
+var _Kinto$elm_kinto$Model$updateRecordInPager = F2(
+	function (formData, pager) {
 		var _p0 = formData.id;
 		if (_p0.ctor === 'Nothing') {
-			return records;
+			return pager;
 		} else {
-			return A2(
-				_elm_lang$core$List$map,
-				function (record) {
-					return _elm_lang$core$Native_Utils.eq(record.id, _p0._0) ? A2(_Kinto$elm_kinto$Model$updateRecord, formData, record) : record;
-				},
-				records);
+			return _elm_lang$core$Native_Utils.update(
+				pager,
+				{
+					objects: A2(
+						_elm_lang$core$List$map,
+						function (record) {
+							return _elm_lang$core$Native_Utils.eq(record.id, _p0._0) ? A2(_Kinto$elm_kinto$Model$updateRecord, formData, record) : record;
+						},
+						pager.objects)
+				});
 		}
 	});
-var _Kinto$elm_kinto$Model$removeRecordFromList = F2(
-	function (_p1, records) {
+var _Kinto$elm_kinto$Model$removeRecordFromPager = F2(
+	function (_p1, pager) {
 		var _p2 = _p1;
-		return A2(
-			_elm_lang$core$List$filter,
-			function (record) {
-				return !_elm_lang$core$Native_Utils.eq(record.id, _p2.id);
-			},
-			records);
+		return _elm_lang$core$Native_Utils.update(
+			pager,
+			{
+				objects: A2(
+					_elm_lang$core$List$filter,
+					function (record) {
+						return !_elm_lang$core$Native_Utils.eq(record.id, _p2.id);
+					},
+					pager.objects)
+			});
 	});
 var _Kinto$elm_kinto$Model$encodeFormData = function (_p3) {
 	var _p4 = _p3;
@@ -9692,6 +9777,7 @@ var _Kinto$elm_kinto$Model$updateError = F2(
 			_1: _elm_lang$core$Platform_Cmd$none
 		};
 	});
+var _Kinto$elm_kinto$Model$initialClientFormData = {server: 'https://kinto.dev.mozaws.net/v1/', username: 'test', password: 'test'};
 var _Kinto$elm_kinto$Model$Record = F4(
 	function (a, b, c, d) {
 		return {id: a, title: b, description: c, last_modified: d};
@@ -9719,20 +9805,26 @@ var _Kinto$elm_kinto$Model$recordToFormData = function (_p5) {
 		A2(_elm_lang$core$Maybe$withDefault, '', _p6.title),
 		A2(_elm_lang$core$Maybe$withDefault, '', _p6.description));
 };
-var _Kinto$elm_kinto$Model$Model = F6(
-	function (a, b, c, d, e, f) {
-		return {error: a, records: b, formData: c, currentTime: d, sort: e, limit: f};
+var _Kinto$elm_kinto$Model$ClientFormData = F3(
+	function (a, b, c) {
+		return {server: a, username: b, password: c};
+	});
+var _Kinto$elm_kinto$Model$Model = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {error: a, client: b, pager: c, formData: d, clientFormData: e, currentTime: f, sort: g, limit: h};
 	});
 var _Kinto$elm_kinto$Model$Desc = function (a) {
 	return {ctor: 'Desc', _0: a};
 };
 var _Kinto$elm_kinto$Model$initialModel = {
 	error: _elm_lang$core$Maybe$Nothing,
-	records: {ctor: '[]'},
+	client: _elm_lang$core$Maybe$Nothing,
+	pager: _elm_lang$core$Maybe$Nothing,
 	formData: _Kinto$elm_kinto$Model$initialFormData,
+	clientFormData: _Kinto$elm_kinto$Model$initialClientFormData,
 	currentTime: 0,
 	sort: _Kinto$elm_kinto$Model$Desc('last_modified'),
-	limit: _elm_lang$core$Maybe$Just(30)
+	limit: _elm_lang$core$Maybe$Just(5)
 };
 var _Kinto$elm_kinto$Model$Asc = function (a) {
 	return {ctor: 'Asc', _0: a};
@@ -9751,15 +9843,31 @@ var _Kinto$elm_kinto$Model$UpdateFormDescription = function (a) {
 var _Kinto$elm_kinto$Model$UpdateFormTitle = function (a) {
 	return {ctor: 'UpdateFormTitle', _0: a};
 };
+var _Kinto$elm_kinto$Model$SaveClient = {ctor: 'SaveClient'};
+var _Kinto$elm_kinto$Model$UpdateClientPassword = function (a) {
+	return {ctor: 'UpdateClientPassword', _0: a};
+};
+var _Kinto$elm_kinto$Model$UpdateClientUsername = function (a) {
+	return {ctor: 'UpdateClientUsername', _0: a};
+};
+var _Kinto$elm_kinto$Model$UpdateClientServer = function (a) {
+	return {ctor: 'UpdateClientServer', _0: a};
+};
 var _Kinto$elm_kinto$Model$DeleteRecordResponse = function (a) {
 	return {ctor: 'DeleteRecordResponse', _0: a};
 };
-var _Kinto$elm_kinto$Model$deleteRecord = function (recordId) {
-	return A2(
-		_Kinto$elm_kinto$Kinto$send,
-		_Kinto$elm_kinto$Model$DeleteRecordResponse,
-		A3(_Kinto$elm_kinto$Kinto$delete, _Kinto$elm_kinto$Model$recordResource, recordId, _Kinto$elm_kinto$Model$client));
-};
+var _Kinto$elm_kinto$Model$deleteRecord = F2(
+	function (client, recordId) {
+		var _p7 = client;
+		if (_p7.ctor === 'Just') {
+			return A2(
+				_Kinto$elm_kinto$Kinto$send,
+				_Kinto$elm_kinto$Model$DeleteRecordResponse,
+				A3(_Kinto$elm_kinto$Kinto$delete, _Kinto$elm_kinto$Model$recordResource, recordId, _p7._0));
+		} else {
+			return _elm_lang$core$Platform_Cmd$none;
+		}
+	});
 var _Kinto$elm_kinto$Model$DeleteRecord = function (a) {
 	return {ctor: 'DeleteRecord', _0: a};
 };
@@ -9772,53 +9880,72 @@ var _Kinto$elm_kinto$Model$EditRecord = function (a) {
 var _Kinto$elm_kinto$Model$CreateRecordResponse = function (a) {
 	return {ctor: 'CreateRecordResponse', _0: a};
 };
-var _Kinto$elm_kinto$Model$sendFormData = function (formData) {
-	var data = _Kinto$elm_kinto$Model$encodeFormData(formData);
-	var _p7 = formData.id;
-	if (_p7.ctor === 'Nothing') {
-		return A2(
-			_Kinto$elm_kinto$Kinto$send,
-			_Kinto$elm_kinto$Model$CreateRecordResponse,
-			A3(_Kinto$elm_kinto$Kinto$create, _Kinto$elm_kinto$Model$recordResource, data, _Kinto$elm_kinto$Model$client));
-	} else {
-		return A2(
-			_Kinto$elm_kinto$Kinto$send,
-			_Kinto$elm_kinto$Model$EditRecordResponse,
-			A4(_Kinto$elm_kinto$Kinto$update, _Kinto$elm_kinto$Model$recordResource, _p7._0, data, _Kinto$elm_kinto$Model$client));
-	}
-};
+var _Kinto$elm_kinto$Model$sendFormData = F2(
+	function (client, formData) {
+		var data = _Kinto$elm_kinto$Model$encodeFormData(formData);
+		var _p8 = {ctor: '_Tuple2', _0: client, _1: formData.id};
+		if ((_p8.ctor === '_Tuple2') && (_p8._0.ctor === 'Just')) {
+			if (_p8._1.ctor === 'Nothing') {
+				return A2(
+					_Kinto$elm_kinto$Kinto$send,
+					_Kinto$elm_kinto$Model$CreateRecordResponse,
+					A3(_Kinto$elm_kinto$Kinto$create, _Kinto$elm_kinto$Model$recordResource, data, _p8._0._0));
+			} else {
+				return A2(
+					_Kinto$elm_kinto$Kinto$send,
+					_Kinto$elm_kinto$Model$EditRecordResponse,
+					A4(_Kinto$elm_kinto$Kinto$update, _Kinto$elm_kinto$Model$recordResource, _p8._1._0, data, _p8._0._0));
+			}
+		} else {
+			return _elm_lang$core$Platform_Cmd$none;
+		}
+	});
 var _Kinto$elm_kinto$Model$FetchRecordsResponse = function (a) {
 	return {ctor: 'FetchRecordsResponse', _0: a};
 };
-var _Kinto$elm_kinto$Model$fetchRecordList = function (model) {
+var _Kinto$elm_kinto$Model$fetchNextRecordList = function (pager) {
+	var _p9 = _Kinto$elm_kinto$Kinto$loadNextPage(pager);
+	if (_p9.ctor === 'Just') {
+		return A2(_Kinto$elm_kinto$Kinto$send, _Kinto$elm_kinto$Model$FetchRecordsResponse, _p9._0);
+	} else {
+		return _elm_lang$core$Platform_Cmd$none;
+	}
+};
+var _Kinto$elm_kinto$Model$fetchRecordList = function (_p10) {
+	var _p11 = _p10;
 	var limiter = function (builder) {
-		var _p8 = model.limit;
-		if (_p8.ctor === 'Just') {
-			return A2(_Kinto$elm_kinto$Kinto$limit, _p8._0, builder);
+		var _p12 = _p11.limit;
+		if (_p12.ctor === 'Just') {
+			return A2(_Kinto$elm_kinto$Kinto$limit, _p12._0, builder);
 		} else {
 			return builder;
 		}
 	};
 	var sortColumn = function () {
-		var _p9 = model.sort;
-		if (_p9.ctor === 'Asc') {
-			return _p9._0;
+		var _p13 = _p11.sort;
+		if (_p13.ctor === 'Asc') {
+			return _p13._0;
 		} else {
-			return A2(_elm_lang$core$Basics_ops['++'], '-', _p9._0);
+			return A2(_elm_lang$core$Basics_ops['++'], '-', _p13._0);
 		}
 	}();
-	return A2(
-		_Kinto$elm_kinto$Kinto$send,
-		_Kinto$elm_kinto$Model$FetchRecordsResponse,
-		limiter(
-			A2(
-				_Kinto$elm_kinto$Kinto$sortBy,
-				{
-					ctor: '::',
-					_0: sortColumn,
-					_1: {ctor: '[]'}
-				},
-				A2(_Kinto$elm_kinto$Kinto$getList, _Kinto$elm_kinto$Model$recordResource, _Kinto$elm_kinto$Model$client))));
+	var _p14 = _p11.client;
+	if (_p14.ctor === 'Just') {
+		return A2(
+			_Kinto$elm_kinto$Kinto$send,
+			_Kinto$elm_kinto$Model$FetchRecordsResponse,
+			limiter(
+				A2(
+					_Kinto$elm_kinto$Kinto$sortBy,
+					{
+						ctor: '::',
+						_0: sortColumn,
+						_1: {ctor: '[]'}
+					},
+					A2(_Kinto$elm_kinto$Kinto$getList, _Kinto$elm_kinto$Model$recordResource, _p14._0))));
+	} else {
+		return _elm_lang$core$Platform_Cmd$none;
+	}
 };
 var _Kinto$elm_kinto$Model$init = {
 	ctor: '_Tuple2',
@@ -9830,144 +9957,213 @@ var _Kinto$elm_kinto$Model$init = {
 			_1: {ctor: '[]'}
 		})
 };
+var _Kinto$elm_kinto$Model$FetchNextRecords = {ctor: 'FetchNextRecords'};
 var _Kinto$elm_kinto$Model$FetchRecords = {ctor: 'FetchRecords'};
 var _Kinto$elm_kinto$Model$FetchRecordResponse = function (a) {
 	return {ctor: 'FetchRecordResponse', _0: a};
 };
-var _Kinto$elm_kinto$Model$fetchRecord = function (recordId) {
-	return A2(
-		_Kinto$elm_kinto$Kinto$send,
-		_Kinto$elm_kinto$Model$FetchRecordResponse,
-		A3(_Kinto$elm_kinto$Kinto$get, _Kinto$elm_kinto$Model$recordResource, recordId, _Kinto$elm_kinto$Model$client));
-};
+var _Kinto$elm_kinto$Model$fetchRecord = F2(
+	function (client, recordId) {
+		var _p15 = client;
+		if (_p15.ctor === 'Just') {
+			return A2(
+				_Kinto$elm_kinto$Kinto$send,
+				_Kinto$elm_kinto$Model$FetchRecordResponse,
+				A3(_Kinto$elm_kinto$Kinto$get, _Kinto$elm_kinto$Model$recordResource, recordId, _p15._0));
+		} else {
+			return _elm_lang$core$Platform_Cmd$none;
+		}
+	});
 var _Kinto$elm_kinto$Model$update = F2(
-	function (msg, model) {
-		var _p10 = msg;
-		switch (_p10.ctor) {
+	function (msg, _p16) {
+		var _p17 = _p16;
+		var _p32 = _p17;
+		var _p31 = _p17.clientFormData;
+		var _p18 = msg;
+		switch (_p18.ctor) {
 			case 'NoOp':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+				return {ctor: '_Tuple2', _0: _p32, _1: _elm_lang$core$Platform_Cmd$none};
 			case 'Tick':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{currentTime: _p10._0}),
+						_p32,
+						{currentTime: _p18._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'FetchRecords':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
-						model,
+						_p32,
 						{
-							records: {ctor: '[]'},
+							pager: function () {
+								var _p19 = _p32.client;
+								if (_p19.ctor === 'Just') {
+									return _elm_lang$core$Maybe$Just(
+										A2(_Kinto$elm_kinto$Kinto$emptyPager, _p19._0, _Kinto$elm_kinto$Model$recordResource));
+								} else {
+									return _elm_lang$core$Maybe$Nothing;
+								}
+							}(),
 							error: _elm_lang$core$Maybe$Nothing
 						}),
-					_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(_p32)
+				};
+			case 'FetchNextRecords':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						_p32,
+						{error: _elm_lang$core$Maybe$Nothing}),
+					_1: function () {
+						var _p20 = _p32.pager;
+						if (_p20.ctor === 'Just') {
+							return _Kinto$elm_kinto$Model$fetchNextRecordList(_p20._0);
+						} else {
+							return _elm_lang$core$Platform_Cmd$none;
+						}
+					}()
 				};
 			case 'FetchRecordResponse':
-				if (_p10._0.ctor === 'Ok') {
+				if (_p18._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
-							model,
+							_p32,
 							{
-								formData: _Kinto$elm_kinto$Model$recordToFormData(_p10._0._0),
+								formData: _Kinto$elm_kinto$Model$recordToFormData(_p18._0._0),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
+					return A2(_Kinto$elm_kinto$Model$updateError, _p18._0._0, _p32);
 				}
 			case 'FetchRecordsResponse':
-				if (_p10._0.ctor === 'Ok') {
+				if (_p18._0.ctor === 'Ok') {
+					var _p22 = _p18._0._0;
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{records: _p10._0._0, error: _elm_lang$core$Maybe$Nothing}),
+							_p32,
+							{
+								pager: function () {
+									var _p21 = _p32.pager;
+									if (_p21.ctor === 'Just') {
+										return _elm_lang$core$Maybe$Just(
+											A2(_Kinto$elm_kinto$Kinto$updatePager, _p22, _p21._0));
+									} else {
+										return _elm_lang$core$Maybe$Just(_p22);
+									}
+								}(),
+								error: _elm_lang$core$Maybe$Nothing
+							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
+					return A2(_Kinto$elm_kinto$Model$updateError, _p18._0._0, _p32);
 				}
 			case 'CreateRecordResponse':
-				if (_p10._0.ctor === 'Ok') {
+				if (_p18._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
-							model,
+							_p32,
 							{formData: _Kinto$elm_kinto$Model$initialFormData}),
-						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+						_1: _Kinto$elm_kinto$Model$fetchRecordList(_p32)
 					};
 				} else {
-					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
+					return A2(_Kinto$elm_kinto$Model$updateError, _p18._0._0, _p32);
 				}
 			case 'EditRecord':
 				return {
 					ctor: '_Tuple2',
-					_0: model,
-					_1: _Kinto$elm_kinto$Model$fetchRecord(_p10._0)
+					_0: _p32,
+					_1: A2(_Kinto$elm_kinto$Model$fetchRecord, _p32.client, _p18._0)
 				};
 			case 'EditRecordResponse':
-				if (_p10._0.ctor === 'Ok') {
+				if (_p18._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
-						_0: model,
-						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+						_0: _p32,
+						_1: _Kinto$elm_kinto$Model$fetchRecordList(_p32)
 					};
 				} else {
-					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
+					return A2(_Kinto$elm_kinto$Model$updateError, _p18._0._0, _p32);
 				}
 			case 'DeleteRecord':
 				return {
 					ctor: '_Tuple2',
-					_0: model,
-					_1: _Kinto$elm_kinto$Model$deleteRecord(_p10._0)
+					_0: _p32,
+					_1: A2(_Kinto$elm_kinto$Model$deleteRecord, _p32.client, _p18._0)
 				};
 			case 'DeleteRecordResponse':
-				if (_p10._0.ctor === 'Ok') {
+				if (_p18._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
-							model,
+							_p32,
 							{
-								records: A2(_Kinto$elm_kinto$Model$removeRecordFromList, _p10._0._0, model.records),
+								pager: function () {
+									var _p23 = _p32.pager;
+									if (_p23.ctor === 'Just') {
+										return _elm_lang$core$Maybe$Just(
+											A2(_Kinto$elm_kinto$Model$removeRecordFromPager, _p18._0._0, _p23._0));
+									} else {
+										return _elm_lang$core$Maybe$Nothing;
+									}
+								}(),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
-						_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
-					return A2(_Kinto$elm_kinto$Model$updateError, _p10._0._0, model);
+					return A2(_Kinto$elm_kinto$Model$updateError, _p18._0._0, _p32);
 				}
 			case 'UpdateFormTitle':
-				var formData = model.formData;
+				var formData = _p32.formData;
 				var updated = _elm_lang$core$Native_Utils.update(
 					formData,
-					{title: _p10._0});
+					{title: _p18._0});
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
-						model,
+						_p32,
 						{
 							formData: updated,
-							records: A2(_Kinto$elm_kinto$Model$updateRecordInList, updated, model.records)
+							pager: function () {
+								var _p24 = _p32.pager;
+								if (_p24.ctor === 'Just') {
+									return _elm_lang$core$Maybe$Just(
+										A2(_Kinto$elm_kinto$Model$updateRecordInPager, updated, _p24._0));
+								} else {
+									return _elm_lang$core$Maybe$Nothing;
+								}
+							}()
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'UpdateFormDescription':
-				var formData = model.formData;
+				var formData = _p32.formData;
 				var updated = _elm_lang$core$Native_Utils.update(
 					formData,
-					{description: _p10._0});
+					{description: _p18._0});
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
-						model,
+						_p32,
 						{
 							formData: updated,
-							records: A2(_Kinto$elm_kinto$Model$updateRecordInList, updated, model.records)
+							pager: function () {
+								var _p25 = _p32.pager;
+								if (_p25.ctor === 'Just') {
+									return _elm_lang$core$Maybe$Just(
+										A2(_Kinto$elm_kinto$Model$updateRecordInPager, updated, _p25._0));
+								} else {
+									return _elm_lang$core$Maybe$Nothing;
+								}
+							}()
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
@@ -9975,24 +10171,24 @@ var _Kinto$elm_kinto$Model$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
-						model,
+						_p32,
 						{formData: _Kinto$elm_kinto$Model$initialFormData}),
-					_1: _Kinto$elm_kinto$Model$sendFormData(model.formData)
+					_1: A2(_Kinto$elm_kinto$Model$sendFormData, _p32.client, _p32.formData)
 				};
 			case 'SortByColumn':
-				var _p14 = _p10._0;
+				var _p29 = _p18._0;
 				var sort = function () {
-					var _p11 = model.sort;
-					if (_p11.ctor === 'Asc') {
-						var _p12 = _p11._0;
-						return _elm_lang$core$Native_Utils.eq(_p12, _p14) ? _Kinto$elm_kinto$Model$Desc(_p12) : _Kinto$elm_kinto$Model$Asc(_p14);
+					var _p26 = _p32.sort;
+					if (_p26.ctor === 'Asc') {
+						var _p27 = _p26._0;
+						return _elm_lang$core$Native_Utils.eq(_p27, _p29) ? _Kinto$elm_kinto$Model$Desc(_p27) : _Kinto$elm_kinto$Model$Asc(_p29);
 					} else {
-						var _p13 = _p11._0;
-						return _elm_lang$core$Native_Utils.eq(_p13, _p14) ? _Kinto$elm_kinto$Model$Asc(_p13) : _Kinto$elm_kinto$Model$Asc(_p14);
+						var _p28 = _p26._0;
+						return _elm_lang$core$Native_Utils.eq(_p28, _p29) ? _Kinto$elm_kinto$Model$Asc(_p28) : _Kinto$elm_kinto$Model$Asc(_p29);
 					}
 				}();
 				var updated = _elm_lang$core$Native_Utils.update(
-					model,
+					_p32,
 					{sort: sort});
 				return {
 					ctor: '_Tuple2',
@@ -10001,25 +10197,75 @@ var _Kinto$elm_kinto$Model$update = F2(
 				};
 			case 'NewLimit':
 				var updated = function () {
-					var _p15 = _elm_lang$core$String$toInt(_p10._0);
-					if (_p15.ctor === 'Ok') {
+					var _p30 = _elm_lang$core$String$toInt(_p18._0);
+					if (_p30.ctor === 'Ok') {
 						return _elm_lang$core$Native_Utils.update(
-							model,
+							_p32,
 							{
-								limit: _elm_lang$core$Maybe$Just(_p15._0)
+								limit: _elm_lang$core$Maybe$Just(_p30._0)
 							});
 					} else {
 						return _elm_lang$core$Native_Utils.update(
-							model,
+							_p32,
 							{limit: _elm_lang$core$Maybe$Nothing});
 					}
 				}();
 				return {ctor: '_Tuple2', _0: updated, _1: _elm_lang$core$Platform_Cmd$none};
-			default:
+			case 'Limit':
 				return {
 					ctor: '_Tuple2',
-					_0: model,
-					_1: _Kinto$elm_kinto$Model$fetchRecordList(model)
+					_0: _p32,
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(_p32)
+				};
+			case 'UpdateClientServer':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						_p32,
+						{
+							clientFormData: _elm_lang$core$Native_Utils.update(
+								_p31,
+								{server: _p18._0})
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'UpdateClientUsername':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						_p32,
+						{
+							clientFormData: _elm_lang$core$Native_Utils.update(
+								_p31,
+								{username: _p18._0})
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'UpdateClientPassword':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						_p32,
+						{
+							clientFormData: _elm_lang$core$Native_Utils.update(
+								_p31,
+								{password: _p18._0})
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			default:
+				var client = _elm_lang$core$Maybe$Just(
+					A2(
+						_Kinto$elm_kinto$Kinto$client,
+						_p31.server,
+						A2(_Kinto$elm_kinto$Kinto$Basic, _p31.username, _p31.password)));
+				var newModel = _elm_lang$core$Native_Utils.update(
+					_p32,
+					{pager: _elm_lang$core$Maybe$Nothing, client: client});
+				return {
+					ctor: '_Tuple2',
+					_0: newModel,
+					_1: _Kinto$elm_kinto$Model$fetchRecordList(newModel)
 				};
 		}
 	});
@@ -10523,6 +10769,208 @@ var _Kinto$elm_kinto$Utils$timeAgo = F2(
 		return (_elm_lang$core$Native_Utils.cmp(seconds, 10) < 0) ? 'a few seconds ago' : ((_elm_lang$core$Native_Utils.cmp(seconds, 55) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'second', seconds) : (A3(_Kinto$elm_kinto$Utils$within, 55, 65, seconds) ? 'about a minute ago' : ((_elm_lang$core$Native_Utils.cmp(minutes, 55) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'minute', minutes) : (A3(_Kinto$elm_kinto$Utils$within, 55, 65, minutes) ? 'about an hour ago' : ((_elm_lang$core$Native_Utils.cmp(hours, 22) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'hour', hours) : (A3(_Kinto$elm_kinto$Utils$within, 22, 26, hours) ? 'about a day ago' : (A3(_Kinto$elm_kinto$Utils$within, 6, 8, days) ? 'about a week ago' : (A3(_Kinto$elm_kinto$Utils$within, 14, 16, days) ? 'about 2 weeks ago' : (A3(_Kinto$elm_kinto$Utils$within, 20, 22, days) ? 'about 3 weeks ago' : ((_elm_lang$core$Native_Utils.cmp(days, 27) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'day', days) : (A3(_Kinto$elm_kinto$Utils$within, 27, 33, days) ? 'about a month ago' : ((_elm_lang$core$Native_Utils.cmp(months, 11) < 0) ? A2(_Kinto$elm_kinto$Utils$plural, 'month', months) : (A3(_Kinto$elm_kinto$Utils$within, 11, 13, months) ? 'about a year ago' : A2(_Kinto$elm_kinto$Utils$plural, 'year', years))))))))))))));
 	});
 
+var _Kinto$elm_kinto$View$clientFormView = function (clientFormData) {
+	return A2(
+		_elm_lang$html$Html$form,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$elm_kinto$Model$SaveClient),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$fieldset,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$legend,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Kinto client configuration'),
+							_1: {ctor: '[]'}
+						}),
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$div,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$class('form-group'),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$label,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$for('server'),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Kinto server'),
+										_1: {ctor: '[]'}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$input,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$id('server'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$type_('text'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$class('form-control'),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Attributes$value(clientFormData.server),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$UpdateClientServer),
+															_1: {ctor: '[]'}
+														}
+													}
+												}
+											}
+										},
+										{ctor: '[]'}),
+									_1: {ctor: '[]'}
+								}
+							}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('form-group'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$label,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$for('username'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Username'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$input,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$id('username'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$type_('text'),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Attributes$class('form-control'),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$value(clientFormData.username),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$UpdateClientUsername),
+																_1: {ctor: '[]'}
+															}
+														}
+													}
+												}
+											},
+											{ctor: '[]'}),
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$div,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$class('form-group'),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$label,
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$for('password'),
+												_1: {ctor: '[]'}
+											},
+											{
+												ctor: '::',
+												_0: _elm_lang$html$Html$text('Password'),
+												_1: {ctor: '[]'}
+											}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$input,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$id('password'),
+													_1: {
+														ctor: '::',
+														_0: _elm_lang$html$Html_Attributes$type_('password'),
+														_1: {
+															ctor: '::',
+															_0: _elm_lang$html$Html_Attributes$class('form-control'),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$html$Html_Attributes$value(clientFormData.password),
+																_1: {
+																	ctor: '::',
+																	_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$UpdateClientPassword),
+																	_1: {ctor: '[]'}
+																}
+															}
+														}
+													}
+												},
+												{ctor: '[]'}),
+											_1: {ctor: '[]'}
+										}
+									}),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$class('btn btn-primary'),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Configure client'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}
+							}
+						}
+					}
+				}),
+			_1: {ctor: '[]'}
+		});
+};
 var _Kinto$elm_kinto$View$formVerb = function (_p0) {
 	var _p1 = _p0;
 	var _p2 = _p1.id;
@@ -10542,7 +10990,7 @@ var _Kinto$elm_kinto$View$formTitle = function (model) {
 				' ',
 				A2(_elm_lang$core$Maybe$withDefault, '', model.id))));
 };
-var _Kinto$elm_kinto$View$formView = function (formData) {
+var _Kinto$elm_kinto$View$recordFormView = function (formData) {
 	return A2(
 		_elm_lang$html$Html$form,
 		{
@@ -10902,46 +11350,102 @@ var _Kinto$elm_kinto$View$recordRow = F2(
 			});
 	});
 var _Kinto$elm_kinto$View$recordsList = F3(
-	function (records, currentTime, sort) {
-		return A2(
-			_elm_lang$html$Html$table,
-			{
-				ctor: '::',
-				_0: _elm_lang$html$Html_Attributes$class('table'),
-				_1: {ctor: '[]'}
-			},
-			{
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$thead,
-					{ctor: '[]'},
-					{
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$tr,
-							{ctor: '[]'},
-							_Kinto$elm_kinto$View$recordHeaders(sort)),
-						_1: {ctor: '[]'}
-					}),
-				_1: {
+	function (pager, currentTime, sort) {
+		var _p9 = pager;
+		if (_p9.ctor === 'Just') {
+			var _p11 = _p9._0;
+			return A2(
+				_elm_lang$html$Html$div,
+				{ctor: '[]'},
+				{
 					ctor: '::',
 					_0: A2(
-						_elm_lang$html$Html$tbody,
-						{ctor: '[]'},
-						A2(
-							_elm_lang$core$List$map,
-							_Kinto$elm_kinto$View$recordRow(currentTime),
-							records)),
-					_1: {ctor: '[]'}
-				}
-			});
+						_elm_lang$html$Html$table,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('table'),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$thead,
+								{ctor: '[]'},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$tr,
+										{ctor: '[]'},
+										_Kinto$elm_kinto$View$recordHeaders(sort)),
+									_1: {ctor: '[]'}
+								}),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$tbody,
+									{ctor: '[]'},
+									A2(
+										_elm_lang$core$List$map,
+										_Kinto$elm_kinto$View$recordRow(currentTime),
+										_p11.objects)),
+								_1: {ctor: '[]'}
+							}
+						}),
+					_1: {
+						ctor: '::',
+						_0: function () {
+							var _p10 = _p11.nextPage;
+							if (_p10.ctor === 'Just') {
+								return A2(
+									_elm_lang$html$Html$button,
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$style(
+											{
+												ctor: '::',
+												_0: {ctor: '_Tuple2', _0: 'display', _1: 'block'},
+												_1: {
+													ctor: '::',
+													_0: {ctor: '_Tuple2', _0: 'width', _1: '100%'},
+													_1: {ctor: '[]'}
+												}
+											}),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(_Kinto$elm_kinto$Model$FetchNextRecords),
+											_1: {ctor: '[]'}
+										}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Load more'),
+										_1: {ctor: '[]'}
+									});
+							} else {
+								return _elm_lang$html$Html$text('');
+							}
+						}(),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$br,
+								{ctor: '[]'},
+								{ctor: '[]'}),
+							_1: {ctor: '[]'}
+						}
+					}
+				});
+		} else {
+			return _elm_lang$html$Html$text('');
+		}
 	});
-var _Kinto$elm_kinto$View$view = function (_p9) {
-	var _p10 = _p9;
+var _Kinto$elm_kinto$View$view = function (_p12) {
+	var _p13 = _p12;
+	var _p16 = _p13.pager;
 	var lim = A2(
 		_elm_lang$core$Maybe$withDefault,
 		'',
-		A2(_elm_lang$core$Maybe$map, _elm_lang$core$Basics$toString, _p10.limit));
+		A2(_elm_lang$core$Maybe$map, _elm_lang$core$Basics$toString, _p13.limit));
 	return A2(
 		_elm_lang$html$Html$div,
 		{
@@ -10961,91 +11465,124 @@ var _Kinto$elm_kinto$View$view = function (_p9) {
 				}),
 			_1: {
 				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$small,
-					{ctor: '[]'},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('Limit records to display: '),
-						_1: {
+				_0: function () {
+					var _p14 = _p13.client;
+					if (_p14.ctor === 'Just') {
+						return _elm_lang$html$Html$text('');
+					} else {
+						return _Kinto$elm_kinto$View$clientFormView(_p13.clientFormData);
+					}
+				}(),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$p,
+						{ctor: '[]'},
+						{
 							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$form,
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$elm_kinto$Model$Limit),
-									_1: {
+							_0: _elm_lang$html$Html$text('Limit records to display: '),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$form,
+									{
 										ctor: '::',
-										_0: _elm_lang$html$Html_Attributes$style(
+										_0: _elm_lang$html$Html_Events$onSubmit(_Kinto$elm_kinto$Model$Limit),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$style(
+												{
+													ctor: '::',
+													_0: {ctor: '_Tuple2', _0: 'display', _1: 'inline'},
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									},
+									{
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$input,
 											{
 												ctor: '::',
-												_0: {ctor: '_Tuple2', _0: 'display', _1: 'inline'},
-												_1: {ctor: '[]'}
-											}),
-										_1: {ctor: '[]'}
-									}
-								},
-								{
-									ctor: '::',
-									_0: A2(
-										_elm_lang$html$Html$input,
-										{
-											ctor: '::',
-											_0: _elm_lang$html$Html_Attributes$type_('number'),
-											_1: {
-												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$min('1'),
+												_0: _elm_lang$html$Html_Attributes$type_('number'),
 												_1: {
 													ctor: '::',
-													_0: _elm_lang$html$Html_Attributes$value(lim),
+													_0: _elm_lang$html$Html_Attributes$min('1'),
 													_1: {
 														ctor: '::',
-														_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$NewLimit),
+														_0: _elm_lang$html$Html_Attributes$value(lim),
 														_1: {
 															ctor: '::',
-															_0: _elm_lang$html$Html_Attributes$style(
-																{
-																	ctor: '::',
-																	_0: {ctor: '_Tuple2', _0: 'width', _1: '40px'},
-																	_1: {ctor: '[]'}
-																}),
-															_1: {ctor: '[]'}
+															_0: _elm_lang$html$Html_Events$onInput(_Kinto$elm_kinto$Model$NewLimit),
+															_1: {
+																ctor: '::',
+																_0: _elm_lang$html$Html_Attributes$style(
+																	{
+																		ctor: '::',
+																		_0: {ctor: '_Tuple2', _0: 'width', _1: '40px'},
+																		_1: {ctor: '[]'}
+																	}),
+																_1: {ctor: '[]'}
+															}
 														}
 													}
 												}
-											}
-										},
-										{ctor: '[]'}),
-									_1: {
-										ctor: '::',
-										_0: A2(
-											_elm_lang$html$Html$button,
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$type_('submit'),
-												_1: {ctor: '[]'}
 											},
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html$text('limit'),
-												_1: {ctor: '[]'}
-											}),
-										_1: {ctor: '[]'}
-									}
-								}),
-							_1: {ctor: '[]'}
-						}
-					}),
-				_1: {
-					ctor: '::',
-					_0: _Kinto$elm_kinto$View$errorNotif(_p10.error),
+											{ctor: '[]'}),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$button,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$type_('submit'),
+													_1: {ctor: '[]'}
+												},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('limit'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
+									}),
+								_1: {ctor: '[]'}
+							}
+						}),
 					_1: {
 						ctor: '::',
-						_0: A3(_Kinto$elm_kinto$View$recordsList, _p10.records, _p10.currentTime, _p10.sort),
+						_0: _Kinto$elm_kinto$View$errorNotif(_p13.error),
 						_1: {
 							ctor: '::',
-							_0: _Kinto$elm_kinto$View$formView(_p10.formData),
-							_1: {ctor: '[]'}
+							_0: function () {
+								var _p15 = _p16;
+								if (_p15.ctor === 'Just') {
+									return A2(
+										_elm_lang$html$Html$p,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text(
+												A2(
+													_elm_lang$core$Basics_ops['++'],
+													_elm_lang$core$Basics$toString(_p15._0.total),
+													' records in this collection.')),
+											_1: {ctor: '[]'}
+										});
+								} else {
+									return _elm_lang$html$Html$text('');
+								}
+							}(),
+							_1: {
+								ctor: '::',
+								_0: A3(_Kinto$elm_kinto$View$recordsList, _p16, _p13.currentTime, _p13.sort),
+								_1: {
+									ctor: '::',
+									_0: _Kinto$elm_kinto$View$recordFormView(_p13.formData),
+									_1: {ctor: '[]'}
+								}
+							}
 						}
 					}
 				}
