@@ -4,6 +4,7 @@ import Time exposing (Time)
 import Html
 import Html.Events
 import Html.Attributes
+import Kinto
 import Utils
 import Model exposing (Model, Record, Msg(..), Sort(..))
 
@@ -72,15 +73,33 @@ recordHeaders sort =
             headings
 
 
-recordsList : List Record -> Time -> Sort -> Html.Html Msg
-recordsList records currentTime sort =
-    Html.table [ Html.Attributes.class "table" ]
-        [ Html.thead []
-            [ Html.tr []
-                (recordHeaders sort)
-            ]
-        , Html.tbody [] (List.map (recordRow currentTime) records)
-        ]
+recordsList : Maybe (Kinto.Pager Record) -> Time -> Sort -> Html.Html Msg
+recordsList pager currentTime sort =
+    case pager of
+        Just pager ->
+            Html.div []
+                [ Html.table [ Html.Attributes.class "table" ]
+                    [ Html.thead []
+                        [ Html.tr []
+                            (recordHeaders sort)
+                        ]
+                    , Html.tbody [] (List.map (recordRow currentTime) pager.objects)
+                    ]
+                , case pager.nextPage of
+                    Just nextPage ->
+                        Html.button
+                            [ Html.Attributes.style [ ( "display", "block" ), ( "width", "100%" ) ]
+                            , Html.Events.onClick FetchNextRecords
+                            ]
+                            [ Html.text "Load more" ]
+
+                    Nothing ->
+                        Html.text ""
+                , Html.br [] []
+                ]
+
+        Nothing ->
+            Html.text ""
 
 
 errorNotif : Maybe String -> Html.Html Msg
@@ -95,7 +114,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, records, formData, currentTime, sort, limit } =
+view { error, client, pager, formData, clientFormData, currentTime, sort, limit } =
     let
         lim =
             limit
@@ -104,7 +123,13 @@ view { error, records, formData, currentTime, sort, limit } =
     in
         Html.div [ Html.Attributes.class "container" ]
             [ Html.h1 [] [ Html.text "elm-kinto demo" ]
-            , Html.small
+            , case client of
+                Just client ->
+                    Html.text ""
+
+                Nothing ->
+                    clientFormView clientFormData
+            , Html.p
                 []
                 [ Html.text "Limit records to display: "
                 , Html.form
@@ -125,8 +150,15 @@ view { error, records, formData, currentTime, sort, limit } =
                     ]
                 ]
             , errorNotif error
-            , recordsList records currentTime sort
-            , formView formData
+            , case pager of
+                Just pager ->
+                    Html.p []
+                        [ Html.text <| (toString pager.total) ++ " records in this collection." ]
+
+                Nothing ->
+                    Html.text ""
+            , recordsList pager currentTime sort
+            , recordFormView formData
             ]
 
 
@@ -148,8 +180,58 @@ formTitle model =
         |> String.trim
 
 
-formView : Model.FormData -> Html.Html Msg
-formView formData =
+clientFormView : Model.ClientFormData -> Html.Html Msg
+clientFormView clientFormData =
+    Html.form [ Html.Events.onSubmit SaveClient ]
+        [ Html.fieldset []
+            [ Html.legend [] [ Html.text "Kinto client configuration" ]
+            , Html.div [ Html.Attributes.class "form-group" ]
+                [ Html.label
+                    [ Html.Attributes.for "server" ]
+                    [ Html.text "Kinto server" ]
+                , Html.input
+                    [ Html.Attributes.id "server"
+                    , Html.Attributes.type_ "text"
+                    , Html.Attributes.class "form-control"
+                    , Html.Attributes.value clientFormData.server
+                    , Html.Events.onInput UpdateClientServer
+                    ]
+                    []
+                ]
+            , Html.div [ Html.Attributes.class "form-group" ]
+                [ Html.label
+                    [ Html.Attributes.for "username" ]
+                    [ Html.text "Username" ]
+                , Html.input
+                    [ Html.Attributes.id "username"
+                    , Html.Attributes.type_ "text"
+                    , Html.Attributes.class "form-control"
+                    , Html.Attributes.value clientFormData.username
+                    , Html.Events.onInput UpdateClientUsername
+                    ]
+                    []
+                ]
+            , Html.div [ Html.Attributes.class "form-group" ]
+                [ Html.label
+                    [ Html.Attributes.for "password" ]
+                    [ Html.text "Password" ]
+                , Html.input
+                    [ Html.Attributes.id "password"
+                    , Html.Attributes.type_ "password"
+                    , Html.Attributes.class "form-control"
+                    , Html.Attributes.value clientFormData.password
+                    , Html.Events.onInput UpdateClientPassword
+                    ]
+                    []
+                ]
+            , Html.button [ Html.Attributes.class "btn btn-primary" ]
+                [ Html.text "Configure client" ]
+            ]
+        ]
+
+
+recordFormView : Model.FormData -> Html.Html Msg
+recordFormView formData =
     Html.form [ Html.Events.onSubmit Submit ]
         [ Html.fieldset []
             [ Html.legend [] [ Html.text (formTitle formData) ]

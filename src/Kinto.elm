@@ -4,7 +4,10 @@ module Kinto
         , Endpoint(..)
         , Filter(..)
         , Client
+        , Request
         , Resource
+        , Pager
+        , emptyPager
         , bucketResource
         , collectionResource
         , recordResource
@@ -25,6 +28,8 @@ module Kinto
         , toRequest
         , get
         , getList
+        , loadNextPage
+        , updatePager
         , create
         , update
         , replace
@@ -39,38 +44,66 @@ store with sharing and synchronisation capabilities. It's open source. It's
 easy to deploy. You can host it yourself, own your data and keep it out of
 silos.
 
+
+# Configure a client and resources
+
+@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+
+
 # Creating requests
+
 You create requests on either an item or a plural (list) endpoint.
 [Kinto concepts](http://kinto.readthedocs.io/en/stable/concepts.html) explain
 that in details.
 
 Plural (list) endpoints are:
-- buckets: `buckets/`
-- collections: `buckets/:bucketId/collections/`
-- records: `buckets/:bucketId/collections/:collectionId/records/`
+
+  - buckets: `buckets/`
+  - collections: `buckets/:bucketId/collections/`
+  - records: `buckets/:bucketId/collections/:collectionId/records/`
 
 Item endpoints are:
-- bucket: `buckets/:bucketId`
-- collection: `buckets/:bucketId/collections/:collectionId`
-- record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
 
-@docs get, getList, create, update, replace, delete
+  - bucket: `buckets/:bucketId`
+  - collection: `buckets/:bucketId/collections/:collectionId`
+  - record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
+
+@docs Request
+
+
+## Single item requests
+
+@docs get, create, update, replace, delete
+
+
+## Resource list requests
+
+@docs getList
+
+
+### Paginated list
+
+@docs Pager, emptyPager, updatePager, loadNextPage
+
 
 # Sorting, limiting, filtering
+
 @docs sortBy, limit, withFilter, Filter
 
-# Configure a client and resources
-@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
 
 # Types and Errors
+
 @docs Endpoint, endpointUrl, ErrorDetail, Error, extractError, toResponse
 
+
 # Sending requests
+
 @docs send, toRequest
 
 -}
 
 import Base64
+import Dict
 import Http
 import HttpBuilder
 import Json.Decode as Decode
@@ -79,6 +112,14 @@ import Json.Encode as Encode
 
 type alias Url =
     String
+
+
+{-| A type describing a Kinto request. Basically an alias for an
+[elm-http-builder](https://package.elm-lang.org/packages/lukewestby/elm-http-builder/latest)
+request builder.
+-}
+type alias Request a =
+    HttpBuilder.RequestBuilder a
 
 
 
@@ -90,6 +131,7 @@ type alias Url =
     Basic "username" "password"
     Bearer "<token>"
     Custom "customType" "customString"
+
 -}
 type Auth
     = NoAuth
@@ -117,6 +159,7 @@ type alias RecordId =
 {-| A type for Kinto API endpoints.
 
     RecordEndpoint "bucket-name" "collection-name" "item-id"
+
 -}
 type Endpoint
     = RootEndpoint
@@ -155,7 +198,7 @@ type alias Client =
     }
 
 
-{-| A type for resources. Constructed using one of `bucketResource`,
+{-| A type for a Kinto resource. Usually constructed using one of `bucketResource`,
 `collectionResource` or `recordResource`.
 -}
 type alias Resource a =
@@ -169,6 +212,7 @@ type alias Resource a =
 {-| A constructor for a bucket resource.
 
     bucketResource bucketDecoder
+
 -}
 bucketResource : Decode.Decoder a -> Resource a
 bucketResource decoder =
@@ -182,6 +226,7 @@ bucketResource decoder =
 {-| A constructor for a collection resource.
 
     collectionResource "bucket-name" collectionDecoder
+
 -}
 collectionResource : BucketName -> Decode.Decoder a -> Resource a
 collectionResource bucket decoder =
@@ -216,6 +261,76 @@ encodeData : Encode.Value -> Encode.Value
 encodeData encoder =
     Encode.object
         [ ( "data", encoder ) ]
+
+
+
+-- Pagination
+
+
+{-| A stateful accumulator for a paginated list of objects.
+-}
+type alias Pager a =
+    { client : Client
+    , objects : List a
+    , decoder : Decode.Decoder (List a)
+    , total : Int
+    , nextPage : Maybe Url
+    }
+
+
+{-| Initialize a `Pager`.
+
+    emptyPager resource
+
+-}
+emptyPager : Client -> Resource a -> Pager a
+emptyPager client resource =
+    { client = client
+    , objects = []
+    , decoder = resource.listDecoder
+    , total = 0
+    , nextPage = Nothing
+    }
+
+
+{-| Update a previous pager with data from a new one, appending new objects
+to the previous list.
+
+    updatePager nextPager previousPager
+
+-}
+updatePager : Pager a -> Pager a -> Pager a
+updatePager nextPager previousPager =
+    { previousPager
+        | total = nextPager.total
+        , nextPage = nextPager.nextPage
+        , objects = previousPager.objects ++ nextPager.objects
+    }
+
+
+{-| Decode a `Pager`.
+-}
+decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
+decodePager client decoder response =
+    let
+        nextPage =
+            Dict.get "Next-Page" response.headers
+
+        total =
+            Dict.get "Total-Records" response.headers
+                |> Maybe.map (String.toInt >> Result.withDefault 0)
+                |> Maybe.withDefault 0
+
+        createPager objects =
+            { client = client
+            , objects = objects
+            , decoder = decoder
+            , total = total
+            , nextPage = nextPage
+            }
+    in
+        Decode.decodeString decoder response.body
+            |> Result.map createPager
 
 
 
@@ -255,6 +370,7 @@ type Error
 {-| Get the full url to an endpoint.
 
     endpointUrl "https://kinto.dev.mozaws.net/v1/" (RecordListEndpoint "default" "test-items")
+
 -}
 endpointUrl : String -> Endpoint -> Url
 endpointUrl baseUrl endpoint =
@@ -313,6 +429,7 @@ alwaysEncode string =
      "message":"Please authenticate yourself to use this endpoint.",
      "code":401,
      "error":"Unauthorized"}
+
 -}
 errorDecoder : Decode.Decoder ErrorDetail
 errorDecoder =
@@ -370,6 +487,7 @@ extractKintoError statusCode statusMsg body =
 {-| Return the header name and value for the given `Auth`.
 
     headersForAuth (Basic "username" "password")
+
 -}
 headersForAuth : Auth -> ( String, String )
 headersForAuth auth =
@@ -394,6 +512,7 @@ headersForAuth auth =
     client
         "https://kinto.dev.mozaws.net/v1/"
         (Basic "username" "password")
+
 -}
 client : Url -> Auth -> Client
 client baseUrl auth =
@@ -410,11 +529,12 @@ client baseUrl auth =
         |> getList recordResource
         |> withFilter (NOT "title" "test")
         |> send TodosFetched
+
 -}
 withFilter :
     Filter
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 withFilter filter builder =
     let
         header =
@@ -463,11 +583,12 @@ withFilter filter builder =
         |> getList recordResource
         |> sortBy ["title", "description"]
         |> send TodosFetched
+
 -}
 sortBy :
     List String
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 sortBy keys builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
@@ -483,11 +604,12 @@ sortBy keys builder =
         |> getList recordResource
         |> limit 10
         |> send TodosFetched
+
 -}
 limit :
     Int
-    -> HttpBuilder.RequestBuilder a
-    -> HttpBuilder.RequestBuilder a
+    -> Request a
+    -> Request a
 limit perPage builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
@@ -504,7 +626,7 @@ limit perPage builder =
         |> send TodosCreated
 
 -}
-send : (Result Error a -> msg) -> HttpBuilder.RequestBuilder a -> Cmd msg
+send : (Result Error a -> msg) -> Request a -> Cmd msg
 send tagger builder =
     builder
         |> HttpBuilder.send (toResponse >> tagger)
@@ -518,7 +640,7 @@ testing, or converting to a `Task` using `Http.toTask`.
         |> toRequest
 
 -}
-toRequest : HttpBuilder.RequestBuilder a -> Http.Request a
+toRequest : Request a -> Http.Request a
 toRequest builder =
     builder
         |> HttpBuilder.toRequest
@@ -526,9 +648,11 @@ toRequest builder =
 
 {-| Create a GET request on an item endpoint
 
-    get resource itemId
+    client
+        |> get resource itemId
+
 -}
-get : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+get : Resource a -> String -> Client -> Request a
 get resource itemId client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.get
@@ -536,23 +660,53 @@ get resource itemId client =
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
-{-| Create a GET request on one of the plural endpoints
+{-| Create a GET request on one of the plural endpoints. As lists are always
+possibly paginated, When the request is succesful, a `Pager` is attached to the
+reponse message.
 
-    getList resource
+    client
+        |> getList resource
+
 -}
-getList : Resource a -> Client -> HttpBuilder.RequestBuilder (List a)
+getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
 getList resource client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders client.headers
-        |> HttpBuilder.withExpect (Http.expectJson resource.listDecoder)
+        |> HttpBuilder.withExpect
+            (Http.expectStringResponse (decodePager client resource.listDecoder))
+
+
+{-| If a pager has a `nextPage`, creates a GET request to retrieve the next page of objects.
+When the request is succesful, a `Pager` with new objects appended is attached to the
+reponse message.
+
+    client
+        |> loadNextPage pager
+
+-}
+loadNextPage : Pager a -> Maybe (HttpBuilder.RequestBuilder (Pager a))
+loadNextPage pager =
+    case pager.nextPage of
+        Just nextPage ->
+            nextPage
+                |> HttpBuilder.get
+                |> HttpBuilder.withHeaders pager.client.headers
+                |> HttpBuilder.withExpect
+                    (Http.expectStringResponse (decodePager pager.client pager.decoder))
+                |> Just
+
+        Nothing ->
+            Nothing
 
 
 {-| Create a DELETE request on an item endpoint:
 
-    delete resource itemId
+    client
+        |> delete resource itemId
+
 -}
-delete : Resource a -> String -> Client -> HttpBuilder.RequestBuilder a
+delete : Resource a -> String -> Client -> Request a
 delete resource itemId client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.delete
@@ -562,9 +716,11 @@ delete resource itemId client =
 
 {-| Create a POST request on a plural endpoint:
 
-    create resource data
+    client
+        |> create resource itemId data
+
 -}
-create : Resource a -> Body -> Client -> HttpBuilder.RequestBuilder a
+create : Resource a -> Body -> Client -> Request a
 create resource body client =
     endpointUrl client.baseUrl resource.listEndpoint
         |> HttpBuilder.post
@@ -575,9 +731,11 @@ create resource body client =
 
 {-| Create a PATCH request on an item endpoint:
 
-    update resource itemId
+    client
+        |> update resource itemId data
+
 -}
-update : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+update : Resource a -> String -> Body -> Client -> Request a
 update resource itemId body client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.patch
@@ -588,9 +746,11 @@ update resource itemId body client =
 
 {-| Create a PUT request on an item endpoint:
 
-    put resource itemId
+    client
+        |> replace resource itemId data
+
 -}
-replace : Resource a -> String -> Body -> Client -> HttpBuilder.RequestBuilder a
+replace : Resource a -> String -> Body -> Client -> Request a
 replace resource itemId body client =
     endpointUrl client.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.put
