@@ -1,4 +1,4 @@
-port module Main exposing (..)
+module KintoTest exposing (all)
 
 import Dict
 import Http
@@ -7,17 +7,9 @@ import Expect
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
-import Test.Runner.Node exposing (run, TestProgram)
 
 
-main : TestProgram
-main =
-    run emit all
-
-
-port emit : ( String, Encode.Value ) -> Cmd msg
-
-
+baseUrl : String
 baseUrl =
     "http://example.com/"
 

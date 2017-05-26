@@ -1,19 +1,8 @@
-port module Main exposing (..)
+module ExampleAppTest exposing (all)
 
 import Expect
 import Test exposing (..)
-import Test.Runner.Node exposing (run, TestProgram)
 import Utils exposing (timeAgo)
-import Json.Encode exposing (Value)
-
-
-
-main : TestProgram
-main =
-    run emit all
-
-
-port emit : ( String, Value ) -> Cmd msg
 
 
 timeAgoTest : String -> Float -> String -> Test
@@ -38,15 +27,15 @@ all =
             [ timeAgoTest "<10s diff" (seconds 4) "a few seconds ago"
             , timeAgoTest "<1mn diff" (seconds 12) "12 seconds ago"
             , timeAgoTest "=1mn- diff" (seconds 55) "about a minute ago"
-            , timeAgoTest "=1mn- diff" (seconds 58) "about a minute ago"
+            , timeAgoTest "=1mn- diff-2" (seconds 58) "about a minute ago"
             , timeAgoTest "=1mn= diff" (seconds 60) "about a minute ago"
             , timeAgoTest "=1mn+ diff" (seconds 62) "about a minute ago"
-            , timeAgoTest "=1mn+ diff" (seconds 65) "about a minute ago"
+            , timeAgoTest "=1mn+ diff-2" (seconds 65) "about a minute ago"
             , timeAgoTest "<1h diff" (minutes 12) "12 minutes ago"
-            , timeAgoTest "<1h diff" (minutes 30) "30 minutes ago"
-            , timeAgoTest "<1h diff" (minutes 48) "48 minutes ago"
+            , timeAgoTest "<1h diff-2" (minutes 30) "30 minutes ago"
+            , timeAgoTest "<1h diff-3" (minutes 48) "48 minutes ago"
             , timeAgoTest "=1h- diff" (minutes 50) "50 minutes ago"
-            , timeAgoTest "=1h- diff" (minutes 58) "about an hour ago"
+            , timeAgoTest "=1h- diff-2" (minutes 58) "about an hour ago"
             , timeAgoTest "=1h= diff" (minutes 60) "about an hour ago"
             , timeAgoTest "=1h+ diff" (minutes 62) "about an hour ago"
             , timeAgoTest "<1d diff" (hours 12) "12 hours ago"
@@ -60,7 +49,7 @@ all =
             , timeAgoTest "=1month= diff" (days 31) "about a month ago"
             , timeAgoTest "<1month diff, week match" (days 14) "about 2 weeks ago"
             , timeAgoTest "<1year diff" (months 6) "6 months ago"
-            , timeAgoTest "<1year diff" (months 10) "10 months ago"
+            , timeAgoTest "<1year diff-2" (months 10) "10 months ago"
             , timeAgoTest "=1year- diff" (days 350) "about a year ago"
             , timeAgoTest "=1year= diff" (days 365) "about a year ago"
             , timeAgoTest "=1year+ diff" (days 380) "about a year ago"
