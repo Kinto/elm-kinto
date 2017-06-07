@@ -314,12 +314,20 @@ decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Resul
 decodePager client decoder response =
     let
         nextPage =
-            Dict.get "Next-Page" response.headers
+            if Dict.member "Next-Page" response.headers then
+                Dict.get "Next-Page" response.headers
+            else
+                Dict.get "next-page" response.headers
 
         total =
-            Dict.get "Total-Records" response.headers
-                |> Maybe.map (String.toInt >> Result.withDefault 0)
-                |> Maybe.withDefault 0
+            if Dict.member "Total-Records" response.headers then
+                Dict.get "Total-Records" response.headers
+                    |> Maybe.map (String.toInt >> Result.withDefault 0)
+                    |> Maybe.withDefault 0
+            else
+                Dict.get "total-records" response.headers
+                    |> Maybe.map (String.toInt >> Result.withDefault 0)
+                    |> Maybe.withDefault 0
 
         createPager objects =
             { client = client
