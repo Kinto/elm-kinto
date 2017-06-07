@@ -104,6 +104,7 @@ Item endpoints are:
 
 import Base64
 import Dict
+import Dict.Extra
 import Http
 import HttpBuilder
 import Json.Decode as Decode
@@ -313,11 +314,14 @@ updatePager nextPager previousPager =
 decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
 decodePager client decoder response =
     let
+        headers =
+            Dict.Extra.mapKeys String.toLower response.headers
+
         nextPage =
-            Dict.get "Next-Page" response.headers
+            Dict.get "next-page" headers
 
         total =
-            Dict.get "Total-Records" response.headers
+            Dict.get "total-records" headers
                 |> Maybe.map (String.toInt >> Result.withDefault 0)
                 |> Maybe.withDefault 0
 
