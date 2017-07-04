@@ -175,9 +175,9 @@ type Endpoint
 {-| A type for filtering, used with `withFilter`
 -}
 type Filter
-    = Equal String String
-    | Min String String
-    | Max String String
+    = EQUAL String String
+    | MIN String String
+    | MAX String String
     | LT String String
     | GT String String
     | IN String (List String)
@@ -543,13 +543,13 @@ withFilter filter builder =
     let
         header =
             case filter of
-                Equal key val ->
+                EQUAL key val ->
                     ( key, val )
 
-                Min key val ->
+                MIN key val ->
                     ( "min_" ++ key, val )
 
-                Max key val ->
+                MAX key val ->
                     ( "max_" ++ key, val )
 
                 LT key val ->

@@ -4,3 +4,4 @@ node_modules
 npm-debug.log
 documentation.json
 /index.html
+package-lock.json
