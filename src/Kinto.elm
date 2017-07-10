@@ -21,8 +21,8 @@ module Kinto
         , extractError
         , headersForAuth
         , client
-        , withFilter
-        , sortBy
+        , filter
+        , sort
         , limit
         , send
         , toRequest
@@ -88,7 +88,7 @@ Item endpoints are:
 
 # Sorting, limiting, filtering
 
-@docs sortBy, limit, withFilter, Filter
+@docs sort, limit, filter, Filter
 
 
 # Types and Errors
@@ -172,7 +172,7 @@ type Endpoint
     | RecordEndpoint BucketName CollectionName RecordId
 
 
-{-| A type for filtering, used with `withFilter`
+{-| A type for filtering, used with `filter`
 -}
 type Filter
     = EQUAL String String
@@ -531,15 +531,15 @@ client baseUrl auth =
 
     client
         |> getList recordResource
-        |> withFilter (NOT "title" "test")
+        |> filter (NOT "title" "test")
         |> send TodosFetched
 
 -}
-withFilter :
+filter :
     Filter
     -> Request a
     -> Request a
-withFilter filter builder =
+filter filter builder =
     let
         header =
             case filter of
@@ -585,15 +585,15 @@ withFilter filter builder =
 
     client
         |> getList recordResource
-        |> sortBy ["title", "description"]
+        |> sort ["title", "description"]
         |> send TodosFetched
 
 -}
-sortBy :
+sort :
     List String
     -> Request a
     -> Request a
-sortBy keys builder =
+sort keys builder =
     builder
         |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
 
