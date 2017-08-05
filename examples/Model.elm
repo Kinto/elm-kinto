@@ -189,7 +189,7 @@ update msg ({ clientFormData } as model) =
             model |> updateError error
 
         CreateRecordResponse (Ok _) ->
-            ( { model | formData = initialFormData }
+            ( { model | formData = initialFormData, pager = Nothing }
             , fetchRecordList model
             )
 
