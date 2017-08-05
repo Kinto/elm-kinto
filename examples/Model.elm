@@ -464,7 +464,7 @@ fetchRecordList { client, sort, limit } =
             Just client ->
                 client
                     |> Kinto.getList recordResource
-                    |> Kinto.sortBy [ sortColumn ]
+                    |> Kinto.sort [ sortColumn ]
                     |> limiter
                     |> Kinto.send FetchRecordsResponse
 

@@ -88,7 +88,7 @@ getTodoList : Cmd Msg
 getTodoList =
     client
         |> Kinto.getList recordResource
-        |> Kinto.sortBy [ "title", "description" ]
+        |> Kinto.sort [ "title", "description" ]
         |> Kinto.send TodosFetched
 
 
