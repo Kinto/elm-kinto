@@ -315,7 +315,7 @@ update msg ({ clientFormData } as model) =
                 ( updated, Cmd.none )
 
         Limit ->
-            ( model, fetchRecordList model )
+            ( { model | pager = Nothing }, fetchRecordList model )
 
         UpdateClientServer server ->
             ( { model | clientFormData = { clientFormData | server = server } }, Cmd.none )
