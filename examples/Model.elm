@@ -298,7 +298,7 @@ update msg ({ clientFormData } as model) =
                                 (Asc column)
 
                 updated =
-                    { model | sort = sort }
+                    { model | sort = sort, pager = Nothing }
             in
                 ( updated, fetchRecordList updated )
 
