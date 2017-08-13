@@ -190,13 +190,7 @@ update msg ({ clientFormData } as model) =
 
         CreateRecordResponse (Ok record) ->
             ( { model
-                | pager =
-                    case model.pager of
-                        Just pager ->
-                            Just <| addRecordToPager record pager
-
-                        Nothing ->
-                            Nothing
+                | pager = model.pager |> Maybe.map (addRecordToPager record)
                 , error = Nothing
               }
             , Cmd.none
