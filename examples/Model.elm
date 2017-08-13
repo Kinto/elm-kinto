@@ -188,9 +188,12 @@ update msg ({ clientFormData } as model) =
         FetchRecordsResponse (Err error) ->
             model |> updateError error
 
-        CreateRecordResponse (Ok _) ->
-            ( { model | formData = initialFormData }
-            , fetchRecordList model
+        CreateRecordResponse (Ok record) ->
+            ( { model
+                | pager = model.pager |> Maybe.map (addRecordToPager record)
+                , error = Nothing
+              }
+            , Cmd.none
             )
 
         CreateRecordResponse (Err error) ->
@@ -289,7 +292,7 @@ update msg ({ clientFormData } as model) =
                                 (Asc column)
 
                 updated =
-                    { model | sort = sort }
+                    { model | sort = sort, pager = Nothing }
             in
                 ( updated, fetchRecordList updated )
 
@@ -306,7 +309,7 @@ update msg ({ clientFormData } as model) =
                 ( updated, Cmd.none )
 
         Limit ->
-            ( model, fetchRecordList model )
+            ( { model | pager = Nothing }, fetchRecordList model )
 
         UpdateClientServer server ->
             ( { model | clientFormData = { clientFormData | server = server } }, Cmd.none )
@@ -363,6 +366,15 @@ encodeFormData { title, description } =
         [ ( "title", Encode.string title )
         , ( "description", Encode.string description )
         ]
+
+
+addRecordToPager : Record -> Kinto.Pager Record -> Kinto.Pager Record
+addRecordToPager formData pager =
+    let
+        updated =
+            pager.objects |> List.append [ formData ]
+    in
+        { pager | objects = updated }
 
 
 removeRecordFromPager : Record -> Kinto.Pager Record -> Kinto.Pager Record
