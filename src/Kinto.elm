@@ -529,6 +529,8 @@ client baseUrl auth =
 
 {-| Add [filtering query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/filtering.html) to the request sent to the Kinto server.
 
+    type Msg = TodosFetched (Result Kinto.Error (Kinto.pager Todo))
+
     client
         |> getList recordResource
         |> filter (NOT "title" "test")
@@ -583,6 +585,8 @@ filter filter builder =
 
 {-| Add [sorting query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/sorting.html) to the request sent to the Kinto server.
 
+    type Msg = TodosFetched (Result Kinto.Error (Kinto.pager Todo))
+
     client
         |> getList recordResource
         |> sort ["title", "description"]
@@ -603,6 +607,8 @@ sort keys builder =
 
 
 {-| Add [limit query parameters](http://kinto.readthedocs.io/en/stable/api/1.x/pagination.html) to the request sent to the Kinto server.
+
+    type Msg = TodosFetched (Result Kinto.Error (Kinto.pager Todo))
 
     client
         |> getList recordResource
@@ -625,9 +631,11 @@ limit perPage builder =
 
 {-| Send a request to the Kinto server.
 
+    type Msg = TodoAdded (Result Kinto.Error Todo)
+
     client
         |> create resource data
-        |> send TodosCreated
+        |> send TodoAdded
 
 -}
 send : (Result Error a -> msg) -> Request a -> Cmd msg
