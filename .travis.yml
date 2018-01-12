@@ -1,12 +1,25 @@
 sudo: false
-language:
-- node_js
-node_js:
-- "6"
+
+cache:
+  directories:
+    - test/elm-stuff/build-artifacts
+    - sysconfcpus
+
+before_install:
+  - | # epic build time improvement - see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
+    if [ ! -d sysconfcpus/bin ];
+    then
+      git clone https://github.com/obmarg/libsysconfcpus.git;
+      cd libsysconfcpus;
+      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
+      make && make install;
+      cd ..;
+    fi
+install:
+  - npm install
+  - cd examples && npm install && cd ..
 script:
-- npm test
-- cd examples
-    && npm install
-    && node_modules/.bin/elm-package install -y
-    && npm test
-    && node_modules/.bin/elm-make Example.elm
+  - $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 npm test
+  - cd examples
+      && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 npm test
+      && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 node_modules/.bin/elm-make --yes Example.elm
