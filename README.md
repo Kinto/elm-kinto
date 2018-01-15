@@ -82,6 +82,38 @@ recordResource =
 
 
 
+--
+
+type Msg
+    = TodoAdded (Result Kinto.Error Todo)
+    | TodosFetched (Result Kinto.Error (Kinto.pager Todo))
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        TodoAdded (Ok todo) ->
+            ( { model | todos = todo :: model.todos }, Cmd.none )
+
+        TodosFetched (Err err) ->
+            let
+                _ =
+                    Debug.log "Error while creating the todo" err
+            in
+                ( model, Cmd.none )
+
+        TodosFetched (Ok todoPager) ->
+            ( { model | todos = todoPager.objects }, Cmd.none )
+
+        TodosFetched (Err err) ->
+            let
+                _ =
+                    Debug.log "Error while getting the list of todos" err
+            in
+                ( model, Cmd.none )
+
+
+
 -- Add a new Todo
 
 
