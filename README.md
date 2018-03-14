@@ -95,7 +95,7 @@ update msg model =
         TodoAdded (Ok todo) ->
             ( { model | todos = todo :: model.todos }, Cmd.none )
 
-        TodosFetched (Err err) ->
+        TodosAdded (Err err) ->
             let
                 _ =
                     Debug.log "Error while creating the todo" err
