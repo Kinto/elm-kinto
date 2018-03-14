@@ -21,7 +21,7 @@ all =
             [ test "returns an empty header for NoAuth" <|
                 \() ->
                     Expect.equal
-                        ( "", "" )
+                        ( "Authorization", "" )
                         (Kinto.headersForAuth Kinto.NoAuth)
             , test "returns Basic Auth headers for Basic" <|
                 \() ->
