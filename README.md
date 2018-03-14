@@ -86,7 +86,7 @@ recordResource =
 
 type Msg
     = TodoAdded (Result Kinto.Error Todo)
-    | TodosFetched (Result Kinto.Error (Kinto.pager Todo))
+    | TodosFetched (Result Kinto.Error (Kinto.Pager Todo))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
