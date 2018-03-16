@@ -497,7 +497,7 @@ headersForAuth : Auth -> ( String, String )
 headersForAuth auth =
     case auth of
         NoAuth ->
-            ( "", "" )
+            ( "Authorization", "" )
 
         Basic username password ->
             ( "Authorization"
