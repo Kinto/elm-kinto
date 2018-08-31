@@ -1,12 +1,12 @@
 module KintoTest exposing (all)
 
 import Dict
-import Http
-import Test exposing (..)
 import Expect
+import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
+import Test exposing (..)
 
 
 baseUrl : String

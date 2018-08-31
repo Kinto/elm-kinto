@@ -4,7 +4,7 @@
   "description": "A client to help making requests to a Kinto storage server",
   "scripts": {
     "build": "elm make src/Kinto.elm --optimize --output=build/app.js",
-    "docs": "elm- make --docs=documentation.json",
+    "docs": "elm make --docs=documentation.json",
     "tdd": "elm-test --watch",
     "test": "elm-test"
   },

@@ -1,17 +1,17 @@
 module View exposing (view)
 
-import Time exposing (Time)
 import Html
-import Html.Events
 import Html.Attributes
+import Html.Events
 import Kinto
+import Model exposing (Model, Msg(..), Record, Sort(..))
+import Time exposing (Posix)
 import Utils
-import Model exposing (Model, Record, Msg(..), Sort(..))
 
 
-formatLastModified : Int -> Time -> String
+formatLastModified : Int -> Posix -> String
 formatLastModified timestamp currentTime =
-    Utils.timeAgo (toFloat timestamp) currentTime
+    Utils.timeAgo (Time.millisToPosix timestamp) currentTime
 
 
 iconBtn : String -> Msg -> Html.Html Msg
@@ -25,7 +25,7 @@ iconBtn icon action =
         ]
 
 
-recordRow : Time -> Record -> Html.Html Msg
+recordRow : Posix -> Record -> Html.Html Msg
 recordRow currentTime { id, title, description, last_modified } =
     Html.tr []
         [ Html.td [] [ Html.text id ]
@@ -48,10 +48,11 @@ headingWithSortIcon icon sortColumn heading =
                 [ Html.i [ Html.Attributes.class icon ] []
                 , Html.text <| " " ++ heading
                 ]
+
             else
                 [ Html.text heading ]
     in
-        Html.th [ Html.Events.onClick (SortByColumn heading) ] content
+    Html.th [ Html.Events.onClick (SortByColumn heading) ] content
 
 
 recordHeaders : Sort -> List (Html.Html Msg)
@@ -68,27 +69,28 @@ recordHeaders sort =
         headings =
             [ "id", "title", "description", "last_modified" ]
     in
-        List.map
-            (headingWithSortIcon icon sortColumn)
-            headings
+    List.map
+        (headingWithSortIcon icon sortColumn)
+        headings
 
 
-recordsList : Maybe (Kinto.Pager Record) -> Time -> Sort -> Html.Html Msg
+recordsList : Maybe (Kinto.Pager Record) -> Posix -> Sort -> Html.Html Msg
 recordsList pager currentTime sort =
     case pager of
-        Just pager ->
+        Just p ->
             Html.div []
                 [ Html.table [ Html.Attributes.class "table" ]
                     [ Html.thead []
                         [ Html.tr []
                             (recordHeaders sort)
                         ]
-                    , Html.tbody [] (List.map (recordRow currentTime) pager.objects)
+                    , Html.tbody [] (List.map (recordRow currentTime) p.objects)
                     ]
-                , case pager.nextPage of
+                , case p.nextPage of
                     Just nextPage ->
                         Html.button
-                            [ Html.Attributes.style [ ( "display", "block" ), ( "width", "100%" ) ]
+                            [ Html.Attributes.style "display" "block"
+                            , Html.Attributes.style "width" "100%"
                             , Html.Events.onClick FetchNextRecords
                             ]
                             [ Html.text "Load more" ]
@@ -118,48 +120,48 @@ view { error, client, pager, formData, clientFormData, currentTime, sort, limit 
     let
         lim =
             limit
-                |> Maybe.map toString
+                |> Maybe.map String.fromInt
                 |> Maybe.withDefault ""
     in
-        Html.div [ Html.Attributes.class "container" ]
-            [ Html.h1 [] [ Html.text "elm-kinto demo" ]
-            , case client of
-                Just client ->
-                    Html.text ""
+    Html.div [ Html.Attributes.class "container" ]
+        [ Html.h1 [] [ Html.text "elm-kinto demo" ]
+        , case client of
+            Just _ ->
+                Html.text ""
 
-                Nothing ->
-                    clientFormView clientFormData
-            , Html.p
-                []
-                [ Html.text "Limit records to display: "
-                , Html.form
-                    [ Html.Events.onSubmit Limit
-                    , Html.Attributes.style [ ( "display", "inline" ) ]
-                    ]
-                    [ Html.input
-                        [ Html.Attributes.type_ "number"
-                        , Html.Attributes.min "1"
-                        , Html.Attributes.value lim
-                        , Html.Events.onInput NewLimit
-                        , Html.Attributes.style [ ( "width", "40px" ) ]
-                        ]
-                        []
-                    , Html.button
-                        [ Html.Attributes.type_ "submit" ]
-                        [ Html.text "limit" ]
-                    ]
+            Nothing ->
+                clientFormView clientFormData
+        , Html.p
+            []
+            [ Html.text "Limit records to display: "
+            , Html.form
+                [ Html.Events.onSubmit Limit
+                , Html.Attributes.style "display" "inline"
                 ]
-            , errorNotif error
-            , case pager of
-                Just pager ->
-                    Html.p []
-                        [ Html.text <| (toString pager.total) ++ " records in this collection." ]
-
-                Nothing ->
-                    Html.text ""
-            , recordsList pager currentTime sort
-            , recordFormView formData
+                [ Html.input
+                    [ Html.Attributes.type_ "number"
+                    , Html.Attributes.min "1"
+                    , Html.Attributes.value lim
+                    , Html.Events.onInput NewLimit
+                    , Html.Attributes.style "width" "40px"
+                    ]
+                    []
+                , Html.button
+                    [ Html.Attributes.type_ "submit" ]
+                    [ Html.text "limit" ]
+                ]
             ]
+        , errorNotif error
+        , case pager of
+            Just p ->
+                Html.p []
+                    [ Html.text <| String.fromInt p.total ++ " records in this collection." ]
+
+            Nothing ->
+                Html.text ""
+        , recordsList pager currentTime sort
+        , recordFormView formData
+        ]
 
 
 formVerb : Model.FormData -> String
@@ -174,9 +176,9 @@ formVerb { id } =
 
 formTitle : Model.FormData -> String
 formTitle model =
-    (formVerb model)
+    formVerb model
         ++ " "
-        ++ (Maybe.withDefault "" model.id)
+        ++ Maybe.withDefault "" model.id
         |> String.trim
 
 

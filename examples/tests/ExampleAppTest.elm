@@ -17,7 +17,7 @@ timeAgoTest description diff result =
         subject =
             timeAgo current now
     in
-        test description <| \() -> Expect.equal subject result
+    test description <| \() -> Expect.equal subject result
 
 
 all : Test
@@ -65,24 +65,24 @@ seconds x =
 
 minutes : Float -> Float
 minutes x =
-    x * (seconds 60)
+    x * seconds 60
 
 
 hours : Float -> Float
 hours x =
-    x * (minutes 60)
+    x * minutes 60
 
 
 days : Float -> Float
 days x =
-    x * (hours 24)
+    x * hours 24
 
 
 months : Float -> Float
 months x =
-    x * (days (365.25 / 12))
+    x * days (365.25 / 12)
 
 
 years : Float -> Float
 years x =
-    x * (days 365.25)
+    x * days 365.25

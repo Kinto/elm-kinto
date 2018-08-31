@@ -7,6 +7,7 @@ module Kinto exposing
     , sort, limit, filter, Filter(..)
     , Endpoint(..), endpointUrl, ErrorDetail, Error(..), extractError, toResponse
     , send, toRequest
+    , errorToString
     )
 
 {-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
@@ -341,6 +342,19 @@ type Error
     = ServerError StatusCode StatusMsg String
     | KintoError StatusCode StatusMsg ErrorDetail
     | NetworkError Http.Error
+
+
+errorToString : Error -> String
+errorToString error =
+    case error of
+        ServerError status message info ->
+            String.fromInt status ++ " " ++ message ++ " " ++ info
+
+        KintoError status message detail ->
+            String.fromInt status ++ message
+
+        NetworkError httpError ->
+            "NetworkError"
 
 
 

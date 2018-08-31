@@ -1,9 +1,10 @@
-module Example exposing (..)
+module Example exposing (Model, Msg(..), Todo, addTodo, client, decodeTodo, encodeData, getTodoList, init, main, recordResource, update, view)
 
 import Html
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
+
 
 
 -- Define what our Kinto records will look like for a Todo list.
@@ -75,9 +76,9 @@ addTodo title description =
         data =
             encodeData title description
     in
-        client
-            |> Kinto.create recordResource data
-            |> Kinto.send TodoAdded
+    client
+        |> Kinto.create recordResource data
+        |> Kinto.send TodoAdded
 
 
 
@@ -106,10 +107,12 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    Model [] Nothing Nothing Nothing
-        ! [ addTodo (Just "test") (Just "description")
-          , getTodoList
-          ]
+    ( Model [] Nothing Nothing Nothing
+    , Cmd.batch
+        [ addTodo (Just "test") (Just "description")
+        , getTodoList
+        ]
+    )
 
 
 type Msg
@@ -126,16 +129,24 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update message model =
     case message of
         TodoAdded (Ok todo) ->
-            { model | error = Nothing } ! []
+            ( { model | error = Nothing }
+            , Cmd.none
+            )
 
         TodoAdded (Err error) ->
-            { model | error = Just <| toString error } ! []
+            ( { model | error = Just <| toString error }
+            , Cmd.none
+            )
 
         TodosFetched (Ok pager) ->
-            { model | error = Nothing, todos = pager.objects } ! []
+            ( { model | error = Nothing, todos = pager.objects }
+            , Cmd.none
+            )
 
         TodosFetched (Err error) ->
-            { model | error = Just <| toString error } ! []
+            ( { model | error = Just <| toString error }
+            , Cmd.none
+            )
 
 
 main : Program Never Model Msg

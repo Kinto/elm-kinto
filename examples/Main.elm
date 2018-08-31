@@ -1,8 +1,9 @@
-module Main exposing (..)
+module Main exposing (main)
 
-import Html
-import Model exposing (Model, Msg)
+import Browser
+import Model exposing (Flags, Model, Msg)
 import View exposing (view)
+
 
 
 -- Todo & ideas
@@ -12,9 +13,9 @@ import View exposing (view)
 -- - Styling
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Html.program
+    Browser.element
         { init = Model.init
         , view = view
         , update = Model.update
