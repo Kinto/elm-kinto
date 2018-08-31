@@ -352,7 +352,7 @@ errorToString error =
             String.fromInt status ++ " " ++ message ++ " " ++ info
 
         KintoError status message detail ->
-            String.fromInt status ++ message
+            String.fromInt status ++ " " ++ message ++ " " ++ detail.message
 
         NetworkError httpError ->
             "NetworkError"

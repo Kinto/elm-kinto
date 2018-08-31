@@ -86,8 +86,8 @@ all =
             [ test "Returns the data from the server response" <|
                 \() ->
                     Expect.equal
-                        (Kinto.toResponse (Ok (Encode.list [])))
-                        (Ok (Encode.list []))
+                        (Kinto.toResponse (Ok (Encode.list Encode.string [])))
+                        (Ok (Encode.list Encode.string []))
             , test "Returns a KintoError" <|
                 \() ->
                     Expect.equal
@@ -134,7 +134,13 @@ all =
                             Kinto.ServerError
                                 403
                                 "Forbidden"
-                                """Expecting an object with a field named `errno` but instead got: {"not-a":"kinto error"}"""
+                                """Problem with the given value:
+
+{
+        "not-a": "kinto error"
+    }
+
+Expecting an OBJECT with a field named `errno`"""
                         )
             , test "Returns a ServerError when we get a bad payload" <|
                 \() ->
@@ -192,5 +198,5 @@ Body received from server: Some bad payload"""
 
 endpointTest : ( String, Kinto.Endpoint ) -> Test
 endpointTest ( expected, endpoint ) =
-    test (toString endpoint) <|
+    test (Kinto.endpointUrl baseUrl endpoint) <|
         \() -> Expect.equal expected (Kinto.endpointUrl baseUrl endpoint)
