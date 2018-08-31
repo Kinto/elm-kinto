@@ -1,5 +1,6 @@
 module Example exposing (Model, Msg(..), Todo, addTodo, client, decodeTodo, encodeData, getTodoList, init, main, recordResource, update, view)
 
+import Browser
 import Html
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -8,6 +9,10 @@ import Kinto
 
 
 -- Define what our Kinto records will look like for a Todo list.
+
+
+type alias Flags =
+    {}
 
 
 type alias Todo =
@@ -105,8 +110,8 @@ type alias Model =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( Model [] Nothing Nothing Nothing
     , Cmd.batch
         [ addTodo (Just "test") (Just "description")
@@ -120,9 +125,19 @@ type Msg
     | TodosFetched (Result Kinto.Error (Kinto.Pager Todo))
 
 
+viewTodo : Todo -> Html.Html Msg
+viewTodo todo =
+    Html.li []
+        [ Html.text <|
+            Maybe.withDefault todo.id todo.title
+                ++ Maybe.withDefault "" (Maybe.map (\x -> " : " ++ x) todo.description)
+        ]
+
+
 view : Model -> Html.Html Msg
 view model =
-    Html.text <| toString model.todos
+    List.map viewTodo model.todos
+        |> Html.ul []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -134,7 +149,7 @@ update message model =
             )
 
         TodoAdded (Err error) ->
-            ( { model | error = Just <| toString error }
+            ( { model | error = Just <| Kinto.errorToString error }
             , Cmd.none
             )
 
@@ -144,14 +159,14 @@ update message model =
             )
 
         TodosFetched (Err error) ->
-            ( { model | error = Just <| toString error }
+            ( { model | error = Just <| Kinto.errorToString error }
             , Cmd.none
             )
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    Html.program
+    Browser.element
         { init = init
         , update = update
         , subscriptions = always Sub.none
