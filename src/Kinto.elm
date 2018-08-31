@@ -1,40 +1,13 @@
-module Kinto
-    exposing
-        ( Auth(..)
-        , Endpoint(..)
-        , Filter(..)
-        , Client
-        , Request
-        , Resource
-        , Pager
-        , emptyPager
-        , bucketResource
-        , collectionResource
-        , recordResource
-        , decodeData
-        , encodeData
-        , ErrorDetail
-        , Error(..)
-        , endpointUrl
-        , errorDecoder
-        , toResponse
-        , extractError
-        , headersForAuth
-        , client
-        , filter
-        , sort
-        , limit
-        , send
-        , toRequest
-        , get
-        , getList
-        , loadNextPage
-        , updatePager
-        , create
-        , update
-        , replace
-        , delete
-        )
+module Kinto exposing
+    ( Client, client, Auth(..), headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+    , Request
+    , get, create, update, replace, delete
+    , getList
+    , Pager, emptyPager, updatePager, loadNextPage
+    , sort, limit, filter, Filter(..)
+    , Endpoint(..), endpointUrl, ErrorDetail, Error(..), extractError, toResponse
+    , send, toRequest
+    )
 
 {-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
 the REST API.
@@ -130,7 +103,9 @@ type alias Request a =
 {-| A type for authentication
 
     Basic "username" "password"
+
     Bearer "<token>"
+
     Custom "customType" "customString"
 
 -}
@@ -218,8 +193,8 @@ type alias Resource a =
 bucketResource : Decode.Decoder a -> Resource a
 bucketResource decoder =
     Resource
-        (BucketEndpoint)
-        (BucketListEndpoint)
+        BucketEndpoint
+        BucketListEndpoint
         (decodeData decoder)
         (decodeData (Decode.list decoder))
 
@@ -285,8 +260,8 @@ type alias Pager a =
 
 -}
 emptyPager : Client -> Resource a -> Pager a
-emptyPager client resource =
-    { client = client
+emptyPager clientInstance resource =
+    { client = clientInstance
     , objects = []
     , decoder = resource.listDecoder
     , total = 0
@@ -312,7 +287,7 @@ updatePager nextPager previousPager =
 {-| Decode a `Pager`.
 -}
 decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
-decodePager client decoder response =
+decodePager clientInstance decoder response =
     let
         headers =
             Dict.Extra.mapKeys String.toLower response.headers
@@ -322,19 +297,20 @@ decodePager client decoder response =
 
         total =
             Dict.get "total-records" headers
-                |> Maybe.map (String.toInt >> Result.withDefault 0)
+                |> Maybe.map (String.toInt >> Maybe.withDefault 0)
                 |> Maybe.withDefault 0
 
         createPager objects =
-            { client = client
+            { client = clientInstance
             , objects = objects
             , decoder = decoder
             , total = total
             , nextPage = nextPage
             }
     in
-        Decode.decodeString decoder response.body
-            |> Result.map createPager
+    Decode.decodeString decoder response.body
+        |> Result.map createPager
+        |> Result.mapError Decode.errorToString
 
 
 
@@ -382,45 +358,41 @@ endpointUrl baseUrl endpoint =
         url =
             if String.endsWith "/" baseUrl then
                 String.dropRight 1 baseUrl
+
             else
                 baseUrl
 
         joinUrl =
             String.join "/"
     in
-        case endpoint of
-            RootEndpoint ->
-                -- Otherwise Kinto returns a 307
-                -- See https://github.com/Kinto/kinto/issues/852
-                url ++ "/"
+    case endpoint of
+        RootEndpoint ->
+            -- Otherwise Kinto returns a 307
+            -- See https://github.com/Kinto/kinto/issues/852
+            url ++ "/"
 
-            BucketListEndpoint ->
-                joinUrl [ url, "buckets" ]
+        BucketListEndpoint ->
+            joinUrl [ url, "buckets" ]
 
-            BucketEndpoint bucketName ->
-                joinUrl [ url, "buckets", bucketName ]
+        BucketEndpoint bucketName ->
+            joinUrl [ url, "buckets", bucketName ]
 
-            CollectionListEndpoint bucketName ->
-                joinUrl [ url, "buckets", bucketName, "collections" ]
+        CollectionListEndpoint bucketName ->
+            joinUrl [ url, "buckets", bucketName, "collections" ]
 
-            CollectionEndpoint bucketName collectionName ->
-                joinUrl [ url, "buckets", bucketName, "collections", collectionName ]
+        CollectionEndpoint bucketName collectionName ->
+            joinUrl [ url, "buckets", bucketName, "collections", collectionName ]
 
-            RecordListEndpoint bucketName collectionName ->
-                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records" ]
+        RecordListEndpoint bucketName collectionName ->
+            joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records" ]
 
-            RecordEndpoint bucketName collectionName recordId ->
-                joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId ]
+        RecordEndpoint bucketName collectionName recordId ->
+            joinUrl [ url, "buckets", bucketName, "collections", collectionName, "records", recordId ]
 
 
 alwaysEncode : String -> String
 alwaysEncode string =
-    case Base64.encode string of
-        Err msg ->
-            Debug.crash "b64encoding failed" msg
-
-        Ok hash ->
-            hash
+    Base64.encode string
 
 
 
@@ -481,7 +453,8 @@ extractKintoError statusCode statusMsg body =
             KintoError statusCode statusMsg errRecord
 
         Err err ->
-            ServerError statusCode statusMsg err
+            Decode.errorToString err
+                |> ServerError statusCode statusMsg
 
 
 
@@ -501,14 +474,14 @@ headersForAuth auth =
 
         Basic username password ->
             ( "Authorization"
-            , ("Basic " ++ (alwaysEncode (username ++ ":" ++ password)))
+            , "Basic " ++ alwaysEncode (username ++ ":" ++ password)
             )
 
         Bearer token ->
-            ( "Authorization", ("Bearer " ++ token) )
+            ( "Authorization", "Bearer " ++ token )
 
         Custom realm token ->
-            ( "Authorization", (realm ++ " " ++ token) )
+            ( "Authorization", realm ++ " " ++ token )
 
 
 {-| A constructor for a `Client`.
@@ -520,7 +493,7 @@ headersForAuth auth =
 -}
 client : Url -> Auth -> Client
 client baseUrl auth =
-    Client baseUrl [ (headersForAuth auth) ]
+    Client baseUrl [ headersForAuth auth ]
 
 
 
@@ -537,14 +510,11 @@ client baseUrl auth =
         |> send TodosFetched
 
 -}
-filter :
-    Filter
-    -> Request a
-    -> Request a
-filter filter builder =
+filter : Filter -> Request a -> Request a
+filter filterValue builder =
     let
         header =
-            case filter of
+            case filterValue of
                 EQUAL key val ->
                     ( key, val )
 
@@ -575,8 +545,8 @@ filter filter builder =
                 BEFORE val ->
                     ( "_before", val )
     in
-        builder
-            |> HttpBuilder.withQueryParams [ header ]
+    builder
+        |> HttpBuilder.withQueryParams [ header ]
 
 
 
@@ -622,7 +592,7 @@ limit :
     -> Request a
 limit perPage builder =
     builder
-        |> HttpBuilder.withQueryParams [ ( "_limit", toString perPage ) ]
+        |> HttpBuilder.withQueryParams [ ( "_limit", String.fromInt perPage ) ]
 
 
 
@@ -665,10 +635,10 @@ toRequest builder =
 
 -}
 get : Resource a -> String -> Client -> Request a
-get resource itemId client =
-    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+get resource itemId clientInstance =
+    endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.get
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
@@ -681,12 +651,12 @@ reponse message.
 
 -}
 getList : Resource a -> Client -> HttpBuilder.RequestBuilder (Pager a)
-getList resource client =
-    endpointUrl client.baseUrl resource.listEndpoint
+getList resource clientInstance =
+    endpointUrl clientInstance.baseUrl resource.listEndpoint
         |> HttpBuilder.get
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withExpect
-            (Http.expectStringResponse (decodePager client resource.listDecoder))
+            (Http.expectStringResponse (decodePager clientInstance resource.listDecoder))
 
 
 {-| If a pager has a `nextPage`, creates a GET request to retrieve the next page of objects.
@@ -719,10 +689,10 @@ loadNextPage pager =
 
 -}
 delete : Resource a -> String -> Client -> Request a
-delete resource itemId client =
-    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+delete resource itemId clientInstance =
+    endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.delete
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
 
@@ -733,10 +703,10 @@ delete resource itemId client =
 
 -}
 create : Resource a -> Body -> Client -> Request a
-create resource body client =
-    endpointUrl client.baseUrl resource.listEndpoint
+create resource body clientInstance =
+    endpointUrl clientInstance.baseUrl resource.listEndpoint
         |> HttpBuilder.post
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
@@ -748,10 +718,10 @@ create resource body client =
 
 -}
 update : Resource a -> String -> Body -> Client -> Request a
-update resource itemId body client =
-    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+update resource itemId body clientInstance =
+    endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.patch
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
 
@@ -763,9 +733,9 @@ update resource itemId body client =
 
 -}
 replace : Resource a -> String -> Body -> Client -> Request a
-replace resource itemId body client =
-    endpointUrl client.baseUrl (resource.itemEndpoint itemId)
+replace resource itemId body clientInstance =
+    endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.put
-        |> HttpBuilder.withHeaders client.headers
+        |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
         |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)

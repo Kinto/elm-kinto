@@ -1,0 +1,20 @@
+{
+    "type": "package",
+    "name": "Kinto/elm-kinto",
+    "summary": "A client to help making requests to a Kinto storage server",
+    "license": "MPL-2.0",
+    "version": "6.0.0",
+    "exposed-modules": [
+        "Kinto"
+    ],
+    "elm-version": "0.19.0 <= v < 0.20.0",
+    "dependencies": {
+        "elm/core": "1.0.0 <= v < 2.0.0",
+        "elm/http": "1.0.0 <= v < 2.0.0",
+        "elm/json": "1.0.0 <= v < 2.0.0",
+        "elm-community/dict-extra": "2.3.1 <= v < 3.0.0",
+        "lukewestby/elm-http-builder": "6.0.0 <= v < 7.0.0",
+        "truqu/elm-base64": "2.0.4 <= v < 3.0.0"
+    },
+    "test-dependencies": {}
+}
