@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Examples using the elm-kinto client",
   "scripts": {
-    "build": "node_modules/.bin/elm make Main.elm --optimize --output=build/app.js",
-    "debug": "cp index.html build/ && node_modules/.bin/elm-live Main.elm --output=build/app.js --dir=build -- --debug",
-    "live": "cp index.html build/ && node_modules/.bin/elm-live Main.elm --output=build/app.js --dir=build",
-    "publish-to-gh-pages": "npm run build && cp index.html build/ && node_modules/.bin/gh-pages --dist build/ && echo 'deployed to https://kinto.github.io/elm-kinto/'",
-    "tdd": "node_modules/.bin/elm-test --watch",
-    "test": "node_modules/.bin/elm-test"
+    "build": "elm make Main.elm --optimize --output=build/app.js",
+    "debug": "cp index.html build/ && elm-live Main.elm --output=build/app.js --dir=build -- --debug",
+    "live": "cp index.html build/ && elm-live Main.elm --output=build/app.js --dir=build",
+    "publish-to-gh-pages": "npm run build && cp index.html build/ && gh-pages --dist build/ && echo 'deployed to https://kinto.github.io/elm-kinto/'",
+    "tdd": "elm-test --watch",
+    "test": "elm-test"
   },
   "repository": {
     "type": "git",

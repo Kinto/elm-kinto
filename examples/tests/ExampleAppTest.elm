@@ -2,6 +2,7 @@ module ExampleAppTest exposing (all)
 
 import Expect
 import Test exposing (..)
+import Time
 import Utils exposing (timeAgo)
 
 
@@ -12,10 +13,10 @@ timeAgoTest description diff result =
             1473870908000
 
         current =
-            now - diff
+            now - round diff
 
         subject =
-            timeAgo current now
+            timeAgo (Time.millisToPosix current) (Time.millisToPosix now)
     in
     test description <| \() -> Expect.equal subject result
 
