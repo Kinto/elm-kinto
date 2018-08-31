@@ -1,5 +1,5 @@
 module Kinto exposing
-    ( Client, client, Auth(..), headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+    ( Client, client, Auth(..), headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder, errorToString
     , Request
     , get, create, update, replace, delete
     , getList
@@ -7,7 +7,6 @@ module Kinto exposing
     , sort, limit, filter, Filter(..)
     , Endpoint(..), endpointUrl, ErrorDetail, Error(..), extractError, toResponse
     , send, toRequest
-    , errorToString
     )
 
 {-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
@@ -21,7 +20,7 @@ silos.
 
 # Configure a client and resources
 
-@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder
+@docs Client, client, Auth, headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder, errorToString
 
 
 # Creating requests
@@ -344,6 +343,8 @@ type Error
     | NetworkError Http.Error
 
 
+{-| Convert any Kinto.Error to a string
+-}
 errorToString : Error -> String
 errorToString error =
     case error of
