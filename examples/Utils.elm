@@ -5,7 +5,6 @@ import Time exposing (Posix)
 
 timeAgo : Posix -> Posix -> String
 timeAgo time now =
-    -- Hint: Time is a Float
     let
         seconds =
             toFloat (Time.posixToMillis now - Time.posixToMillis time) / 1000

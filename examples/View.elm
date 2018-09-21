@@ -75,18 +75,18 @@ recordHeaders sort =
 
 
 recordsList : Maybe (Kinto.Pager Record) -> Posix -> Sort -> Html.Html Msg
-recordsList pager currentTime sort =
-    case pager of
-        Just p ->
+recordsList maybePager currentTime sort =
+    case maybePager of
+        Just pager ->
             Html.div []
                 [ Html.table [ Html.Attributes.class "table" ]
                     [ Html.thead []
                         [ Html.tr []
                             (recordHeaders sort)
                         ]
-                    , Html.tbody [] (List.map (recordRow currentTime) p.objects)
+                    , Html.tbody [] (List.map (recordRow currentTime) pager.objects)
                     ]
-                , case p.nextPage of
+                , case pager.nextPage of
                     Just nextPage ->
                         Html.button
                             [ Html.Attributes.style "display" "block"
@@ -116,16 +116,16 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { error, client, pager, formData, clientFormData, currentTime, sort, limit } =
+view { maybeError, maybeClient, maybePager, formData, clientFormData, currentTime, sort, maybeLimit } =
     let
-        lim =
-            limit
+        limit =
+            maybeLimit
                 |> Maybe.map String.fromInt
                 |> Maybe.withDefault ""
     in
     Html.div [ Html.Attributes.class "container" ]
         [ Html.h1 [] [ Html.text "elm-kinto demo" ]
-        , case client of
+        , case maybeClient of
             Just _ ->
                 Html.text ""
 
@@ -141,7 +141,7 @@ view { error, client, pager, formData, clientFormData, currentTime, sort, limit 
                 [ Html.input
                     [ Html.Attributes.type_ "number"
                     , Html.Attributes.min "1"
-                    , Html.Attributes.value lim
+                    , Html.Attributes.value limit
                     , Html.Events.onInput NewLimit
                     , Html.Attributes.style "width" "40px"
                     ]
@@ -151,15 +151,15 @@ view { error, client, pager, formData, clientFormData, currentTime, sort, limit 
                     [ Html.text "limit" ]
                 ]
             ]
-        , errorNotif error
-        , case pager of
-            Just p ->
+        , errorNotif maybeError
+        , case maybePager of
+            Just pager ->
                 Html.p []
-                    [ Html.text <| String.fromInt p.total ++ " records in this collection." ]
+                    [ Html.text <| String.fromInt pager.total ++ " records in this collection." ]
 
             Nothing ->
                 Html.text ""
-        , recordsList pager currentTime sort
+        , recordsList maybePager currentTime sort
         , recordFormView formData
         ]
 
