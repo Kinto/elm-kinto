@@ -24,7 +24,5 @@
     "elm-live": "^3.0.5",
     "elm-test": "beta"
   },
-  "dependencies": {
-    "elm-upgrade": "^0.19.2"
-  }
+  "dependencies": {}
 }
