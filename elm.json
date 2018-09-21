@@ -3,7 +3,7 @@
     "name": "Kinto/elm-kinto",
     "summary": "A client to help making requests to a Kinto storage server",
     "license": "MPL-2.0",
-    "version": "6.0.0",
+    "version": "6.1.0",
     "exposed-modules": [
         "Kinto"
     ],
@@ -16,7 +16,7 @@
         "lukewestby/elm-http-builder": "6.0.0 <= v < 7.0.0",
         "truqu/elm-base64": "2.0.4 <= v < 3.0.0"
     },
-  "test-dependencies": {
-    "elm-explorations/test": "1.0.0 <= v < 2.0.0"
-  }
+    "test-dependencies": {
+        "elm-explorations/test": "1.0.0 <= v < 2.0.0"
+    }
 }
