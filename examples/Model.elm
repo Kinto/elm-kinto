@@ -1,20 +1,20 @@
-module Model
-    exposing
-        ( init
-        , update
-        , subscriptions
-        , FormData
-        , ClientFormData
-        , Model
-        , Msg(..)
-        , Record
-        , Sort(..)
-        )
+module Model exposing
+    ( ClientFormData
+    , Flags
+    , FormData
+    , Model
+    , Msg(..)
+    , Record
+    , Sort(..)
+    , init
+    , subscriptions
+    , update
+    )
 
-import Time
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
+import Time exposing (Posix)
 
 
 type alias RecordId =
@@ -44,14 +44,14 @@ type alias ClientFormData =
 
 
 type alias Model =
-    { error : Maybe String
-    , client : Maybe Kinto.Client
-    , pager : Maybe (Kinto.Pager Record)
+    { maybeError : Maybe String
+    , maybeClient : Maybe Kinto.Client
+    , maybePager : Maybe (Kinto.Pager Record)
     , formData : FormData
     , clientFormData : ClientFormData
-    , currentTime : Time.Time
+    , currentTime : Posix
     , sort : Sort
-    , limit : Maybe Int
+    , maybeLimit : Maybe Int
     }
 
 
@@ -63,7 +63,7 @@ type Sort
 type Msg
     = NoOp
       -- Use by TimeAgo to display human friendly timestamps
-    | Tick Time.Time
+    | Tick Posix
       -- Kinto API requests
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
@@ -90,8 +90,12 @@ type Msg
     | Limit
 
 
-init : ( Model, Cmd Msg )
-init =
+type alias Flags =
+    {}
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( initialModel
     , Cmd.batch [ fetchRecordList initialModel ]
     )
@@ -112,14 +116,14 @@ initialClientFormData =
 
 initialModel : Model
 initialModel =
-    { error = Nothing
-    , client = Nothing
-    , pager = Nothing
+    { maybeError = Nothing
+    , maybeClient = Nothing
+    , maybePager = Nothing
     , formData = initialFormData
     , clientFormData = initialClientFormData
-    , currentTime = 0
+    , currentTime = Time.millisToPosix 0
     , sort = Desc "last_modified"
-    , limit = Just 5
+    , maybeLimit = Just 5
     }
 
 
@@ -138,21 +142,21 @@ update msg ({ clientFormData } as model) =
 
         FetchRecords ->
             ( { model
-                | pager =
-                    case model.client of
+                | maybePager =
+                    case model.maybeClient of
                         Just client ->
                             Just <| Kinto.emptyPager client recordResource
 
                         Nothing ->
                             Nothing
-                , error = Nothing
+                , maybeError = Nothing
               }
             , fetchRecordList model
             )
 
         FetchNextRecords ->
-            ( { model | error = Nothing }
-            , case model.pager of
+            ( { model | maybeError = Nothing }
+            , case model.maybePager of
                 Just pager ->
                     fetchNextRecordList pager
 
@@ -163,7 +167,7 @@ update msg ({ clientFormData } as model) =
         FetchRecordResponse (Ok record) ->
             ( { model
                 | formData = recordToFormData record
-                , error = Nothing
+                , maybeError = Nothing
               }
             , Cmd.none
             )
@@ -173,14 +177,14 @@ update msg ({ clientFormData } as model) =
 
         FetchRecordsResponse (Ok newPager) ->
             ( { model
-                | pager =
-                    case model.pager of
+                | maybePager =
+                    case model.maybePager of
                         Just pager ->
                             Just <| Kinto.updatePager newPager pager
 
                         Nothing ->
                             Just <| newPager
-                , error = Nothing
+                , maybeError = Nothing
               }
             , Cmd.none
             )
@@ -190,8 +194,8 @@ update msg ({ clientFormData } as model) =
 
         CreateRecordResponse (Ok record) ->
             ( { model
-                | pager = model.pager |> Maybe.map (addRecordToPager record)
-                , error = Nothing
+                | maybePager = model.maybePager |> Maybe.map (addRecordToPager record)
+                , maybeError = Nothing
               }
             , Cmd.none
             )
@@ -200,7 +204,7 @@ update msg ({ clientFormData } as model) =
             model |> updateError error
 
         EditRecord recordId ->
-            ( model, fetchRecord model.client recordId )
+            ( model, fetchRecord model.maybeClient recordId )
 
         EditRecordResponse (Ok _) ->
             ( model, fetchRecordList model )
@@ -209,18 +213,18 @@ update msg ({ clientFormData } as model) =
             model |> updateError error
 
         DeleteRecord recordId ->
-            ( model, deleteRecord model.client recordId )
+            ( model, deleteRecord model.maybeClient recordId )
 
         DeleteRecordResponse (Ok record) ->
             ( { model
-                | pager =
-                    case model.pager of
+                | maybePager =
+                    case model.maybePager of
                         Just pager ->
                             Just <| removeRecordFromPager record pager
 
                         Nothing ->
                             Nothing
-                , error = Nothing
+                , maybeError = Nothing
               }
             , Cmd.none
             )
@@ -236,18 +240,18 @@ update msg ({ clientFormData } as model) =
                 updated =
                     { formData | title = title }
             in
-                ( { model
-                    | formData = updated
-                    , pager =
-                        case model.pager of
-                            Just pager ->
-                                Just <| updateRecordInPager updated pager
+            ( { model
+                | formData = updated
+                , maybePager =
+                    case model.maybePager of
+                        Just pager ->
+                            Just <| updateRecordInPager updated pager
 
-                            Nothing ->
-                                Nothing
-                  }
-                , Cmd.none
-                )
+                        Nothing ->
+                            Nothing
+              }
+            , Cmd.none
+            )
 
         UpdateFormDescription description ->
             let
@@ -257,22 +261,22 @@ update msg ({ clientFormData } as model) =
                 updated =
                     { formData | description = description }
             in
-                ( { model
-                    | formData = updated
-                    , pager =
-                        case model.pager of
-                            Just pager ->
-                                Just <| updateRecordInPager updated pager
+            ( { model
+                | formData = updated
+                , maybePager =
+                    case model.maybePager of
+                        Just pager ->
+                            Just <| updateRecordInPager updated pager
 
-                            Nothing ->
-                                Nothing
-                  }
-                , Cmd.none
-                )
+                        Nothing ->
+                            Nothing
+              }
+            , Cmd.none
+            )
 
         Submit ->
             ( { model | formData = initialFormData }
-            , sendFormData model.client model.formData
+            , sendFormData model.maybeClient model.formData
             )
 
         SortByColumn column ->
@@ -281,35 +285,28 @@ update msg ({ clientFormData } as model) =
                     case model.sort of
                         Asc sortedColumn ->
                             if sortedColumn == column then
-                                (Desc sortedColumn)
+                                Desc sortedColumn
+
                             else
-                                (Asc column)
+                                Asc column
 
                         Desc sortedColumn ->
                             if sortedColumn == column then
-                                (Asc sortedColumn)
+                                Asc sortedColumn
+
                             else
-                                (Asc column)
+                                Asc column
 
                 updated =
-                    { model | sort = sort, pager = Nothing }
+                    { model | sort = sort, maybePager = Nothing }
             in
-                ( updated, fetchRecordList updated )
+            ( updated, fetchRecordList updated )
 
         NewLimit newLimit ->
-            let
-                updated =
-                    case String.toInt newLimit of
-                        Ok limit ->
-                            { model | limit = Just limit }
-
-                        Err _ ->
-                            { model | limit = Nothing }
-            in
-                ( updated, Cmd.none )
+            ( { model | maybeLimit = String.toInt newLimit }, Cmd.none )
 
         Limit ->
-            ( { model | pager = Nothing }, fetchRecordList model )
+            ( { model | maybePager = Nothing }, fetchRecordList model )
 
         UpdateClientServer server ->
             ( { model | clientFormData = { clientFormData | server = server } }, Cmd.none )
@@ -329,14 +326,14 @@ update msg ({ clientFormData } as model) =
                         |> Just
 
                 newModel =
-                    { model | pager = Nothing, client = client }
+                    { model | maybePager = Nothing, maybeClient = client }
             in
-                ( newModel, fetchRecordList newModel )
+            ( newModel, fetchRecordList newModel )
 
 
-updateError : error -> Model -> ( Model, Cmd Msg )
+updateError : Kinto.Error -> Model -> ( Model, Cmd Msg )
 updateError error model =
-    ( { model | error = Just <| toString error }, Cmd.none )
+    ( { model | maybeError = Just <| Kinto.errorToString error }, Cmd.none )
 
 
 
@@ -345,7 +342,7 @@ updateError error model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every Time.second Tick
+    Time.every 1000 Tick
 
 
 
@@ -374,7 +371,7 @@ addRecordToPager formData pager =
         updated =
             pager.objects |> List.append [ formData ]
     in
-        { pager | objects = updated }
+    { pager | objects = updated }
 
 
 removeRecordFromPager : Record -> Kinto.Pager Record -> Kinto.Pager Record
@@ -396,6 +393,7 @@ updateRecordInPager formData pager =
                         (\record ->
                             if record.id == id then
                                 updateRecord formData record
+
                             else
                                 record
                         )
@@ -418,12 +416,11 @@ recordResource =
 
 decodeRecord : Decode.Decoder Record
 decodeRecord =
-    (Decode.map4 Record
+    Decode.map4 Record
         (Decode.field "id" Decode.string)
         (Decode.maybe (Decode.field "title" Decode.string))
         (Decode.maybe (Decode.field "description" Decode.string))
         (Decode.field "last_modified" Decode.int)
-    )
 
 
 
@@ -431,8 +428,8 @@ decodeRecord =
 
 
 fetchRecord : Maybe Kinto.Client -> RecordId -> Cmd Msg
-fetchRecord client recordId =
-    case client of
+fetchRecord maybeClient recordId =
+    case maybeClient of
         Just client ->
             client
                 |> Kinto.get recordResource recordId
@@ -453,7 +450,7 @@ fetchNextRecordList pager =
 
 
 fetchRecordList : Model -> Cmd Msg
-fetchRecordList { client, sort, limit } =
+fetchRecordList { maybeClient, sort, maybeLimit } =
     let
         sortColumn =
             case sort of
@@ -464,7 +461,7 @@ fetchRecordList { client, sort, limit } =
                     "-" ++ column
 
         limiter builder =
-            case limit of
+            case maybeLimit of
                 Just limit ->
                     builder
                         |> Kinto.limit limit
@@ -472,21 +469,21 @@ fetchRecordList { client, sort, limit } =
                 Nothing ->
                     builder
     in
-        case client of
-            Just client ->
-                client
-                    |> Kinto.getList recordResource
-                    |> Kinto.sort [ sortColumn ]
-                    |> limiter
-                    |> Kinto.send FetchRecordsResponse
+    case maybeClient of
+        Just client ->
+            client
+                |> Kinto.getList recordResource
+                |> Kinto.sort [ sortColumn ]
+                |> limiter
+                |> Kinto.send FetchRecordsResponse
 
-            Nothing ->
-                Cmd.none
+        Nothing ->
+            Cmd.none
 
 
 deleteRecord : Maybe Kinto.Client -> RecordId -> Cmd Msg
-deleteRecord client recordId =
-    case client of
+deleteRecord maybeClient recordId =
+    case maybeClient of
         Just client ->
             client
                 |> Kinto.delete recordResource recordId
@@ -497,21 +494,21 @@ deleteRecord client recordId =
 
 
 sendFormData : Maybe Kinto.Client -> FormData -> Cmd Msg
-sendFormData client formData =
+sendFormData maybeClient formData =
     let
         data =
             encodeFormData formData
     in
-        case ( client, formData.id ) of
-            ( Just client, Nothing ) ->
-                client
-                    |> Kinto.create recordResource data
-                    |> Kinto.send CreateRecordResponse
+    case ( maybeClient, formData.id ) of
+        ( Just client, Nothing ) ->
+            client
+                |> Kinto.create recordResource data
+                |> Kinto.send CreateRecordResponse
 
-            ( Just client, Just recordId ) ->
-                client
-                    |> Kinto.update recordResource recordId data
-                    |> Kinto.send EditRecordResponse
+        ( Just client, Just recordId ) ->
+            client
+                |> Kinto.update recordResource recordId data
+                |> Kinto.send EditRecordResponse
 
-            _ ->
-                Cmd.none
+        _ ->
+            Cmd.none
