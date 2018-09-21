@@ -3,6 +3,7 @@ sudo: false
 cache:
   directories:
     - test/elm-stuff/build-artifacts
+    - examples/test/elm-stuff/build-artifacts
     - sysconfcpus
 
 before_install:
@@ -16,10 +17,16 @@ before_install:
       cd ..;
     fi
 install:
+  - npm install -g elm@0.19.0-bugfix2 elm-test@0.19.0-beta8 elm-format
+  - mv $(npm config get prefix)/bin/elm $(npm config get prefix)/bin/elm-old
+  - printf '%s\n\n' '#!/bin/bash' 'echo "Running elm with sysconfcpus -n 1"' '$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 1 elm-old "$@"' > $(npm config get prefix)/bin/elm
+  - chmod +x $(npm config get prefix)/bin/elm
   - npm install
-  - cd examples && npm install && cd ..
+  - cd examples 
+  - npm install
+  - cd ..
 script:
-  - $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 1 npm test
+  - elm-test
   - cd examples
-      && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 1 npm test
-      && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 1 node_modules/.bin/elm make Example.elm
+      && elm-test
+      && elm make Example.elm
