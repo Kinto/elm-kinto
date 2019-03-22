@@ -4,7 +4,7 @@ Experimenting with [Elm](elm-lang.org) and [Kinto](http://www.kinto-storage.org/
 
 ## Setup
 
-Node and Elm v0.18 should be installed on your system. Then:
+Node should be installed on your system. Then:
 
 ```
 $ npm install
