@@ -93,8 +93,8 @@ type alias Url =
 [elm-http-builder](https://package.elm-lang.org/packages/lukewestby/elm-http-builder/latest)
 request builder.
 -}
-type alias Request msg =
-    HttpBuilder.RequestBuilder msg
+type alias Request a =
+    HttpBuilder.RequestBuilder a
 
 
 
@@ -178,11 +178,11 @@ type alias Client =
 {-| A type for a Kinto resource. Usually constructed using one of `bucketResource`,
 `collectionResource` or `recordResource`.
 -}
-type alias Resource msg =
+type alias Resource a =
     { itemEndpoint : String -> Endpoint
     , listEndpoint : Endpoint
-    , itemDecoder : Decode.Decoder msg
-    , listDecoder : Decode.Decoder (List msg)
+    , itemDecoder : Decode.Decoder a
+    , listDecoder : Decode.Decoder (List a)
     }
 
 
@@ -191,7 +191,7 @@ type alias Resource msg =
     bucketResource bucketDecoder
 
 -}
-bucketResource : Decode.Decoder msg -> Resource msg
+bucketResource : Decode.Decoder a -> Resource a
 bucketResource decoder =
     Resource
         BucketEndpoint
@@ -205,7 +205,7 @@ bucketResource decoder =
     collectionResource "bucket-name" collectionDecoder
 
 -}
-collectionResource : BucketName -> Decode.Decoder msg -> Resource msg
+collectionResource : BucketName -> Decode.Decoder a -> Resource a
 collectionResource bucket decoder =
     Resource
         (CollectionEndpoint bucket)
@@ -216,7 +216,7 @@ collectionResource bucket decoder =
 
 {-| A constructor for a record resource.
 -}
-recordResource : BucketName -> CollectionName -> Decode.Decoder msg -> Resource msg
+recordResource : BucketName -> CollectionName -> Decode.Decoder a -> Resource a
 recordResource bucket collection decoder =
     Resource
         (RecordEndpoint bucket collection)
@@ -227,7 +227,7 @@ recordResource bucket collection decoder =
 
 {-| A decoder for a basic Kinto response.
 -}
-decodeData : Decode.Decoder msg -> Decode.Decoder msg
+decodeData : Decode.Decoder a -> Decode.Decoder a
 decodeData decoder =
     Decode.field "data" decoder
 
@@ -246,10 +246,10 @@ encodeData encoder =
 
 {-| A stateful accumulator for a paginated list of objects.
 -}
-type alias Pager msg =
+type alias Pager a =
     { client : Client
-    , objects : List msg
-    , decoder : Decode.Decoder (List msg)
+    , objects : List a
+    , decoder : Decode.Decoder (List a)
     , total : Int
     , nextPage : Maybe Url
     }
@@ -260,7 +260,7 @@ type alias Pager msg =
     emptyPager resource
 
 -}
-emptyPager : Client -> Resource msg -> Pager msg
+emptyPager : Client -> Resource a -> Pager a
 emptyPager clientInstance resource =
     { client = clientInstance
     , objects = []
@@ -283,35 +283,6 @@ updatePager nextPager previousPager =
         , nextPage = nextPager.nextPage
         , objects = previousPager.objects ++ nextPager.objects
     }
-
-
-{-| Decode a `Pager`.
--}
-decodePager : Client -> Decode.Decoder (List a) -> Http.Response String -> Result.Result String (Pager a)
-decodePager clientInstance decoder response =
-    let
-        headers =
-            Dict.Extra.mapKeys String.toLower response.headers
-
-        nextPage =
-            Dict.get "next-page" headers
-
-        total =
-            Dict.get "total-records" headers
-                |> Maybe.map (String.toInt >> Maybe.withDefault 0)
-                |> Maybe.withDefault 0
-
-        createPager objects =
-            { client = clientInstance
-            , objects = objects
-            , decoder = decoder
-            , total = total
-            , nextPage = nextPage
-            }
-    in
-    Decode.decodeString decoder response.body
-        |> Result.map createPager
-        |> Result.mapError Decode.errorToString
 
 
 
@@ -434,15 +405,32 @@ errorDecoder =
 
 {-| Extract an `Error` from an `Http.Error`.
 -}
-expectJson : (Result Error a -> msg) -> Decode.Decoder a -> Http.Expect msg
-expectJson toMsg decoder =
+expectJson : (Result Error a -> msg) -> Client -> Decode.Decoder a -> Http.Expect msg
+expectJson toMsg clientInstance decoder =
     Http.expectStringResponse toMsg <|
         \response ->
             case response of
                 Http.BadStatus_ { statusCode, statusText } body ->
                     Err <| extractKintoError statusCode statusText body
 
-                Http.GoodStatus_ { statusCode, statusText } body ->
+                Http.GoodStatus_ { headers, statusCode, statusText } body ->
+                    let
+                        nextPage =
+                            Dict.get "next-page" headers
+
+                        total =
+                            Dict.get "total-records" headers
+                                |> Maybe.map (String.toInt >> Maybe.withDefault 0)
+                                |> Maybe.withDefault 0
+
+                        createPager objects =
+                            { client = clientInstance
+                            , objects = objects
+                            , decoder = decoder
+                            , total = total
+                            , nextPage = nextPage
+                            }
+                    in
                     case Decode.decodeString decoder body of
                         Ok value ->
                             Ok value
@@ -460,7 +448,53 @@ expectJson toMsg decoder =
                                 )
 
                 anyError ->
-                    Err <| NetworkError anyError
+                    NetworkError anyError |> Err
+
+
+expectPagerJson : (Result Error (Pager a) -> msg) -> Client -> Decode.Decoder (List a) -> Http.Expect msg
+expectPagerJson toMsg clientInstance decoder =
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadStatus_ { statusCode, statusText } body ->
+                    Err <| extractKintoError statusCode statusText body
+
+                Http.GoodStatus_ { headers, statusCode, statusText } body ->
+                    let
+                        nextPage =
+                            Dict.get "next-page" headers
+
+                        total =
+                            Dict.get "total-records" headers
+                                |> Maybe.map (String.toInt >> Maybe.withDefault 0)
+                                |> Maybe.withDefault 0
+
+                        createPager objects =
+                            { client = clientInstance
+                            , objects = objects
+                            , decoder = decoder
+                            , total = total
+                            , nextPage = nextPage
+                            }
+                    in
+                    case Decode.decodeString decoder body of
+                        Ok value ->
+                            Ok <| createPager value
+
+                        Err err ->
+                            Err
+                                (ServerError
+                                    statusCode
+                                    statusText
+                                    ("failed decoding json: "
+                                        ++ Decode.errorToString err
+                                        ++ "\n\nBody received from server: "
+                                        ++ body
+                                    )
+                                )
+
+                anyError ->
+                    NetworkError anyError |> Err
 
 
 extractKintoError : StatusCode -> StatusMsg -> String -> Error
@@ -472,6 +506,12 @@ extractKintoError statusCode statusMsg body =
         Err err ->
             Decode.errorToString err
                 |> ServerError statusCode statusMsg
+
+
+withQueryParam : ( String, String ) -> Request a -> Request a
+withQueryParam params builder =
+    -- XXX: Change the builder.url with the new param addition
+    builder
 
 
 
@@ -527,10 +567,10 @@ client baseUrl auth =
         |> send TodosFetched
 
 -}
-filter : Filter -> Request msg -> Request msg
+filter : Filter -> Request a -> Request a
 filter filterValue builder =
     let
-        header =
+        param =
             case filterValue of
                 EQUAL key val ->
                     ( key, val )
@@ -563,7 +603,7 @@ filter filterValue builder =
                     ( "_before", val )
     in
     builder
-        |> HttpBuilder.withQueryParams [ header ]
+        |> withQueryParam param
 
 
 
@@ -582,11 +622,11 @@ filter filterValue builder =
 -}
 sort :
     List String
-    -> Request msg
-    -> Request msg
+    -> Request a
+    -> Request a
 sort keys builder =
     builder
-        |> HttpBuilder.withQueryParams [ ( "_sort", String.join "," keys ) ]
+        |> withQueryParam ( "_sort", String.join "," keys )
 
 
 
@@ -605,11 +645,11 @@ sort keys builder =
 -}
 limit :
     Int
-    -> Request msg
-    -> Request msg
+    -> Request a
+    -> Request a
 limit perPage builder =
     builder
-        |> HttpBuilder.withQueryParams [ ( "_limit", String.fromInt perPage ) ]
+        |> withQueryParam ( "_limit", String.fromInt perPage )
 
 
 
@@ -625,9 +665,9 @@ limit perPage builder =
         |> send TodoAdded
 
 -}
-send : Request msg -> Cmd msg
-send builder =
-    HttpBuilder.toRequest builder
+send : Request a -> Cmd a
+send =
+    HttpBuilder.request
 
 
 {-| Create a GET request on an item endpoint
@@ -636,12 +676,12 @@ send builder =
         |> get resource itemId
 
 -}
-get : Resource msg -> String -> Client -> Request msg
-get resource itemId clientInstance =
+get : Resource a -> String -> (Result Error a -> msg) -> Client -> Request msg
+get resource itemId toMsg clientInstance =
     endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders clientInstance.headers
-        |> HttpBuilder.withExpectJson resource.itemDecoder
+        |> HttpBuilder.withExpect (expectJson toMsg clientInstance resource.itemDecoder)
 
 
 {-| Create a GET request on one of the plural endpoints. As lists are always
@@ -652,13 +692,13 @@ reponse message.
         |> getList resource
 
 -}
-getList : Resource msg -> Client -> HttpBuilder.RequestBuilder (Pager a)
-getList resource clientInstance =
+getList : Resource a -> (Result Error (Pager a) -> msg) -> Client -> Request msg
+getList resource toMsg clientInstance =
     endpointUrl clientInstance.baseUrl resource.listEndpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders clientInstance.headers
-        |> HttpBuilder.withExpectJson
-            (Http.expectStringResponse (decodePager clientInstance resource.listDecoder))
+        |> HttpBuilder.withExpect
+            (expectPagerJson toMsg clientInstance resource.listDecoder)
 
 
 {-| If a pager has a `nextPage`, creates a GET request to retrieve the next page of objects.
@@ -669,15 +709,15 @@ reponse message.
         |> loadNextPage pager
 
 -}
-loadNextPage : Pager a -> Maybe (HttpBuilder.RequestBuilder (Pager a))
-loadNextPage pager =
+loadNextPage : Pager a -> (Result Error (Pager a) -> msg) -> Maybe (Request msg)
+loadNextPage pager toMsg =
     case pager.nextPage of
         Just nextPage ->
             nextPage
                 |> HttpBuilder.get
                 |> HttpBuilder.withHeaders pager.client.headers
                 |> HttpBuilder.withExpect
-                    (Http.expectStringResponse (decodePager pager.client pager.decoder))
+                    (expectPagerJson toMsg pager.client pager.decoder)
                 |> Just
 
         Nothing ->
@@ -690,12 +730,12 @@ loadNextPage pager =
         |> delete resource itemId
 
 -}
-delete : Resource msg -> String -> Client -> Request msg
-delete resource itemId clientInstance =
+delete : Resource a -> String -> (Result Error a -> msg) -> Client -> Request msg
+delete resource itemId toMsg clientInstance =
     endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.delete
         |> HttpBuilder.withHeaders clientInstance.headers
-        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
+        |> HttpBuilder.withExpect (expectJson toMsg clientInstance resource.itemDecoder)
 
 
 {-| Create a POST request on a plural endpoint:
@@ -704,13 +744,13 @@ delete resource itemId clientInstance =
         |> create resource itemId data
 
 -}
-create : Resource msg -> Body -> Client -> Request msg
-create resource body clientInstance =
+create : Resource a -> Body -> (Result Error a -> msg) -> Client -> Request msg
+create resource body toMsg clientInstance =
     endpointUrl clientInstance.baseUrl resource.listEndpoint
         |> HttpBuilder.post
         |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
-        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
+        |> HttpBuilder.withExpect (expectJson toMsg clientInstance resource.itemDecoder)
 
 
 {-| Create a PATCH request on an item endpoint:
@@ -719,13 +759,13 @@ create resource body clientInstance =
         |> update resource itemId data
 
 -}
-update : Resource msg -> String -> Body -> Client -> Request msg
-update resource itemId body clientInstance =
+update : Resource a -> String -> Body -> (Result Error a -> msg) -> Client -> Request msg
+update resource itemId body toMsg clientInstance =
     endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.patch
         |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
-        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
+        |> HttpBuilder.withExpect (expectJson toMsg clientInstance resource.itemDecoder)
 
 
 {-| Create a PUT request on an item endpoint:
@@ -734,10 +774,10 @@ update resource itemId body clientInstance =
         |> replace resource itemId data
 
 -}
-replace : Resource msg -> String -> Body -> Client -> Request msg
-replace resource itemId body clientInstance =
+replace : Resource a -> String -> Body -> (Result Error a -> msg) -> Client -> Request msg
+replace resource itemId body toMsg clientInstance =
     endpointUrl clientInstance.baseUrl (resource.itemEndpoint itemId)
         |> HttpBuilder.put
         |> HttpBuilder.withHeaders clientInstance.headers
         |> HttpBuilder.withJsonBody (encodeData body)
-        |> HttpBuilder.withExpect (Http.expectJson resource.itemDecoder)
+        |> HttpBuilder.withExpect (expectJson toMsg clientInstance resource.itemDecoder)
