@@ -7,7 +7,7 @@ module Kinto exposing
     , sort, limit, filter, Filter(..)
     , Endpoint(..), endpointUrl, ErrorDetail, Error(..)
     , send
-    , expectJson
+    , expectJson, withQueryParam
     )
 
 {-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
@@ -83,6 +83,7 @@ import Http
 import HttpBuilder
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Url
 
 
 type alias Url =
@@ -509,9 +510,59 @@ extractKintoError statusCode statusMsg body =
 
 
 withQueryParam : ( String, String ) -> Request a -> Request a
-withQueryParam params builder =
-    -- XXX: Change the builder.url with the new param addition
-    builder
+withQueryParam param builder =
+    let
+        ( url, params ) =
+            case String.split "?" builder.url of
+                [ path, qs ] ->
+                    ( path
+                    , qs
+                        |> String.split "&"
+                        |> List.filterMap (tupleSplit "=")
+                    )
+
+                [ path ] ->
+                    ( path, [] )
+
+                _ ->
+                    ( "", [] )
+
+        queryString =
+            params
+                |> List.append [ param ]
+                |> joinUrlEncoded
+    in
+    { builder | url = url ++ "?" ++ queryString }
+
+
+tupleSplit : String -> String -> Maybe ( String, String )
+tupleSplit sep string =
+    case String.split sep string of
+        [ key, value ] ->
+            Just ( key, value )
+
+        _ ->
+            Nothing
+
+
+joinUrlEncoded : List ( String, String ) -> String
+joinUrlEncoded args =
+    String.join "&" (List.map queryPair args)
+
+
+queryPair : ( String, String ) -> String
+queryPair ( key, value ) =
+    queryEscape key ++ "=" ++ queryEscape value
+
+
+queryEscape : String -> String
+queryEscape =
+    Url.percentEncode >> replaceSpace "%20" "+"
+
+
+replaceSpace : String -> String -> String -> String
+replaceSpace old new =
+    String.split old >> String.join new
 
 
 
