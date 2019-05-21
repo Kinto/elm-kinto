@@ -82,7 +82,6 @@ import Http
 import HttpBuilder
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Url
 import Url.Builder exposing (string, toQuery)
 
 
