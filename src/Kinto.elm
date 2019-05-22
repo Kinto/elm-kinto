@@ -1,13 +1,12 @@
 module Kinto exposing
     ( Client, client, Auth(..), headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder, errorToString
-    , Request
+    , Request, withQueryParam
     , get, create, update, replace, delete
     , getList
     , Pager, emptyPager, updatePager, loadNextPage
     , sort, limit, filter, Filter(..)
-    , Endpoint(..), endpointUrl, ErrorDetail, Error(..)
+    , Endpoint(..), endpointUrl, ErrorDetail, Error(..), expectJson, expectPagerJson
     , send
-    , expectJson, withQueryParam
     )
 
 {-| [Kinto](http://www.kinto-storage.org/) client to ease communicating with
@@ -42,7 +41,7 @@ Item endpoints are:
   - collection: `buckets/:bucketId/collections/:collectionId`
   - record: `buckets/:bucketId/collections/:collectionId/records/:recordId`
 
-@docs Request
+@docs Request, withQueryParam
 
 
 ## Single item requests
@@ -67,12 +66,12 @@ Item endpoints are:
 
 # Types and Errors
 
-@docs Endpoint, endpointUrl, ErrorDetail, Error, extractError
+@docs Endpoint, endpointUrl, ErrorDetail, Error, expectJson, expectPagerJson
 
 
 # Sending requests
 
-@docs send, toRequest
+@docs send
 
 -}
 
@@ -434,6 +433,8 @@ expectJson toMsg decoder =
                     NetworkError anyError |> Err
 
 
+{-| Extract an `Error` from an `Http.Error` or return a Pager for the decoded list.
+-}
 expectPagerJson : (Result Error (Pager a) -> msg) -> Client -> Decode.Decoder (List a) -> Http.Expect msg
 expectPagerJson toMsg clientInstance decoder =
     Http.expectStringResponse toMsg <|
@@ -491,6 +492,8 @@ extractKintoError statusCode statusMsg body =
                 |> ServerError statusCode statusMsg
 
 
+{-| Update the URL to add a query parameter.
+-}
 withQueryParam : ( String, String ) -> Request a -> Request a
 withQueryParam ( paramKey, paramValue ) builder =
     let
