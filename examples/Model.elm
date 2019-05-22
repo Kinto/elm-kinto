@@ -432,8 +432,8 @@ fetchRecord maybeClient recordId =
     case maybeClient of
         Just client ->
             client
-                |> Kinto.get recordResource recordId
-                |> Kinto.send FetchRecordResponse
+                |> Kinto.get recordResource recordId FetchRecordResponse
+                |> Kinto.send
 
         Nothing ->
             Cmd.none
@@ -441,9 +441,9 @@ fetchRecord maybeClient recordId =
 
 fetchNextRecordList : Kinto.Pager Record -> Cmd Msg
 fetchNextRecordList pager =
-    case Kinto.loadNextPage pager of
+    case Kinto.loadNextPage pager FetchRecordsResponse of
         Just request ->
-            Kinto.send FetchRecordsResponse request
+            Kinto.send request
 
         Nothing ->
             Cmd.none
@@ -472,10 +472,10 @@ fetchRecordList { maybeClient, sort, maybeLimit } =
     case maybeClient of
         Just client ->
             client
-                |> Kinto.getList recordResource
+                |> Kinto.getList recordResource FetchRecordsResponse
                 |> Kinto.sort [ sortColumn ]
                 |> limiter
-                |> Kinto.send FetchRecordsResponse
+                |> Kinto.send
 
         Nothing ->
             Cmd.none
@@ -486,8 +486,8 @@ deleteRecord maybeClient recordId =
     case maybeClient of
         Just client ->
             client
-                |> Kinto.delete recordResource recordId
-                |> Kinto.send DeleteRecordResponse
+                |> Kinto.delete recordResource recordId DeleteRecordResponse
+                |> Kinto.send
 
         Nothing ->
             Cmd.none
@@ -502,13 +502,13 @@ sendFormData maybeClient formData =
     case ( maybeClient, formData.id ) of
         ( Just client, Nothing ) ->
             client
-                |> Kinto.create recordResource data
-                |> Kinto.send CreateRecordResponse
+                |> Kinto.create recordResource data CreateRecordResponse
+                |> Kinto.send
 
         ( Just client, Just recordId ) ->
             client
-                |> Kinto.update recordResource recordId data
-                |> Kinto.send EditRecordResponse
+                |> Kinto.update recordResource recordId data EditRecordResponse
+                |> Kinto.send
 
         _ ->
             Cmd.none

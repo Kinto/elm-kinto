@@ -124,8 +124,8 @@ addTodo title description =
             encodeData title description
     in
         client
-            |> Kinto.create recordResource data
-            |> Kinto.send TodoAdded
+            |> Kinto.create recordResource data TodoAdded
+            |> Kinto.send
 
 
 
@@ -135,9 +135,9 @@ addTodo title description =
 getTodoList : Cmd Msg
 getTodoList =
     client
-        |> Kinto.getList recordResource
+        |> Kinto.getList recordResource TodosFetched
         |> Kinto.sort [ "title", "description" ]
-        |> Kinto.send TodosFetched
+        |> Kinto.send
 ```
 
 ## Contributing
