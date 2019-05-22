@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Examples using the elm-kinto client",
   "scripts": {
-    "build": "elm make Main.elm --optimize --output=app.js && elm make Example.elm --optimize --output=example.html ",
-    "debug": "cp index.html build/ && elm-live Main.elm --output=build/app.js --dir=build -- --debug",
-    "live": "cp index.html build/ && elm-live Main.elm --output=build/app.js --dir=build",
-    "publish-to-gh-pages": "npm run build && cp index.html build/ && gh-pages --dist build/ && echo 'deployed to https://kinto.github.io/elm-kinto/'",
+    "build": "mkdir -p dist && elm make Main.elm --optimize --output=dist/app.js && elm make Example.elm --optimize --output=dist/example.html",
+    "debug": "mkdir -p build && cp index.html build/ && elm-live Main.elm --dir=build -- --debug --output=build/app.js",
+    "live": "mkdir -p build && cp index.html build/ && elm-live Main.elm --dir=build -- --output=build/app.js",
+    "publish-to-gh-pages": "mkdir -p dist && npm run build && cp index.html dist/ && gh-pages --dist dist/ && echo 'deployed to https://kinto.github.io/elm-kinto/'",
     "tdd": "elm-test --watch",
     "test": "elm-test"
   },
