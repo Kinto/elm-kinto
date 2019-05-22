@@ -3,7 +3,7 @@
     "name": "Kinto/elm-kinto",
     "summary": "A client to help making requests to a Kinto storage server",
     "license": "MPL-2.0",
-    "version": "6.1.0",
+    "version": "7.0.0",
     "exposed-modules": [
         "Kinto"
     ],
