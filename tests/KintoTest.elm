@@ -3,6 +3,7 @@ module KintoTest exposing (all)
 import Dict
 import Expect
 import Http
+import HttpBuilder
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Kinto
@@ -63,135 +64,27 @@ all =
                   )
                 ]
             )
-        , describe "errorDecoder"
-            [ test "Properly decodes a Kinto error" <|
+        , describe "withQueryParam helper"
+            [ test "Calling withQueryParam with no query in request url adds one" <|
                 \() ->
-                    Expect.equal
-                        (Decode.decodeString
-                            Kinto.errorDecoder
-                            """{"errno": 123,
-                                "message": "something failed",
-                                "code": 321,
-                                "error": "some error"}"""
-                        )
-                        (Ok <|
-                            Kinto.ErrorDetail
-                                123
-                                "something failed"
-                                321
-                                "some error"
-                        )
-            ]
-        , describe "toResponse"
-            [ test "Returns the data from the server response" <|
+                    let
+                        newUrl =
+                            HttpBuilder.get "http://www.perdu.com/"
+                                |> Kinto.withQueryParam ( "_sort", "-last_modified" )
+                                |> .url
+                    in
+                    Expect.equal newUrl "http://www.perdu.com/?_sort=-last_modified"
+            , test "Calling withQueryParam with existing query keeps both the old and new ones" <|
                 \() ->
-                    Expect.equal
-                        (Kinto.toResponse (Ok (Encode.list Encode.string [])))
-                        (Ok (Encode.list Encode.string []))
-            , test "Returns a KintoError" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <|
-                                Http.BadStatus
-                                    (Http.Response
-                                        "http://example.com"
-                                        { code = 403, message = "Forbidden" }
-                                        Dict.empty
-                                        """{"errno":121,
-                                            "message":"This user cannot access this resource.",
-                                            "code":403,
-                                            "error":"Forbidden"}"""
-                                    )
-                            )
-                        )
-                        (Err <|
-                            Kinto.KintoError
-                                403
-                                "Forbidden"
-                                (Kinto.ErrorDetail
-                                    121
-                                    "This user cannot access this resource."
-                                    403
-                                    "Forbidden"
-                                )
-                        )
-            , test "Returns ServerError when we can't decode a KintoError" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <|
-                                Http.BadStatus
-                                    (Http.Response
-                                        "http://example.com"
-                                        { code = 403, message = "Forbidden" }
-                                        Dict.empty
-                                        """{"not-a":"kinto error"}"""
-                                    )
-                            )
-                        )
-                        (Err <|
-                            Kinto.ServerError
-                                403
-                                "Forbidden"
-                                """Problem with the given value:
-
-{
-        "not-a": "kinto error"
-    }
-
-Expecting an OBJECT with a field named `errno`"""
-                        )
-            , test "Returns a ServerError when we get a bad payload" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <|
-                                Http.BadPayload
-                                    "Bad Payload"
-                                    (Http.Response
-                                        "http://example.com"
-                                        { code = 200, message = "OK" }
-                                        Dict.empty
-                                        """Some bad payload"""
-                                    )
-                            )
-                        )
-                        (Err <|
-                            Kinto.ServerError
-                                200
-                                "OK"
-                                """failed decoding json: Bad Payload
-
-Body received from server: Some bad payload"""
-                        )
-            , test "Returns a NetworkError in case of bad url" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <| Http.BadUrl "bad url")
-                        )
-                        (Err <|
-                            Kinto.NetworkError (Http.BadUrl "bad url")
-                        )
-            , test "Returns a NetworkError in case of timeout" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <| Http.Timeout)
-                        )
-                        (Err <|
-                            Kinto.NetworkError Http.Timeout
-                        )
-            , test "Returns a NetworkError in case of NetworkError" <|
-                \() ->
-                    Expect.equal
-                        (Kinto.toResponse
-                            (Err <| Http.NetworkError)
-                        )
-                        (Err <|
-                            Kinto.NetworkError Http.NetworkError
-                        )
+                    let
+                        newUrl =
+                            HttpBuilder.get "http://www.perdu.com/?is_active=true"
+                                |> Kinto.withQueryParam ( "_sort", "-last_modified" )
+                                |> Kinto.withQueryParam ( "_limit", "20" )
+                                |> Kinto.withQueryParam ( "name", "Rémy Hubscher" )
+                                |> .url
+                    in
+                    Expect.equal newUrl "http://www.perdu.com/?name=R%C3%A9my+Hubscher&_limit=20&_sort=-last_modified&is_active=true"
             ]
         ]
 

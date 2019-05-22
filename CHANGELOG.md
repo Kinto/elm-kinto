@@ -1,3 +1,13 @@
+# 4.0.0
+
+Changed:
+- Port elm-kinto to elm-http-builder 7.0 and elm-http 2.0
+
+Removed:
+- `decodePager` helper
+- error helpers
+- `toRequest` helper
+
 # 3.0.0
 
 Added:
