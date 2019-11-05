@@ -244,6 +244,10 @@ encodeData encoder =
 
 
 {-| A stateful accumulator for a paginated list of objects.
+
+**Note:** as of 8.0.0, the `total` field has been removed from the record. You
+must use the [`count`](#count) function to retrieve the total number of records.
+
 -}
 type alias Pager a =
     { client : Client
