@@ -2,7 +2,7 @@ module Kinto exposing
     ( Client, client, Auth(..), headersForAuth, Resource, bucketResource, collectionResource, recordResource, decodeData, encodeData, errorDecoder, errorToString
     , Request, withQueryParam
     , get, create, update, replace, delete
-    , getList
+    , getList, count
     , Pager, emptyPager, updatePager, loadNextPage
     , sort, limit, filter, Filter(..)
     , Endpoint(..), endpointUrl, ErrorDetail, Error(..), expectJson, expectPagerJson
@@ -51,7 +51,7 @@ Item endpoints are:
 
 ## Resource list requests
 
-@docs getList
+@docs getList, count
 
 
 ### Paginated list
@@ -244,12 +244,15 @@ encodeData encoder =
 
 
 {-| A stateful accumulator for a paginated list of objects.
+
+**Note:** as of 8.0.0, the `total` field has been removed from the record. You
+must use the [`count`](#count) function to retrieve the total number of records.
+
 -}
 type alias Pager a =
     { client : Client
     , objects : List a
     , decoder : Decode.Decoder (List a)
-    , total : Int
     , nextPage : Maybe Url
     }
 
@@ -264,7 +267,6 @@ emptyPager clientInstance resource =
     { client = clientInstance
     , objects = []
     , decoder = resource.listDecoder
-    , total = 0
     , nextPage = Nothing
     }
 
@@ -278,8 +280,7 @@ to the previous list.
 updatePager : Pager a -> Pager a -> Pager a
 updatePager nextPager previousPager =
     { previousPager
-        | total = nextPager.total
-        , nextPage = nextPager.nextPage
+        | nextPage = nextPager.nextPage
         , objects = previousPager.objects ++ nextPager.objects
     }
 
@@ -448,16 +449,10 @@ expectPagerJson toMsg clientInstance decoder =
                         nextPage =
                             Dict.get "next-page" headers
 
-                        total =
-                            Dict.get "total-records" headers
-                                |> Maybe.map (String.toInt >> Maybe.withDefault 0)
-                                |> Maybe.withDefault 0
-
                         createPager objects =
                             { client = clientInstance
                             , objects = objects
                             , decoder = decoder
-                            , total = total
                             , nextPage = nextPage
                             }
                     in
@@ -476,6 +471,26 @@ expectPagerJson toMsg clientInstance decoder =
                                         ++ body
                                     )
                                 )
+
+                anyError ->
+                    NetworkError anyError |> Err
+
+
+{-| Extract the value of the `Total-Records` header
+-}
+expectTotalCount : (Result Error Int -> msg) -> Http.Expect msg
+expectTotalCount toMsg =
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadStatus_ { statusCode, statusText } body ->
+                    Err <| extractKintoError statusCode statusText body
+
+                Http.GoodStatus_ { headers } _ ->
+                    Dict.get "total-records" headers
+                        |> Maybe.andThen String.toInt
+                        |> Maybe.withDefault 0
+                        |> Ok
 
                 anyError ->
                     NetworkError anyError |> Err
@@ -702,6 +717,20 @@ get resource itemId toMsg clientInstance =
         |> HttpBuilder.withExpect (expectJson toMsg resource.itemDecoder)
 
 
+{-| Count the number of records within a given collection
+
+    client
+        |> count resource CountReceived
+
+-}
+count : Resource a -> (Result Error Int -> msg) -> Client -> Request msg
+count resource toMsg clientInstance =
+    endpointUrl clientInstance.baseUrl resource.listEndpoint
+        |> HttpBuilder.head
+        |> HttpBuilder.withHeaders clientInstance.headers
+        |> HttpBuilder.withExpect (expectTotalCount toMsg)
+
+
 {-| Create a GET request on one of the plural endpoints. As lists are always
 possibly paginated, When the request is succesful, a `Pager` is attached to the
 reponse message.
@@ -715,8 +744,7 @@ getList resource toMsg clientInstance =
     endpointUrl clientInstance.baseUrl resource.listEndpoint
         |> HttpBuilder.get
         |> HttpBuilder.withHeaders clientInstance.headers
-        |> HttpBuilder.withExpect
-            (expectPagerJson toMsg clientInstance resource.listDecoder)
+        |> HttpBuilder.withExpect (expectPagerJson toMsg clientInstance resource.listDecoder)
 
 
 {-| If a pager has a `nextPage`, creates a GET request to retrieve the next page of objects.

@@ -52,6 +52,7 @@ type alias Model =
     , currentTime : Posix
     , sort : Sort
     , maybeLimit : Maybe Int
+    , totalRecords : Int
     }
 
 
@@ -65,6 +66,7 @@ type Msg
       -- Use by TimeAgo to display human friendly timestamps
     | Tick Posix
       -- Kinto API requests
+    | CountRecordsResponse (Result Kinto.Error Int)
     | FetchRecordResponse (Result Kinto.Error Record)
     | FetchRecords
     | FetchNextRecords
@@ -97,7 +99,7 @@ type alias Flags =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( initialModel
-    , Cmd.batch [ fetchRecordList initialModel ]
+    , fetchData initialModel
     )
 
 
@@ -124,6 +126,7 @@ initialModel =
     , currentTime = Time.millisToPosix 0
     , sort = Desc "last_modified"
     , maybeLimit = Just 5
+    , totalRecords = 0
     }
 
 
@@ -140,6 +143,12 @@ update msg ({ clientFormData } as model) =
         Tick newTime ->
             ( { model | currentTime = newTime }, Cmd.none )
 
+        CountRecordsResponse (Ok totalRecords) ->
+            ( { model | totalRecords = totalRecords }, Cmd.none )
+
+        CountRecordsResponse (Err error) ->
+            model |> updateError error
+
         FetchRecords ->
             ( { model
                 | maybePager =
@@ -151,7 +160,7 @@ update msg ({ clientFormData } as model) =
                             Nothing
                 , maybeError = Nothing
               }
-            , fetchRecordList model
+            , fetchData model
             )
 
         FetchNextRecords ->
@@ -169,7 +178,7 @@ update msg ({ clientFormData } as model) =
                 | formData = recordToFormData record
                 , maybeError = Nothing
               }
-            , Cmd.none
+            , countRecords model
             )
 
         FetchRecordResponse (Err error) ->
@@ -197,7 +206,7 @@ update msg ({ clientFormData } as model) =
                 | maybePager = model.maybePager |> Maybe.map (addRecordToPager record)
                 , maybeError = Nothing
               }
-            , Cmd.none
+            , countRecords model
             )
 
         CreateRecordResponse (Err error) ->
@@ -207,7 +216,7 @@ update msg ({ clientFormData } as model) =
             ( model, fetchRecord model.maybeClient recordId )
 
         EditRecordResponse (Ok _) ->
-            ( model, fetchRecordList model )
+            ( model, fetchData model )
 
         EditRecordResponse (Err error) ->
             model |> updateError error
@@ -226,7 +235,7 @@ update msg ({ clientFormData } as model) =
                             Nothing
                 , maybeError = Nothing
               }
-            , Cmd.none
+            , fetchData model
             )
 
         DeleteRecordResponse (Err error) ->
@@ -300,13 +309,13 @@ update msg ({ clientFormData } as model) =
                 updated =
                     { model | sort = sort, maybePager = Nothing }
             in
-            ( updated, fetchRecordList updated )
+            ( updated, fetchData updated )
 
         NewLimit newLimit ->
             ( { model | maybeLimit = String.toInt newLimit }, Cmd.none )
 
         Limit ->
-            ( { model | maybePager = Nothing }, fetchRecordList model )
+            ( { model | maybePager = Nothing }, fetchData model )
 
         UpdateClientServer server ->
             ( { model | clientFormData = { clientFormData | server = server } }, Cmd.none )
@@ -328,7 +337,7 @@ update msg ({ clientFormData } as model) =
                 newModel =
                     { model | maybePager = Nothing, maybeClient = client }
             in
-            ( newModel, fetchRecordList newModel )
+            ( newModel, fetchData newModel )
 
 
 updateError : Kinto.Error -> Model -> ( Model, Cmd Msg )
@@ -444,6 +453,23 @@ fetchNextRecordList pager =
     case Kinto.loadNextPage pager FetchRecordsResponse of
         Just request ->
             Kinto.send request
+
+        Nothing ->
+            Cmd.none
+
+
+fetchData : Model -> Cmd Msg
+fetchData model =
+    Cmd.batch [ fetchRecordList model, countRecords model ]
+
+
+countRecords : Model -> Cmd Msg
+countRecords { maybeClient } =
+    case maybeClient of
+        Just client ->
+            client
+                |> Kinto.count recordResource CountRecordsResponse
+                |> Kinto.send
 
         Nothing ->
             Cmd.none
