@@ -484,7 +484,7 @@ expectTotalCount toMsg =
 
                 Http.GoodStatus_ { headers } _ ->
                     Dict.get "total-records" headers
-                        |> Maybe.map (String.toInt >> Maybe.withDefault 0)
+                        |> Maybe.andThen String.toInt
                         |> Maybe.withDefault 0
                         |> Ok
 
