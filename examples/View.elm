@@ -116,7 +116,7 @@ errorNotif error =
 
 
 view : Model -> Html.Html Msg
-view { maybeError, maybeClient, maybePager, formData, clientFormData, currentTime, sort, maybeLimit } =
+view { maybeError, maybeClient, maybePager, formData, clientFormData, currentTime, sort, maybeLimit, totalRecords } =
     let
         limit =
             maybeLimit
@@ -155,7 +155,7 @@ view { maybeError, maybeClient, maybePager, formData, clientFormData, currentTim
         , case maybePager of
             Just pager ->
                 Html.p []
-                    [ Html.text <| String.fromInt pager.total ++ " records in this collection." ]
+                    [ Html.text <| String.fromInt totalRecords ++ " records in this collection." ]
 
             Nothing ->
                 Html.text ""
