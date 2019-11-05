@@ -144,10 +144,6 @@ update msg ({ clientFormData } as model) =
             ( { model | currentTime = newTime }, Cmd.none )
 
         CountRecordsResponse (Ok totalRecords) ->
-            let
-                _ =
-                    Debug.log "total" totalRecords
-            in
             ( { model | totalRecords = totalRecords }, Cmd.none )
 
         CountRecordsResponse (Err error) ->
